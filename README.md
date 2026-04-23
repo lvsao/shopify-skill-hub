@@ -1,8 +1,24 @@
 # Selofy Shopify Skill Hub
 
-Public AI agent skills for Shopify and ecommerce operators.
+[![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
+[![Skills](https://img.shields.io/badge/skills-1-2563eb)](./skills)
+[![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
+[![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
 
-This repository is the source of truth for Selofy Skill Hub skills. Skills are written as reviewable GitHub files, installable with the `skills` CLI, and designed for beginner-friendly Shopify workflows.
+🛍️ Public AI agent skills for Shopify and ecommerce operators.
+
+## About
+
+Selofy Shopify Skill Hub is an open-source skill library for Shopify sellers who want AI agents to help with real store work: content, SEO, product feeds, setup, social repurposing, and daily operations.
+
+The repository is designed as the public source of truth for Skill Hub:
+
+- 🧩 Skills are reviewable GitHub folders, not hidden prompts.
+- ⚙️ Skills can include small native scripts when scripts make work safer or faster.
+- 🛡️ Shopify writes must stay dry-run-first and approval-based.
+- 🌱 Beginner onboarding should reuse one shared Skill Hub env file.
+- 🚀 Skills install with the `skills` CLI and can later sync into Selofy Web.
 
 ## Install
 
@@ -78,8 +94,25 @@ skills/
       shopify-context.mjs
       related-product-block.mjs
 catalog/
-  categories.json
-  skills.json
+  INDEX.json
+  content-creation/
+    CATEGORY.md
+    skills.json
+  seo-growth/
+    CATEGORY.md
+    skills.json
+  product-feed/
+    CATEGORY.md
+    skills.json
+  store-setup/
+    CATEGORY.md
+    skills.json
+  social-media/
+    CATEGORY.md
+    skills.json
+  operations/
+    CATEGORY.md
+    skills.json
 examples/
   skill-hub.env.example
 AGENTS.md
@@ -88,6 +121,8 @@ README.md
 ```
 
 ## Categories
+
+Categories are folder-first. Each category lives at `catalog/<category-slug>/` so people can browse the repository naturally on GitHub. `catalog/INDEX.json` is only a machine-readable index for sync jobs and UI tooling.
 
 Selofy Web currently expects these public Skill Hub category slugs:
 
@@ -98,7 +133,7 @@ Selofy Web currently expects these public Skill Hub category slugs:
 - `social-media`
 - `operations`
 
-Use these category slugs in catalog metadata unless Selofy Web is updated first.
+Use these folder names and slugs unless Selofy Web is updated first.
 
 ## Authoring Rules
 
