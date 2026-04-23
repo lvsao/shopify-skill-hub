@@ -1,0 +1,16 @@
+{
+  "skills": [
+    {
+      "name": "wechat-to-shopify-blog",
+      "displayName": "WeChat to Shopify Blog",
+      "category": "content-creation",
+      "tags": ["wechat", "shopify-blog", "social-media"],
+      "integrations": ["shopify", "chatgpt", "claude", "codex"],
+      "path": "skills/wechat-to-shopify-blog",
+      "public": true,
+      "status": "preview",
+      "shortDescription": "Turn WeChat articles into Shopify blog drafts",
+      "sourceType": "github-skill"
+    }
+  ]
+}
