@@ -1,0 +1,43 @@
+name: Sync Selofy Skill Hub
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate sync payload
+        run: node scripts/build-sync-payload.mjs > skill-hub-sync-payload.json
+
+      - name: Sync to Selofy Web
+        env:
+          SKILL_HUB_SYNC_TOKEN: ${{ secrets.SKILL_HUB_SYNC_TOKEN }}
+          SELOFY_SKILL_HUB_SYNC_URL: ${{ secrets.SELOFY_SKILL_HUB_SYNC_URL }}
+        run: |
+          if [ -z "$SKILL_HUB_SYNC_TOKEN" ]; then
+            echo "Missing SKILL_HUB_SYNC_TOKEN secret; skipping sync."
+            exit 1
+          fi
+
+          SYNC_URL="${SELOFY_SKILL_HUB_SYNC_URL:-https://selofy.com/api/internal/skill-hub/sync}"
+
+          curl --fail-with-body \
+            -X POST "$SYNC_URL" \
+            -H "Authorization: Bearer $SKILL_HUB_SYNC_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data-binary @skill-hub-sync-payload.json

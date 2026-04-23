@@ -10,7 +10,7 @@
 
 ## About
 
-Selofy Shopify Skill Hub is an open-source skill library for Shopify sellers who want AI agents to help with real store work: content, SEO, product feeds, setup, social repurposing, and daily operations.
+Selofy Shopify Skill Hub is a free, open-source library of AI agent skills for Shopify sellers. Use it to install transparent, reviewable workflows for Shopify content creation, SEO growth, product feed cleanup, store setup, social content repurposing, and day-to-day ecommerce operations.
 
 The repository is designed as the public source of truth for Skill Hub:
 
@@ -28,7 +28,7 @@ Install all public skills from this repository:
 npx skills add lvsao/shopify-skill-hub
 ```
 
-Install only the WeChat to Shopify Blog skill:
+Install one specific skill with `--skill`. For example, to install only the WeChat to Shopify Blog skill:
 
 ```bash
 npx skills add lvsao/shopify-skill-hub --skill wechat-to-shopify-blog
@@ -40,11 +40,13 @@ List available skills before installing:
 npx skills add lvsao/shopify-skill-hub --list
 ```
 
-For local development before a GitHub push:
+Preview skills from a local checkout while authoring or reviewing repository changes:
 
 ```bash
 npx skills add . --list
 ```
+
+This local command is for maintainers only. Regular users should install from GitHub with `npx skills add lvsao/shopify-skill-hub`.
 
 ## Current Skills
 
@@ -161,11 +163,31 @@ npx skills add . --list
 1. Validate the skill locally.
 2. Commit focused changes.
 3. Push `main` to GitHub.
-4. Verify remote install:
+4. GitHub Actions sync public skill metadata to Selofy Web when sync secrets are configured.
+5. Verify remote install:
 
 ```bash
 npx skills add lvsao/shopify-skill-hub --list
 ```
+
+## Selofy Web Sync
+
+This repository can sync public skills into Selofy Web's Skill Hub pages.
+
+Sync path:
+
+```text
+GitHub push -> GitHub Actions -> /api/internal/skill-hub/sync -> Postgres -> /shopify-skill-hub
+```
+
+Required GitHub repository secrets:
+
+```text
+SKILL_HUB_SYNC_TOKEN=<same value as Selofy Web SKILL_HUB_SYNC_TOKEN>
+SELOFY_SKILL_HUB_SYNC_URL=https://selofy.com/api/internal/skill-hub/sync
+```
+
+`SELOFY_SKILL_HUB_SYNC_URL` is optional if the production endpoint is `https://selofy.com/api/internal/skill-hub/sync`; the workflow uses that URL by default.
 
 ## License
 
