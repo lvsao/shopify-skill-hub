@@ -1,0 +1,47 @@
+# Local AI agent rules and workspace notes
+AGENTS.md
+agents.md
+.agents/
+.codex/
+
+# Secrets and local Shopify credentials
+.env
+.env.*
+!.env.example
+.shopify-skills/
+.skill-hub/
+*.local
+*.secret
+*.key
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dependency and build caches
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.cache/
+.turbo/
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Temporary outputs
+tmp/
+temp/
+.tmp/
+*.log
+*.bak
