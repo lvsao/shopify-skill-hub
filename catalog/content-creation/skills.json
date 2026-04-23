@@ -8,7 +8,107 @@
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
       "status": "PUBLISHED",
-      "shortDescription": "Turn WeChat articles into Shopify blog drafts"
+      "shortDescription": "Turn WeChat articles into Shopify blog drafts",
+      "introduction": {
+        "en": "Turn a WeChat Official Account article into a polished Shopify blog draft with clean formatting, Shopify-hosted images, brand-aware writing, and product-aware internal links.",
+        "zh": "将微信公众号文章转换为结构清晰的 Shopify 博客草稿，自动整理排版、托管图片、适配品牌语气，并插入相关商品内链。"
+      },
+      "features": [
+        {
+          "id": "smart-images",
+          "title": {
+            "en": "Smart image insertion",
+            "zh": "智能插入图片"
+          },
+          "description": {
+            "en": "Filters useful article images, excludes QR codes and promotional noise, uploads selected assets to Shopify Files, and uses Shopify CDN URLs in the draft.",
+            "zh": "筛选正文有效图片，排除二维码和营销噪音图，将保留图片上传到 Shopify Files，并在草稿中使用 Shopify CDN 地址。"
+          },
+          "badge": {
+            "en": "Shopify Files",
+            "zh": "Shopify Files"
+          },
+          "icon": "Image"
+        },
+        {
+          "id": "related-product",
+          "title": {
+            "en": "Related product insertion",
+            "zh": "智能插入相关商品"
+          },
+          "description": {
+            "en": "Reads the store product catalog, selects a relevant product, and inserts an editorial product block with an internal product link and product image when available.",
+            "zh": "读取店铺商品目录，选择相关商品，并插入带商品内链和商品图片的编辑型商品推荐区块。"
+          },
+          "badge": {
+            "en": "Internal link",
+            "zh": "内部链接"
+          },
+          "icon": "ShoppingBag"
+        },
+        {
+          "id": "rewrite-styles",
+          "title": {
+            "en": "Three rewrite styles",
+            "zh": "三种转述风格"
+          },
+          "description": {
+            "en": "Supports format-only cleanup, light polish, or deeper rewriting with optional research references and FAQ expansion.",
+            "zh": "支持仅整理排版、轻度润色，以及加入资料和 FAQ 的深度改写。"
+          },
+          "badge": {
+            "en": "A/B/C/D",
+            "zh": "A/B/C/D"
+          },
+          "icon": "PenLine"
+        },
+        {
+          "id": "brand-context",
+          "title": {
+            "en": "Brand voice context",
+            "zh": "品牌上下文识别"
+          },
+          "description": {
+            "en": "Reads shop details, homepage metadata, blogs, recent articles, and products before writing so the draft better matches the business.",
+            "zh": "写作前读取店铺信息、首页元信息、博客容器、近期文章和商品，让文章更贴近业务定位。"
+          },
+          "badge": {
+            "en": "Brand-aware",
+            "zh": "品牌适配"
+          },
+          "icon": "Store"
+        },
+        {
+          "id": "seo-blocks",
+          "title": {
+            "en": "Blocks, summary, and SEO metadata",
+            "zh": "区块、摘要与 SEO 元信息"
+          },
+          "description": {
+            "en": "Chooses the right blog collection, creates a clean article summary, and prepares meta title, meta description, image alt text, and structured HTML sections.",
+            "zh": "识别合适的博客区块集合，生成摘要，并准备 Meta title、Meta description、图片 alt text 和结构化 HTML。"
+          },
+          "badge": {
+            "en": "SEO-ready",
+            "zh": "SEO 友好"
+          },
+          "icon": "SearchCheck"
+        }
+      ],
+      "prerequisites": [
+        {
+          "id": "multimodal-model",
+          "label": {
+            "en": "Multimodal model required",
+            "zh": "需要多模态大模型"
+          },
+          "badge": {
+            "en": "Image understanding",
+            "zh": "图片识别"
+          },
+          "icon": "Sparkles"
+        }
+      ]
     }
   ]
 }

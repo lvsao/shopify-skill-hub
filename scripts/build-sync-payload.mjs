@@ -47,6 +47,79 @@ function parseFrontmatter(text) {
   return values;
 }
 
+function isLocalizedText(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof value.en === "string" &&
+    value.en.trim().length > 0 &&
+    typeof value.zh === "string" &&
+    value.zh.trim().length > 0
+  );
+}
+
+function assertLocalizedText(value, pathLabel) {
+  if (!isLocalizedText(value)) {
+    throw new Error(`${pathLabel} must include non-empty en and zh strings.`);
+  }
+}
+
+function normalizeFeatures(features = [], skillName) {
+  if (!Array.isArray(features)) {
+    throw new Error(`${skillName}.features must be an array.`);
+  }
+
+  return features.map((feature, index) => {
+    const pathLabel = `${skillName}.features[${index}]`;
+    if (!feature || typeof feature !== "object" || Array.isArray(feature)) {
+      throw new Error(`${pathLabel} must be an object.`);
+    }
+    if (typeof feature.id !== "string" || !feature.id.trim()) {
+      throw new Error(`${pathLabel}.id must be a non-empty string.`);
+    }
+    assertLocalizedText(feature.title, `${pathLabel}.title`);
+    assertLocalizedText(feature.description, `${pathLabel}.description`);
+    assertLocalizedText(feature.badge, `${pathLabel}.badge`);
+
+    return {
+      id: feature.id.trim(),
+      title: feature.title,
+      description: feature.description,
+      badge: feature.badge,
+      icon: typeof feature.icon === "string" && feature.icon.trim() ? feature.icon.trim() : "Sparkles",
+    };
+  });
+}
+
+function normalizePrerequisites(prerequisites = [], skillName) {
+  if (!Array.isArray(prerequisites)) {
+    throw new Error(`${skillName}.prerequisites must be an array.`);
+  }
+
+  return prerequisites.map((prerequisite, index) => {
+    const pathLabel = `${skillName}.prerequisites[${index}]`;
+    if (!prerequisite || typeof prerequisite !== "object" || Array.isArray(prerequisite)) {
+      throw new Error(`${pathLabel} must be an object.`);
+    }
+    if (typeof prerequisite.id !== "string" || !prerequisite.id.trim()) {
+      throw new Error(`${pathLabel}.id must be a non-empty string.`);
+    }
+    assertLocalizedText(prerequisite.label, `${pathLabel}.label`);
+    assertLocalizedText(prerequisite.badge, `${pathLabel}.badge`);
+
+    return {
+      id: prerequisite.id.trim(),
+      label: prerequisite.label,
+      badge: prerequisite.badge,
+      icon:
+        typeof prerequisite.icon === "string" && prerequisite.icon.trim()
+          ? prerequisite.icon.trim()
+          : "Sparkles",
+    };
+  });
+}
+
 function sha(text) {
   return createHash("sha256").update(text).digest("hex");
 }
@@ -126,6 +199,12 @@ async function collectSkills() {
       const skillMd = await readFile(skillMdPath, "utf8");
       const frontmatter = parseFrontmatter(skillMd);
       const slug = item.name || frontmatter.name;
+      const features = normalizeFeatures(item.features, slug);
+      const prerequisites = normalizePrerequisites(item.prerequisites, slug);
+
+      if (item.introduction !== undefined) {
+        assertLocalizedText(item.introduction, `${slug}.introduction`);
+      }
 
       skills.push({
         slug,
@@ -146,6 +225,9 @@ async function collectSkills() {
         seoDescription: item.shortDescription || frontmatter.description || null,
         metadata: {
           sourceType: item.sourceType || "github-skill",
+          introduction: item.introduction || null,
+          features,
+          prerequisites,
           tags: item.tags || [],
           integrations: item.integrations || [],
         },
