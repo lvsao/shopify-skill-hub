@@ -7,7 +7,7 @@
       "tags": ["wechat", "shopify-blog", "social-media"],
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
-      "status": "preview",
+      "status": "PUBLISHED",
       "shortDescription": "Turn WeChat articles into Shopify blog drafts"
     }
   ]
