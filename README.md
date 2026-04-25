@@ -16,7 +16,7 @@ The repository is designed as the public source of truth for Skill Hub:
 
 - 🧩 Skills are reviewable GitHub folders, not hidden prompts.
 - ⚙️ Skills can include small native scripts when scripts make work safer or faster.
-- 🛡️ Shopify writes must stay dry-run-first and approval-based.
+- 🛡️ Shopify writes must stay preview-first and approval-based.
 - 🌱 Beginner onboarding should reuse one shared Skill Hub env file.
 - 🚀 Skills install with the `skills` CLI and can later sync into Selofy Web.
 
@@ -61,7 +61,7 @@ Skill Hub skills share one local env file instead of creating separate files for
 Create this file locally:
 
 ```text
-.skill-hub/skill-hub.env
+skill-hub.env
 ```
 
 Use this shape:
@@ -70,9 +70,8 @@ Use this shape:
 # Skill Hub shared Shopify configuration
 # Keep this file private. Do not commit it or paste tokens into chat.
 
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-SKILL_HUB_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN=shpat_or_public_storefront_token
 SKILL_HUB_SHOPIFY_API_VERSION=2026-04
 ```
 
@@ -82,7 +81,7 @@ For the Shopify custom app setup guide, see:
 https://help.shopify.com/en/manual/apps/app-types/custom-apps
 ```
 
-Use one custom app for Skill Hub and enable all Admin API scopes plus all Storefront API scopes when available. This reduces repeated permission changes as new skills are added.
+Use the store domain the merchant knows best, such as `your-store.com` or `your-store.myshopify.com`. Skill scripts resolve custom storefront domains to the Shopify Admin API domain before making Admin GraphQL calls. Create one Admin API access token for Skill Hub and enable only the scopes needed by the skill you are running. Keep this as one file in the current working directory; do not create a hidden env folder.
 
 ## Repository Layout
 
@@ -144,7 +143,7 @@ Use these folder names and slugs unless Selofy Web is updated first.
 - Every skill must contain `SKILL.md` with YAML frontmatter fields `name` and `description`.
 - Keep skill folders lean: add `scripts/`, `references/`, and `assets/` only when they directly improve execution.
 - Do not commit secrets, store data, screenshots with private data, or generated merchant context.
-- Do not write Shopify resources without an explicit dry-run and user approval.
+- Do not write Shopify resources without an explicit preview and user approval.
 - Prefer native scripts with no dependencies when reliability can be improved.
 
 ## Validation

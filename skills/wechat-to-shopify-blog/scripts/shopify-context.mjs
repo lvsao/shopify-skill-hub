@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 
 function parseArgs(argv) {
   const args = {
-    env: ".skill-hub/skill-hub.env",
+    env: "skill-hub.env",
     articleId: null,
     productPageSize: 50,
   };
@@ -46,7 +46,8 @@ async function loadEnv(path) {
   }
 
   const aliases = {
-    SHOPIFY_STORE_DOMAIN: env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || env.SHOPIFY_STORE_DOMAIN,
+    SHOPIFY_STORE_DOMAIN:
+      env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || env.SHOPIFY_STORE_DOMAIN || env.SHOPIFY_TEST_STORE_DOMAIN,
     SHOPIFY_ADMIN_API_ACCESS_TOKEN:
       env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN || env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
     SHOPIFY_API_VERSION: env.SKILL_HUB_SHOPIFY_API_VERSION || env.SHOPIFY_API_VERSION || "2026-04",
@@ -58,19 +59,61 @@ async function loadEnv(path) {
   }
 
   env.SHOPIFY_API_VERSION = aliases.SHOPIFY_API_VERSION;
+  env.SHOPIFY_STORE_DOMAIN = normalizeDomain(env.SHOPIFY_STORE_DOMAIN);
+  env.SHOPIFY_API_DOMAIN = await resolveAdminApiDomain(env);
   return env;
 }
 
-async function graphql(env, query, variables = {}) {
-  const endpoint = `https://${env.SHOPIFY_STORE_DOMAIN}/admin/api/${env.SHOPIFY_API_VERSION}/graphql.json`;
+function normalizeDomain(value) {
+  const raw = value.trim();
+  const url = raw.includes("://") ? new URL(raw) : new URL(`https://${raw}`);
+  return url.host;
+}
+
+async function resolveAdminApiDomain(env) {
+  const host = env.SHOPIFY_STORE_DOMAIN;
+  if (host.endsWith(".myshopify.com")) return host;
+
+  const endpoint = `https://${host}/admin/api/${env.SHOPIFY_API_VERSION}/graphql.json`;
   const response = await fetch(endpoint, {
     method: "POST",
+    redirect: "manual",
     headers: {
       "Content-Type": "application/json",
       "X-Shopify-Access-Token": env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
     },
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({ query: "query SkillHubDomainProbe { shop { myshopifyDomain } }" }),
   });
+
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get("location");
+    await response.arrayBuffer().catch(() => {});
+    if (location) {
+      const redirectedHost = new URL(location, endpoint).host;
+      if (redirectedHost.endsWith(".myshopify.com")) return redirectedHost;
+    }
+  }
+
+  throw new Error(
+    "Could not resolve a Shopify Admin API domain from SHOPIFY_STORE_DOMAIN. Ask the user for their Shopify .myshopify.com domain or a storefront domain that redirects to it.",
+  );
+}
+
+async function graphql(env, query, variables = {}) {
+  const endpoint = `https://${env.SHOPIFY_API_DOMAIN}/admin/api/${env.SHOPIFY_API_VERSION}/graphql.json`;
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+  } catch (error) {
+    throw new Error(`Shopify Admin API request failed for resolved domain ${env.SHOPIFY_API_DOMAIN}: ${error.message}`);
+  }
 
   const json = await response.json();
   if (!response.ok || json.errors) {

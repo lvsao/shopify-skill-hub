@@ -7,23 +7,24 @@ description: Convert an owned or authorized WeChat Official Account article into
 
 ## Non-Negotiables
 
-- Work in English internally unless the target article language requires another language.
+- Write the final Shopify blog draft in English by default. Translate and adapt the WeChat article into English even when the user or source article uses another language.
 - Create only a Shopify draft article. Never publish the article.
 - Ask for explicit approval before any Shopify write: staged upload, fileCreate, or articleCreate.
 - Do not require Agent Browser, Playwright, scraping libraries, image libraries, or extra skills.
 - Use native runtime features only: shell, Node.js built-in `fetch`, built-in `FormData`, local filesystem, and the model's own multimodal image understanding when available.
 - Recommend a multimodal model with image recognition. If the active model cannot inspect images, stop and ask the user to switch to one before uploading images.
 - Never print or store access tokens, session cookies, or merchant data in public files.
-- Delete all temporary image files and temporary folders after the workflow completes or fails.
+- Do not create hidden onboarding folders. Keep the shared env as one `skill-hub.env` file in the user's current working directory.
+- Keep the user's working folder clean. Delete every temporary image, JSON plan, downloaded file, generated helper file, and ad hoc script after the workflow completes or fails.
 
 ## Beginner Onboarding First
 
 Start every first-time run by checking the shared Skill Hub env file. Do not create a separate env file for this skill. Future Skill Hub skills must reuse the same file.
 
-Use this private shared file path:
+Use this private shared file path in the current working directory:
 
 ```text
-.skill-hub/skill-hub.env
+skill-hub.env
 ```
 
 If the file does not exist, tell the user to create it with this header and fields:
@@ -33,9 +34,8 @@ If the file does not exist, tell the user to create it with this header and fiel
 # Keep this file private. Do not commit it or paste tokens into chat.
 # Reuse this file for all current and future Skill Hub skills.
 
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-SKILL_HUB_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN=shpat_or_public_storefront_token
 SKILL_HUB_SHOPIFY_API_VERSION=2026-04
 ```
 
@@ -47,24 +47,35 @@ https://help.shopify.com/en/manual/apps/app-types/custom-apps
 
 Permission guidance:
 
-- Ask the user to enable all Admin API scopes for the custom app.
-- Ask the user to enable all Storefront API scopes for the same app when Storefront API access is available.
-- Explain that Skill Hub uses one shared app/token setup so later skills do not require repeated permission edits.
+- Ask the user to create only one credential: the Admin API access token.
+- Ask the user to enter the domain they know best for `SKILL_HUB_SHOPIFY_STORE_DOMAIN`, such as their storefront domain (`example.com` or `www.example.com`) or their `.myshopify.com` domain.
+- Before calling Admin GraphQL, resolve the API domain:
+  - If `SKILL_HUB_SHOPIFY_STORE_DOMAIN` already ends with `.myshopify.com`, use it directly.
+  - Otherwise, make a read-only POST request to `https://{domain}/admin/api/{version}/graphql.json` with `redirect: manual`.
+  - If Shopify returns a 301 or other 3xx redirect to a `.myshopify.com` host, use that redirected host for all Admin API calls.
+  - Do not follow the 301 automatically for the GraphQL request itself, because some clients convert the POST into a GET and then return 404.
+  - Never print the resolved API host together with the user's token.
+- Ask the user to enable only the Admin API scopes this skill needs:
+  - `read_products`
+  - `read_content` or `read_online_store_pages`
+  - `write_content` or `write_online_store_pages`
+  - `write_files` or `write_images`
+- Explain that Skill Hub uses one shared Admin API token setup for current skills that work through the Admin API.
 
-Do not ask for `SHOPIFY_API_SECRET_KEY` unless a future Skill Hub skill explicitly needs OAuth app development.
+Do not ask for Storefront API tokens, API keys, or API secrets. This skill does not use them.
 
 Before continuing, check:
 
 - `node -v` works. If not, ask the user to install Node.js LTS.
 - The env file exists.
 - `SKILL_HUB_SHOPIFY_STORE_DOMAIN` and `SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN` are present.
-- `SKILL_HUB_SHOPIFY_STOREFRONT_API_ACCESS_TOKEN` is present when Storefront API work is needed.
-- A read-only Shopify GraphQL request succeeds.
+- The provided domain resolves to a usable Shopify Admin API domain.
+- A read-only Shopify Admin GraphQL request succeeds after domain resolution.
 
 Use the bundled native context script when available:
 
 ```text
-node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env .skill-hub/skill-hub.env
+node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env
 ```
 
 ## Bundled Native Scripts
@@ -72,9 +83,27 @@ node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env .skill-hub/
 This skill includes small Node.js scripts to reduce repeated boilerplate. They use only built-in Node.js APIs and do not install dependencies.
 
 - `scripts/shopify-context.mjs`: Load the private env file, verify Shopify access, read shop brand context, blogs, recent articles, all products, optional target article data, and homepage meta.
+- `scripts/fetch-wechat-article.mjs`: Fetch a WeChat article with native `fetch`, parse title, description, author, cover image, body text, and body image URLs, and optionally download candidate images to a temporary folder.
+- `scripts/shopify-blog-admin.mjs`: Reusable Shopify Admin helper for `context`, `upload-images`, `create-draft`, and `verify`. It previews by default and writes only when called with `--execute`.
 - `scripts/related-product-block.mjs`: Convert one selected product JSON object into a consistent related-product HTML block with an internal product link and optional product image.
 
-Treat script output as merchant context. Do not commit generated JSON or temporary product files.
+Treat script output as merchant context. Do not commit generated JSON or temporary product files. Prefer these bundled scripts over writing new one-off scripts.
+
+Reference commands:
+
+```text
+node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env --product-page-size 50
+node skills/wechat-to-shopify-blog/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>
+node skills/wechat-to-shopify-blog/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL> --download-images --output-dir <temporary-existing-or-disposable-folder>
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs context --env skill-hub.env --product-page-size 50
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json --execute
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs verify --env skill-hub.env --article-id gid://shopify/Article/...
+```
+
+Use `--execute` only after explicit user approval. Delete `image-manifest.json`, `draft-article.json`, downloaded images, and any temporary folders after verification.
 
 ## User Reply Flow
 
@@ -88,18 +117,18 @@ After you finish the shared Skill Hub env file, send the WeChat article URL and 
 
 Offer these four input choices:
 
-- `A` - copy unchanged, formatting only.
-- `B` - light polish.
-- `C` - medium rewrite.
-- `D` - deep rewrite with research materials and FAQ.
+- `A` - translate to English with formatting only.
+- `B` - translate to English with light polish.
+- `C` - translate to English with medium rewrite.
+- `D` - translate to English with deep rewrite, research materials, and FAQ.
 
 Map those choices into three internal rewrite modes:
 
-- `A -> Format only`: keep the original content unchanged and only clean structure, headings, lists, and layout.
-- `B -> Clean polish`: lightly polish wording so the copy is smoother and more natural.
-- `C or D -> Deep rewrite`: fully rewrite the content for brand voice. For `D`, also add research materials, references, and FAQ.
+- `A -> English format only`: translate faithfully and only clean structure, headings, lists, and layout.
+- `B -> English clean polish`: translate and lightly polish wording so the copy is smoother and more natural.
+- `C or D -> English deep rewrite`: translate and fully rewrite the content for brand voice. For `D`, also add research materials, references, and FAQ.
 
-Ask for blog container only if automatic selection is uncertain. If confidence is high, include the chosen blog in the dry-run plan instead of asking.
+Ask for blog container only if automatic selection is uncertain. If confidence is high, include the chosen blog in the preview plan instead of asking.
 
 ## Required Order
 
@@ -110,11 +139,22 @@ Always complete brand context before fetching or rewriting the WeChat article.
 3. Choose the Shopify blog container.
 4. Fetch and parse the WeChat article.
 5. Inspect and filter images with the multimodal model.
-6. Select one related product when the internal rewrite mode is `Deep rewrite`.
-7. Prepare the dry-run plan.
-8. After approval, upload selected images to Shopify Files.
-9. Create the draft article.
-10. Verify the draft and delete temporary files.
+6. Translate or rewrite the article into English.
+7. Select one related product when the internal rewrite mode is `English deep rewrite`.
+8. Prepare the preview plan.
+9. After approval, upload selected images to Shopify Files.
+10. Create the draft article.
+11. Verify the draft and delete temporary files.
+
+## Safe Parallel Work
+
+Use sub-agents when the host environment supports them and the work can be split safely:
+
+- Run Shopify context gathering and WeChat article extraction in parallel because both are read-only.
+- Run image relevance review in parallel batches after article extraction, but keep the final keep/reject decision in one consolidated plan.
+- Run product matching in parallel with English outline drafting after brand context and article extraction are both available.
+- Do not let sub-agents write to Shopify, create local scripts, edit the env file, or delete files. The main agent owns writes, cleanup, and final verification.
+- Give each sub-agent a bounded read-only task and ask for structured output only. Do not pass secrets to sub-agents unless the task strictly requires API access.
 
 ## Brand Voice Context
 
@@ -144,7 +184,7 @@ Also fetch the public homepage from the primary domain with native `fetch` and r
 - `<title>`
 - `<meta name="description">`
 
-If the public homepage cannot be fetched, continue with Shopify API data only and note the gap in the dry-run plan.
+If the public homepage cannot be fetched, continue with Shopify API data only and note the gap in the preview plan.
 
 Use `shop.name` as the article author. Never use a placeholder author such as "Skill Hub Test".
 
@@ -155,7 +195,7 @@ When the internal rewrite mode is `Deep rewrite`:
 - Analyze recent article title style, section style, summary style, and CTA style.
 - Detect numbered title patterns such as "No. 138", "Issue 138", "Post 138", or similar.
 - If a stable latest number exists, increment it for the new draft title.
-- If the numbering pattern is unclear, do not invent a number. Mention it in the dry-run plan.
+- If the numbering pattern is unclear, do not invent a number. Mention it in the preview plan.
 
 ## Blog Container Selection
 
@@ -169,7 +209,7 @@ Choose the target blog by comparing:
 - language fit
 - whether the blog is used for guides, stories, news, tutorials, journals, or product education
 
-If there is one blog, use it. If there are multiple blogs and one is clearly best, choose it and explain why in the dry-run plan. If confidence is low, ask the user to choose one blog.
+If there is one blog, use it. If there are multiple blogs and one is clearly best, choose it and explain why in the preview plan. If confidence is low, ask the user to choose one blog.
 
 ## Related Product Insertion
 
@@ -200,7 +240,13 @@ Preserve or add external source/reference links only when they are relevant and 
 
 ## WeChat Article Extraction
 
-Use native `fetch` first. Extract from the WeChat HTML:
+Use the bundled native script first:
+
+```text
+node skills/wechat-to-shopify-blog/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>
+```
+
+It uses only Node.js built-ins and extracts from the WeChat HTML:
 
 - title
 - subtitle or description
@@ -209,6 +255,14 @@ Use native `fetch` first. Extract from the WeChat HTML:
 - publish date if available
 - article body text and heading-like blocks
 - image URLs from `data-src` first, then `src`
+
+When image files need local inspection or Shopify upload preparation, use:
+
+```text
+node skills/wechat-to-shopify-blog/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL> --download-images --output-dir <temporary-existing-or-disposable-folder>
+```
+
+Delete that output folder after the task. Do not keep WeChat images in the user's project folder after the final Shopify draft is verified.
 
 Map the WeChat subtitle/description to Shopify `summary`. Never use an image, image alt text, or image URL as the subtitle or summary.
 
@@ -252,9 +306,26 @@ For every kept image, generate:
 - concise, descriptive alt text
 - a short caption only when it helps the reader
 
+## Shopify Admin API Operations
+
+Prefer the bundled `scripts/shopify-blog-admin.mjs` helper for Shopify Admin operations. It contains validated Admin GraphQL shapes for:
+
+- brand context: `shop`, `blogs`, `articles`, paginated `products`
+- image staging: `stagedUploadsCreate`
+- Shopify Files: `fileCreate`
+- blog draft creation: `articleCreate`
+- post-write verification: `article(id:)`
+
+The helper previews by default. It writes only when called with `--execute`.
+
 ## Shopify Files Upload
 
-Use staged upload as the required Shopify Files method so filenames are controlled.
+Use staged upload as the required Shopify Files method so filenames are controlled. Prefer:
+
+```text
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json --execute
+```
 
 Do not use direct `fileCreate(originalSource: wechatImageUrl)` as the normal path. Direct transfer can work, but it can produce non-SEO filenames such as `640.png` and can fail when Shopify compares filename extensions against WeChat CDN URLs.
 
@@ -276,19 +347,24 @@ For each selected image:
 6. Poll the created `MediaImage` until `fileStatus` is `READY`.
 7. Use the returned Shopify CDN `image.url` in the article HTML.
 
-If any image upload fails, exclude that image from the draft and report it in the dry-run or final verification. Do not fall back to hotlinking WeChat images in the Shopify article.
+If any image upload fails, exclude that image from the draft and report it in the preview or final verification. Do not fall back to hotlinking WeChat images in the Shopify article.
 
 ## Draft Article Creation
 
-Create the article with `articleCreate`.
+Create the article with `articleCreate`. Prefer:
+
+```text
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute
+```
 
 Set:
 
 - `blogId`: selected blog container ID
-- `title`: generated or adapted title
+- `title`: English generated or adapted title
 - `author.name`: `shop.name`
-- `summary`: WeChat subtitle/description adapted to brand voice
-- `body`: formatted HTML with Shopify CDN image URLs
+- `summary`: English summary adapted from the WeChat subtitle/description and brand voice
+- `body`: English formatted HTML with Shopify CDN image URLs
 - `image`: selected meaningful cover image, if any
 - `isPublished: false`
 - `metafields`:
@@ -297,13 +373,13 @@ Set:
 
 Do not add tags automatically. Do not touch tax settings.
 
-## Dry-Run Approval
+## Preview Approval
 
-Before any Shopify write, show a concise dry-run plan:
+Before any Shopify write, show a concise preview plan:
 
 - target store and brand name
 - selected blog and selection reason
-- rewrite level and target language
+- rewrite level and target language: English
 - title and summary
 - SEO title and SEO description
 - selected related product, link, image, and insertion location when `Deep rewrite` is selected
@@ -329,6 +405,8 @@ After creating the draft:
 - Confirm SEO metafields exist.
 - Confirm no automatic tags were added.
 - Delete the temporary image folder and all downloaded images.
+- Delete temporary JSON inputs such as `image-manifest.json`, `draft-article.json`, article extraction output, and any one-off helper scripts the agent created.
+- Re-scan the working directory for AI-generated leftovers before finishing. Keep only user-provided files, the intended `skill-hub.env`, and committed skill source files.
 
 If cleanup fails, tell the user the exact temporary path that still needs removal.
 
