@@ -8,7 +8,14 @@
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
       "status": "PUBLISHED",
-      "shortDescription": "Turn WeChat articles into Shopify blog drafts",
+      "shortDescription": {
+        "en": "Turn WeChat articles into Shopify blog drafts",
+        "zh": "把微信公众号文章转换成 Shopify 博客草稿"
+      },
+      "longDescription": {
+        "en": "Turn an owned or authorized WeChat Official Account article into a polished Shopify blog draft. The workflow extracts the article, filters useful images, uploads selected images to Shopify Files with SEO-friendly filenames and alt text, adapts the copy to the store brand voice, chooses the right Shopify blog container, inserts a relevant internal product link when appropriate, and creates an unpublished draft for review.",
+        "zh": "将你拥有或已授权使用的微信公众号文章转换为结构清晰的 Shopify 博客草稿。这个 workflow 会提取文章内容、筛选有效图片、将选中的图片以 SEO 友好的文件名和 alt text 上传到 Shopify Files，根据店铺品牌语气改写文案，选择合适的 Shopify 博客容器，在合适时插入相关商品内链，并创建一个未发布的草稿供你审核。"
+      },
       "introduction": {
         "en": "Turn a WeChat Official Account article into a polished Shopify blog draft with clean formatting, Shopify-hosted images, brand-aware writing, and product-aware internal links.",
         "zh": "将微信公众号文章转换为结构清晰的 Shopify 博客草稿，自动整理排版、托管图片、适配品牌语气，并插入相关商品内链。"
