@@ -1,3 +1,145 @@
 {
-  "skills": []
+  "skills": [
+    {
+      "name": "optimize-shopify-alt-text",
+      "displayName": "Optimize Shopify Alt Text",
+      "path": "../../skills/optimize-shopify-alt-text",
+      "tags": ["shopify", "alt-text", "seo", "accessibility", "product-media"],
+      "integrations": ["shopify", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Audit and improve Shopify image alt text",
+        "zh": "审查并优化 Shopify 图片 alt text"
+      },
+      "longDescription": {
+        "en": "Scan Shopify product media, collection featured images, article featured images, and article inline images, then prepare a reviewable alt text optimization plan. The workflow first tests whether the active AI agent can truly inspect images, uses multimodal image understanding when available, falls back to Shopify fields when it is not, enforces Shopify alt text length limits, checks for repeated or keyword-stuffed text, and applies only approved updates.",
+        "zh": "扫描 Shopify 商品媒体、集合封面图、博客文章封面图和文章正文图片，并生成可审核的 alt text 优化计划。这个 workflow 会先测试当前 AI agent 是否真的能识别图片；可用时使用多模态图片理解，不可用时回退到 Shopify 字段上下文；同时强制检查 Shopify alt text 字符限制、重复文案和关键词堆叠，并且只执行用户批准的更新。"
+      },
+      "introduction": {
+        "en": "Optimize Shopify image alt text with a preview-first workflow that can use real image understanding when available and safe context-only fallback when it is not.",
+        "zh": "用先预览再执行的流程优化 Shopify 图片 alt text：可用时使用真实图片识别，不可用时安全回退到店铺字段上下文。"
+      },
+      "features": [
+        {
+          "id": "vision-aware-alt-text",
+          "title": {
+            "en": "Vision-aware alt text",
+            "zh": "基于图片识别的 alt text"
+          },
+          "description": {
+            "en": "Tests whether the active AI model can inspect local images, then uses downloaded product, collection, and article images to generate grounded descriptions when possible.",
+            "zh": "先测试当前 AI 模型是否能识别本地图片；通过后再下载商品、集合和文章图片，基于真实画面生成更可靠的描述。"
+          },
+          "badge": {
+            "en": "Multimodal",
+            "zh": "多模态"
+          },
+          "icon": "ScanEye"
+        },
+        {
+          "id": "context-only-fallback",
+          "title": {
+            "en": "Context-only fallback",
+            "zh": "字段上下文回退"
+          },
+          "description": {
+            "en": "When image recognition is unavailable, generates lower-confidence candidates from product, collection, article, filename, and nearby HTML context without pretending to see the image.",
+            "zh": "当无法识别图片时，只使用商品、集合、文章、文件名和附近 HTML 上下文生成低置信度候选，不假装看过图片。"
+          },
+          "badge": {
+            "en": "Safe fallback",
+            "zh": "安全回退"
+          },
+          "icon": "ShieldCheck"
+        },
+        {
+          "id": "inventory-and-batches",
+          "title": {
+            "en": "Inventory and batch planning",
+            "zh": "图片盘点与分批计划"
+          },
+          "description": {
+            "en": "Counts every product, collection, and article image that needs optimization, flags shared files and article HTML edits, and proposes manageable batches before any update.",
+            "zh": "统计所有需要优化的商品、集合和文章图片，标记共享文件和文章 HTML 风险，并在更新前规划可控批次。"
+          },
+          "badge": {
+            "en": "Preview first",
+            "zh": "先预览"
+          },
+          "icon": "ListChecks"
+        },
+        {
+          "id": "length-and-duplicate-guard",
+          "title": {
+            "en": "Length and duplicate guard",
+            "zh": "字符与重复保护"
+          },
+          "description": {
+            "en": "Enforces Shopify's 512-character hard limit, targets concise 125-character alt text, and rejects repeated or keyword-stuffed candidates.",
+            "zh": "强制遵守 Shopify 512 字符硬限制，默认控制在 125 字符以内，并拒绝重复或关键词堆叠的候选。"
+          },
+          "badge": {
+            "en": "512 max",
+            "zh": "最多 512"
+          },
+          "icon": "TextCursorInput"
+        },
+        {
+          "id": "approved-shopify-updates",
+          "title": {
+            "en": "Approved Shopify updates",
+            "zh": "批准后写入 Shopify"
+          },
+          "description": {
+            "en": "Updates product MediaImage alt text, collection image altText, article featured image altText, and inline article img alt attributes only after explicit approval.",
+            "zh": "只在明确批准后更新商品 MediaImage alt text、集合图片 altText、文章封面图 altText 和文章正文图片 alt 属性。"
+          },
+          "badge": {
+            "en": "Controlled write",
+            "zh": "受控写入"
+          },
+          "icon": "FileCheck2"
+        }
+      ],
+      "prerequisites": [
+        {
+          "id": "shopify-admin-access",
+          "label": {
+            "en": "Shopify Admin API access",
+            "zh": "Shopify Admin API 访问权限"
+          },
+          "badge": {
+            "en": "Required",
+            "zh": "必需"
+          },
+          "icon": "KeyRound"
+        },
+        {
+          "id": "node-runtime",
+          "label": {
+            "en": "Node.js runtime",
+            "zh": "Node.js 运行环境"
+          },
+          "badge": {
+            "en": "Scripts",
+            "zh": "脚本"
+          },
+          "icon": "Terminal"
+        },
+        {
+          "id": "multimodal-recommended",
+          "label": {
+            "en": "Multimodal model recommended",
+            "zh": "建议使用多模态模型"
+          },
+          "badge": {
+            "en": "Recommended",
+            "zh": "建议"
+          },
+          "icon": "Sparkles"
+        }
+      ]
+    }
+  ]
 }
