@@ -69,41 +69,100 @@ async function loadEnv(envPath) {
   env.SHOPIFY_ADMIN_API_ACCESS_TOKEN =
     env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN ||
     env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
-  env.SHOPIFY_API_VERSION = env.SKILL_HUB_SHOPIFY_API_VERSION || env.SHOPIFY_API_VERSION || "2026-04";
+  const preferredVersion = env.SKILL_HUB_SHOPIFY_API_VERSION || env.SHOPIFY_API_VERSION;
 
   for (const name of ["SHOPIFY_STORE_DOMAIN", "SHOPIFY_ADMIN_API_ACCESS_TOKEN"]) {
     if (!env[name]) throw new Error(`Missing ${name} in ${envPath}.`);
   }
 
   env.SHOPIFY_STORE_DOMAIN = normalizeDomain(env.SHOPIFY_STORE_DOMAIN);
-  env.SHOPIFY_API_DOMAIN = await resolveAdminApiDomain(env);
+  const endpoint = await resolveAdminEndpoint(env, preferredVersion);
+  env.SHOPIFY_API_DOMAIN = endpoint.host;
+  env.SHOPIFY_API_VERSION = endpoint.version;
   return env;
 }
 
-async function resolveAdminApiDomain(env) {
-  if (env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) return env.SHOPIFY_STORE_DOMAIN;
+function candidateApiVersions(preferredVersion) {
+  const versions = [];
+  if (preferredVersion) versions.push(preferredVersion);
 
-  const endpoint = `https://${env.SHOPIFY_STORE_DOMAIN}/admin/api/${env.SHOPIFY_API_VERSION}/graphql.json`;
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth() + 1;
+  const quarterMonth = [1, 4, 7, 10].filter((value) => value <= month).pop() || 1;
+
+  for (let offset = 0; offset < 8; offset += 1) {
+    const quarterIndex = [1, 4, 7, 10].indexOf(quarterMonth) - offset;
+    const candidateYear = year + Math.floor(quarterIndex / 4);
+    const candidateMonth = [1, 4, 7, 10][((quarterIndex % 4) + 4) % 4];
+    versions.push(`${candidateYear}-${String(candidateMonth).padStart(2, "0")}`);
+  }
+
+  return [...new Set(versions)];
+}
+
+async function probeAdminEndpoint(host, version, token, redirect = "follow") {
+  const endpoint = `https://${host}/admin/api/${version}/graphql.json`;
   const response = await fetch(endpoint, {
     method: "POST",
-    redirect: "manual",
+    redirect,
     headers: {
       "Content-Type": "application/json",
-      "X-Shopify-Access-Token": env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+      "X-Shopify-Access-Token": token,
     },
-    body: JSON.stringify({ query: "query SkillHubDomainProbe { shop { myshopifyDomain } }" }),
+    body: JSON.stringify({ query: "query SkillHubVersionProbe { shop { myshopifyDomain } }" }),
   });
 
-  if (response.status >= 300 && response.status < 400) {
-    const location = response.headers.get("location");
-    await response.arrayBuffer().catch(() => {});
-    if (location) {
-      const host = new URL(location, endpoint).host;
-      if (host.endsWith(".myshopify.com")) return host;
+  let json = null;
+  try {
+    json = await response.json();
+  } catch {}
+
+  return {
+    ok: response.ok && !json?.errors,
+    status: response.status,
+    location: response.headers.get("location"),
+    version: response.headers.get("x-shopify-api-version") || version,
+  };
+}
+
+async function resolveAdminEndpoint(env, preferredVersion) {
+  const host = env.SHOPIFY_STORE_DOMAIN;
+  const versions = candidateApiVersions(preferredVersion);
+
+  for (const version of versions) {
+    if (host.endsWith(".myshopify.com")) {
+      const probe = await probeAdminEndpoint(host, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
+      if (probe.ok) return { host, version: probe.version };
+      continue;
+    }
+
+    const endpoint = `https://${host}/admin/api/${version}/graphql.json`;
+    const response = await fetch(endpoint, {
+      method: "POST",
+      redirect: "manual",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+      },
+      body: JSON.stringify({ query: "query SkillHubDomainProbe { shop { myshopifyDomain } }" }),
+    });
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      await response.arrayBuffer().catch(() => {});
+      if (!location) continue;
+      const redirectedHost = new URL(location, endpoint).host;
+      if (!redirectedHost.endsWith(".myshopify.com")) continue;
+      const probe = await probeAdminEndpoint(redirectedHost, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
+      if (probe.ok) return { host: redirectedHost, version: probe.version };
+    } else if (response.ok) {
+      const versionHeader = response.headers.get("x-shopify-api-version");
+      return { host, version: versionHeader || version };
     }
   }
 
-  throw new Error("Could not resolve the Shopify Admin API host from the provided store domain.");
+  throw new Error("Could not resolve a usable Shopify Admin API endpoint from the provided store domain and Admin API token.");
 }
 
 async function graphql(env, query, variables = {}) {

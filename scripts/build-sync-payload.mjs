@@ -337,7 +337,7 @@ async function collectSkills() {
         integrationSlugs: item.integrations || [],
         repositoryPath: relativeSkillPath,
         githubUrl: `https://github.com/${REPOSITORY}/tree/main/${relativeSkillPath}`,
-        installCommand: `npx --yes skills add ${REPOSITORY} --skill ${slug} --agent codex --global --yes`,
+        installCommand: `npx --yes skills add ${REPOSITORY} --skill ${slug}`,
         status: item.status || "PUBLISHED",
         visibility: item.public === false ? "HIDDEN" : "PUBLIC",
         publishedAt: sourceUpdatedAt,
