@@ -8,6 +8,7 @@
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
       "status": "PUBLISHED",
+      "publishedAt": "2026-04-23T00:00:00.000Z",
       "shortDescription": {
         "en": "Turn WeChat articles into Shopify blog drafts",
         "zh": "把微信公众号文章转换成 Shopify 博客草稿"

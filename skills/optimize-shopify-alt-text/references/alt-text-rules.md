@@ -32,7 +32,11 @@ Avoid:
 
 Use real image understanding when available. Do not trust model self-report.
 
-The main agent should test image capability by asking the active model to describe a known local image path. The model must answer from the pixels, not from the filename, OCR libraries, metadata, or surrounding text.
+The main agent must test image capability with a real local image input, not a capability question. The model must answer from the pixels, not from the filename, product title, collection title, article title, OCR libraries, metadata, URL, or surrounding text.
+
+Downloading a file is not enough. The agent must open, attach, or view the local image through the host environment's real multimodal image pathway before using `source: vision`.
+
+A valid vision result must include concrete visual evidence, such as color, object type, layout, background, visible text, material, shape, or scene. If the answer only repeats Shopify context or product naming, reject it as context-only.
 
 If the model cannot inspect images, use context-only fallback and lower confidence.
 
