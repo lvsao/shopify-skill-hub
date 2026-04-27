@@ -78,7 +78,7 @@ function buildBlock(product, primaryDomain, heading) {
     : "";
   const priceHtml = price ? `<p><strong>${escapeHtml(price)}</strong></p>` : "";
 
-  return `<section class="related-product">
+  return `<section class="related-product" data-selofy-related-product="true" data-product-id="${escapeHtml(product.id || "")}">
   <h2>${escapeHtml(heading)}</h2>
   ${imageHtml}
   <h3><a href="${escapeHtml(url)}">${escapeHtml(product.title)}</a></h3>

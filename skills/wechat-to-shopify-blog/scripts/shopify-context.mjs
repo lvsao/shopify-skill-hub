@@ -241,6 +241,10 @@ query ProductPage($first: Int!, $after: String) {
       description
       productType
       vendor
+      status
+      tags
+      seo { title description }
+      collections(first: 5) { nodes { id title handle } }
       onlineStoreUrl
       featuredMedia {
         preview { image { url altText width height } }

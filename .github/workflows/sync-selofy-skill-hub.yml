@@ -36,9 +36,9 @@ jobs:
             exit 1
           fi
 
-          SYNC_URL="${SELOFY_SKILL_HUB_SYNC_URL:-https://selofy.com/api/internal/skill-hub/sync}"
+          SYNC_URL="${SELOFY_SKILL_HUB_SYNC_URL:-https://www.selofy.com/api/internal/skill-hub/sync}"
 
-          curl --fail-with-body \
+          curl --fail-with-body --show-error --location \
             -X POST "$SYNC_URL" \
             -H "Authorization: Bearer $SKILL_HUB_SYNC_TOKEN" \
             -H "Content-Type: application/json" \

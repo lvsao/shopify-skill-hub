@@ -194,7 +194,9 @@ query BrandVoiceOverview($blogFirst: Int!, $articleFirst: Int!, $productFirst: I
   }
   products(first: $productFirst, after: $after, sortKey: UPDATED_AT, reverse: true) {
     nodes {
-      id title handle description productType vendor onlineStoreUrl
+      id title handle description productType vendor status tags onlineStoreUrl
+      seo { title description }
+      collections(first: 5) { nodes { id title handle } }
       featuredMedia { preview { image { url altText width height } } }
       media(first: 5) {
         nodes {
