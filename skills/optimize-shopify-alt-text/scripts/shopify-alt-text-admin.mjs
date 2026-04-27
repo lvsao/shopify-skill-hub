@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const DEFAULT_ENV = "skill-hub.env";
 const DEFAULT_VERSION_CANDIDATES = ["2026-04", "2026-01", "2025-10", "2025-07"];
 const SOFT_ALT_LIMIT = 125;
 const HARD_ALT_LIMIT = 512;
+const execFileAsync = promisify(execFile);
 
 function fail(message) {
   console.error(`ERROR: ${message}`);
@@ -85,7 +88,6 @@ SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
-SKILL_HUB_SHOPIFY_CLIENT_SECRET=shpss_xxx
 `;
   } else {
     fail("--method must be admin_custom_app or dev_dashboard_app");
@@ -115,6 +117,34 @@ async function requestClientCredentialsToken(shop, env) {
     fail(`Client credentials token request failed for ${shop}: ${json.error_description || json.error || response.status}`);
   }
   return json.access_token;
+}
+
+async function shopifyCliFetch({ shop, query, variables, allowMutations = false }) {
+  const args = ["store", "execute", "--store", shop, "--query", query, "--json", "--no-color"];
+  if (Object.keys(variables || {}).length > 0) {
+    args.push("--variables", JSON.stringify(variables));
+  }
+  if (allowMutations) {
+    args.push("--allow-mutations");
+  }
+  try {
+    const { stdout } = await execFileAsync("shopify", args, {
+      timeout: 120000,
+      maxBuffer: 1024 * 1024 * 20,
+      windowsHide: true,
+    });
+    const json = JSON.parse(stdout);
+    return { ok: !json.errors, status: 200, apiVersion: "shopify-cli", json };
+  } catch (error) {
+    const stderr = error.stderr ? String(error.stderr) : "";
+    const stdout = error.stdout ? String(error.stdout) : "";
+    return {
+      ok: false,
+      status: error.code || 1,
+      apiVersion: "shopify-cli",
+      json: { errors: [{ message: stderr || stdout || error.message }] },
+    };
+  }
 }
 
 async function adminFetch({ shop, version, token, query, variables }) {
@@ -161,11 +191,22 @@ async function resolveAdmin(env) {
     }
   }
 
-  let token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
   if (method === "dev_dashboard_app") {
     if (!shop.endsWith(".myshopify.com")) fail("Dev Dashboard app setup requires a .myshopify.com store domain.");
-    token = await requestClientCredentialsToken(shop, env);
+    const cliProbe = await shopifyCliFetch({
+      shop,
+      query: `query SkillHubAltTextConnectionCheck { shop { name myshopifyDomain } }`,
+      variables: {},
+    });
+    if (cliProbe.ok) {
+      return { shop, version: "shopify-cli", transport: "shopify_cli", shopInfo: cliProbe.json.data.shop };
+    }
+    fail(
+      `Shopify CLI store authentication is required for Dev Dashboard setup. Run: shopify store auth --store ${shop} --scopes read_products,write_products,read_content,write_content,read_files,write_files --json --no-color`,
+    );
   }
+
+  let token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
   if (!token || token.includes("xxx") || token.startsWith("your-")) {
     fail("A valid Shopify Admin credential is required in skill-hub.env.");
   }
@@ -174,13 +215,22 @@ async function resolveAdmin(env) {
   for (const version of uniqueVersions) {
     const result = await adminFetch({ shop, version, token, query, variables: {} });
     if (result.ok) {
-      return { shop, version: result.apiVersion, token, shopInfo: result.json.data.shop };
+      return { shop, version: result.apiVersion, token, transport: "admin_token", shopInfo: result.json.data.shop };
     }
   }
   fail("Could not validate Shopify Admin GraphQL access with the configured credentials.");
 }
 
 async function gql(client, query, variables = {}) {
+  if (client.transport === "shopify_cli") {
+    const allowMutations = /(^|\n)\s*mutation\b/i.test(query);
+    const result = await shopifyCliFetch({ shop: client.shop, query, variables, allowMutations });
+    if (!result.ok) {
+      const detail = JSON.stringify(result.json.errors || result.json, null, 2);
+      fail(`Shopify CLI GraphQL request failed: ${detail}`);
+    }
+    return result.json.data;
+  }
   const result = await adminFetch({
     shop: client.shop,
     version: client.version,
@@ -586,7 +636,13 @@ async function connectionCheck(args) {
   const client = await resolveAdmin(env);
   console.log(JSON.stringify({
     ok: true,
-    shop: { domain: client.shop, apiVersion: client.version, name: client.shopInfo.name, myshopifyDomain: client.shopInfo.myshopifyDomain },
+    shop: {
+      domain: client.shop,
+      apiVersion: client.version,
+      transport: client.transport,
+      name: client.shopInfo.name,
+      myshopifyDomain: client.shopInfo.myshopifyDomain,
+    },
   }, null, 2));
 }
 

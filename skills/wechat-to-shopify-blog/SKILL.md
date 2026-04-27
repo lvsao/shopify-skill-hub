@@ -26,7 +26,7 @@ Minimize user decisions and actions. Start every first-time run by asking one sh
 ```text
 Where did you create your Shopify app?
 
-A - Shopify Admin custom app
+A - Shopify store Settings custom app (Legacy Custom App)
 B - Dev Dashboard app
 ```
 
@@ -38,9 +38,9 @@ skill-hub.env
 
 Immediately ensure `.gitignore` contains `skill-hub.env`. Add that line if it is missing. Do not ask the user to create the env file or update `.gitignore` manually.
 
-### Path A: Shopify Admin Custom App
+### Path A: Shopify Store Settings Custom App (Legacy Custom App)
 
-Use this only when the merchant can still create a custom app from Shopify Admin. Create `skill-hub.env` with this minimal template:
+Use this only when the merchant can still create a custom app from the Shopify store Settings area. Create `skill-hub.env` with this minimal template:
 
 ```text
 # Skill Hub shared Shopify configuration
@@ -62,7 +62,7 @@ Use this path's domain resolution before Admin GraphQL:
 
 ### Path B: Dev Dashboard App
 
-Use this as the preferred fallback when Shopify Admin custom app creation is unavailable. The user provides only the app and store basics; the agent handles Shopify CLI, scopes, authorization, and verification.
+Use this as the preferred fallback when Legacy Custom App creation is unavailable. The user provides only the app and store basics; the agent handles Shopify CLI, scopes, authorization, and verification.
 
 Create `skill-hub.env` with this minimal template:
 
@@ -73,10 +73,11 @@ Create `skill-hub.env` with this minimal template:
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
-SKILL_HUB_SHOPIFY_CLIENT_SECRET=shpss_xxx
 ```
 
-Ask the user to fill only those three values. For Dev Dashboard apps, require the `.myshopify.com` domain because client credentials token exchange is shop-specific.
+Ask the user to fill only those two values. For Dev Dashboard apps, require the `.myshopify.com` domain because Shopify CLI store authorization is store-specific.
+
+Do not ask for the Client secret for this workflow unless a future helper explicitly implements client credential token exchange. The bundled helpers use Shopify CLI store authorization after deploy.
 
 Before continuing:
 
@@ -128,17 +129,21 @@ shopify app config validate --path $tmp --no-color
 shopify app deploy --client-id <client-id> --path $tmp --allow-updates --no-color
 ```
 
-After deployment, the merchant must approve the newly released scopes in Shopify Admin because Shopify does not automatically apply new scopes to already installed Dev Dashboard apps. Keep this as the only manual action: tell the user to open the app in Shopify Admin or Dev Dashboard Home and approve/update the installed app permissions. Do not ask the user to edit scopes manually.
-
-After the user approves permissions, verify with the bundled helper, which requests short-lived access tokens automatically:
+After deployment, do not send the user to Dev Dashboard to look for a manual approval button. Instead, run Shopify CLI store authorization with the required scopes. Tell the user before running it: "A Shopify permission authorization page may open next. Please review the scopes and click authorize."
 
 ```powershell
-node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env --product-page-size 1
+shopify store auth --store <store>.myshopify.com --scopes read_products,write_content,write_files --json --no-color
 ```
 
-If verification still returns `Access denied`, report the missing scope and ask the user to approve the app permission update again or reinstall the app after the CLI-deployed version is released.
+After the user completes the browser authorization, verify the store command auth with Shopify CLI:
 
-After successful permission approval, the bundled scripts use `SKILL_HUB_SHOPIFY_CLIENT_ID` and `SKILL_HUB_SHOPIFY_CLIENT_SECRET` to request short-lived access tokens automatically. Do not ask the user to copy or paste those access tokens.
+```powershell
+shopify store execute --store <store>.myshopify.com --query "query SkillHubConnectionCheck { shop { name myshopifyDomain } }" --json --no-color
+```
+
+If verification still returns `Access denied`, rerun `shopify store auth` with the required scopes. Do not invent a Dev Dashboard approval step.
+
+After successful authorization, do not ask the user to copy or paste short-lived access tokens.
 
 Always remove the temporary CLI app config directory after setup succeeds or fails.
 

@@ -71,9 +71,9 @@ skill-hub.env
 
 Do not commit this file or paste secrets into chat. Add `skill-hub.env` to `.gitignore`.
 
-### Option A: Shopify Admin custom app
+### Option A: Shopify store Settings custom app (Legacy Custom App)
 
-Use this when your Shopify Admin still allows custom app creation. Create a custom app in Shopify Admin, enable only the Admin API scopes required by the skill, then copy the Admin API access token into:
+Use this when your Shopify store Settings still allows Legacy Custom App creation. Create a custom app from the store Settings area, enable only the Admin API scopes required by the skill, then copy the Admin API access token into:
 
 ```text
 # Skill Hub Shopify API credentials
@@ -90,14 +90,14 @@ Shopify guide: [Create custom apps in Shopify](https://help.shopify.com/en/manua
 
 ### Option B: Shopify Dev Dashboard app
 
-Use this when you prefer a Partner/Dev Dashboard app flow, or when Admin custom app creation is not available.
+Use this when you prefer a Partner/Dev Dashboard app flow, or when Legacy Custom App creation is not available in the store Settings area.
 
 1. Create a Shopify Partner account.
 2. In the Dev Dashboard, create an app.
 3. In `Distribution`, choose custom distribution and install the app to your own store.
-4. In the app settings, copy the Client ID, Client secret, and use your store's exact `.myshopify.com` domain.
+4. In the app settings, copy the Client ID and use your store's exact `.myshopify.com` domain.
 
-These three values are the app's key material for Skill Hub:
+These values are the app's key material for Skill Hub:
 
 ```text
 # Skill Hub Shopify API credentials
@@ -106,10 +106,9 @@ These three values are the app's key material for Skill Hub:
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
-SKILL_HUB_SHOPIFY_CLIENT_SECRET=shpss_xxx
 ```
 
-After the app is installed, the agent can use Shopify CLI to release the skill's required scopes and ask you to approve the permission update. The bundled scripts request short-lived access tokens automatically; you should not manually copy temporary tokens.
+After the app is installed, the agent uses Shopify CLI to release the skill's required scopes, then runs `shopify store auth` for the target store. A Shopify permission authorization page may open; review the scopes and click authorize. Do not look for a separate Dev Dashboard approval button. Bundled scripts should use the CLI-authenticated helper flow for routine scan, batch, and write work instead of repeated one-off `shopify store execute` commands.
 
 ## Repository Layout
 
