@@ -58,7 +58,7 @@ This local command is for maintainers only. Regular users should install from Gi
 
 Skill Hub skills share one local env file instead of creating separate files for every skill.
 
-Create this file locally:
+The AI agent should create this file in the current working directory during onboarding:
 
 ```text
 skill-hub.env
@@ -72,7 +72,6 @@ Use this shape:
 
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-SKILL_HUB_SHOPIFY_API_VERSION=2026-04
 ```
 
 For the Shopify custom app setup guide, see:
@@ -81,7 +80,7 @@ For the Shopify custom app setup guide, see:
 https://help.shopify.com/en/manual/apps/app-types/custom-apps
 ```
 
-Use the store domain the merchant knows best, such as `your-store.com` or `your-store.myshopify.com`. Skill scripts resolve custom storefront domains to the Shopify Admin API domain before making Admin GraphQL calls. Create one Admin API access token for Skill Hub and enable only the scopes needed by the skill you are running. Keep this as one file in the current working directory; do not create a hidden env folder.
+Use the store domain the merchant knows best, such as `your-store.com` or `your-store.myshopify.com`. Skill scripts resolve custom storefront domains to the Shopify Admin API domain before making Admin GraphQL calls and probe for a usable Admin API version internally. Create one Admin API access token for Skill Hub and enable only the scopes needed by the skill you are running. Keep this as one file in the current working directory, and ensure `skill-hub.env` is listed in `.gitignore`; do not create a hidden env folder.
 
 ## Repository Layout
 

@@ -19,7 +19,7 @@ description: Convert an owned or authorized WeChat Official Account article into
 
 ## Beginner Onboarding First
 
-Start every first-time run by checking the shared Skill Hub env file. Do not create a separate env file for this skill. Future Skill Hub skills must reuse the same file.
+Start every first-time run by checking the shared Skill Hub env file. Do not create a separate env file or folder for this skill. Future Skill Hub skills must reuse the same file.
 
 Use this private shared file path in the current working directory:
 
@@ -27,7 +27,7 @@ Use this private shared file path in the current working directory:
 skill-hub.env
 ```
 
-If the file does not exist, tell the user to create it with this header and fields:
+If the file does not exist, create it for the user in the current working directory with this content:
 
 ```text
 # Skill Hub shared Shopify configuration
@@ -36,7 +36,26 @@ If the file does not exist, tell the user to create it with this header and fiel
 
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-SKILL_HUB_SHOPIFY_API_VERSION=2026-04
+```
+
+Immediately ensure `.gitignore` contains `skill-hub.env`. Add that line if it is missing. Do not ask the user to create the env file or update `.gitignore` manually.
+
+PowerShell reference for agents:
+
+```powershell
+if (-not (Test-Path -LiteralPath "skill-hub.env")) {
+  @"
+# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
+# Reuse this file for all current and future Skill Hub skills.
+
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
+SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
+"@ | Set-Content -LiteralPath "skill-hub.env" -Encoding UTF8
+}
+if ((Test-Path -LiteralPath ".gitignore") -and -not (Select-String -LiteralPath ".gitignore" -Pattern "^skill-hub\.env$" -Quiet)) {
+  Add-Content -LiteralPath ".gitignore" -Value "skill-hub.env"
+}
 ```
 
 Guide the user to create a Shopify custom app and Admin API access token with Shopify's tutorial:
@@ -69,6 +88,7 @@ Before continuing, check:
 - `node -v` works. If not, ask the user to install Node.js LTS.
 - The env file exists.
 - `SKILL_HUB_SHOPIFY_STORE_DOMAIN` and `SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN` are present.
+- `skill-hub.env` is ignored by Git.
 - The provided domain resolves to a usable Shopify Admin API domain.
 - A read-only Shopify Admin GraphQL request succeeds after domain resolution.
 

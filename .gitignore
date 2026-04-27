@@ -8,6 +8,7 @@ agents.md
 .env
 .env.*
 !.env.example
+skill-hub.env
 .shopify-skills/
 .skill-hub/
 *.local
