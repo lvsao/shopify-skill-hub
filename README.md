@@ -1,7 +1,7 @@
 # Selofy Shopify Skill Hub
 
 [![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
-[![Skills](https://img.shields.io/badge/skills-1-2563eb)](./skills)
+[![Skills](https://img.shields.io/badge/skills-2-2563eb)](./skills)
 [![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 [![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
@@ -17,7 +17,7 @@ The repository is designed as the public source of truth for Skill Hub:
 - 🧩 Skills are reviewable GitHub folders, not hidden prompts.
 - ⚙️ Skills can include small native scripts when scripts make work safer or faster.
 - 🛡️ Shopify writes must stay preview-first and approval-based.
-- 🌱 Beginner onboarding should reuse one shared Skill Hub env file.
+- 🌱 Beginner onboarding should keep Shopify API credentials in one private local env file.
 - 🚀 Skills install with the `skills` CLI and can later sync into Selofy Web.
 
 ## Install
@@ -32,6 +32,12 @@ Install one specific skill with `--skill`. For example, to install only the WeCh
 
 ```bash
 npx skills add lvsao/shopify-skill-hub --skill wechat-to-shopify-blog
+```
+
+Or install only the Shopify alt text optimization skill:
+
+```bash
+npx skills add lvsao/shopify-skill-hub --skill optimize-shopify-alt-text
 ```
 
 List available skills before installing:
@@ -53,34 +59,57 @@ This local command is for maintainers only. Regular users should install from Gi
 | Skill | Category | Purpose |
 | --- | --- | --- |
 | `wechat-to-shopify-blog` | `content-creation` | Convert an owned or authorized WeChat Official Account article into a Shopify blog draft, including Shopify Files image hosting, brand voice adaptation, blog selection, and related product insertion. |
+| `optimize-shopify-alt-text` | `seo-growth` | Audit Shopify product media, collection featured images, article featured images, and article inline images, then prepare a preview-first alt text optimization plan with real image understanding when available and safe context-only fallback when it is not. |
 
-## Shared Shopify Env
+## Shopify API Access And Env
 
-Skill Hub skills share one local env file instead of creating separate files for every skill.
-
-The AI agent should create this file in the current working directory during onboarding:
+Most Skill Hub skills need limited Shopify Admin API access before they can read store context or prepare a preview. Keep the credentials in one private local file:
 
 ```text
 skill-hub.env
 ```
 
-Use this shape:
+Do not commit this file or paste secrets into chat. Add `skill-hub.env` to `.gitignore`.
+
+### Option A: Shopify Admin custom app
+
+Use this when your Shopify Admin still allows custom app creation. Create a custom app in Shopify Admin, enable only the Admin API scopes required by the skill, then copy the Admin API access token into:
 
 ```text
-# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
+# Skill Hub Shopify API credentials
+# Private local file. Do not commit.
 
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 ```
 
-For the Shopify custom app setup guide, see:
+You can use the domain you normally recognize, such as `your-store.com` or `your-store.myshopify.com`. Skill scripts resolve the correct Shopify Admin API host before making Admin GraphQL calls.
+
+Shopify guide: [Create custom apps in Shopify](https://help.shopify.com/en/manual/apps/app-types/custom-apps)
+
+### Option B: Shopify Dev Dashboard app
+
+Use this when you prefer a Partner/Dev Dashboard app flow, or when Admin custom app creation is not available.
+
+1. Create a Shopify Partner account.
+2. In the Dev Dashboard, create an app.
+3. In `Distribution`, choose custom distribution and install the app to your own store.
+4. In the app settings, copy the Client ID, Client secret, and use your store's exact `.myshopify.com` domain.
+
+These three values are the app's key material for Skill Hub:
 
 ```text
-https://help.shopify.com/en/manual/apps/app-types/custom-apps
+# Skill Hub Shopify API credentials
+# Private local file. Do not commit.
+
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
+SKILL_HUB_SHOPIFY_CLIENT_SECRET=shpss_xxx
 ```
 
-Use the store domain the merchant knows best, such as `your-store.com` or `your-store.myshopify.com`. Skill scripts resolve custom storefront domains to the Shopify Admin API domain before making Admin GraphQL calls and probe for a usable Admin API version internally. Create one Admin API access token for Skill Hub and enable only the scopes needed by the skill you are running. Keep this as one file in the current working directory, and ensure `skill-hub.env` is listed in `.gitignore`; do not create a hidden env folder.
+After the app is installed, the agent can use Shopify CLI to release the skill's required scopes and ask you to approve the permission update. The bundled scripts request short-lived access tokens automatically; you should not manually copy temporary tokens.
 
 ## Repository Layout
 
@@ -93,6 +122,14 @@ skills/
     scripts/
       shopify-context.mjs
       related-product-block.mjs
+  optimize-shopify-alt-text/
+    SKILL.md
+    agents/
+      openai.yaml
+    references/
+      alt-text-rules.md
+    scripts/
+      shopify-alt-text-admin.mjs
 catalog/
   INDEX.json
   content-creation/
@@ -134,58 +171,6 @@ Selofy Web currently expects these public Skill Hub category slugs:
 - `operations`
 
 Use these folder names and slugs unless Selofy Web is updated first.
-
-## Authoring Rules
-
-- Keep every public skill in `skills/<skill-name>/`.
-- Use lowercase hyphen-case names.
-- Every skill must contain `SKILL.md` with YAML frontmatter fields `name` and `description`.
-- Keep skill folders lean: add `scripts/`, `references/`, and `assets/` only when they directly improve execution.
-- Do not commit secrets, store data, screenshots with private data, or generated merchant context.
-- Do not write Shopify resources without an explicit preview and user approval.
-- Prefer native scripts with no dependencies when reliability can be improved.
-
-## Validation
-
-Validate the current skill with:
-
-```bash
-python C:\Users\qiuru\.codex\skills\.system\skill-creator\scripts\quick_validate.py skills\wechat-to-shopify-blog
-node --check skills\wechat-to-shopify-blog\scripts\shopify-context.mjs
-node --check skills\wechat-to-shopify-blog\scripts\related-product-block.mjs
-npx skills add . --list
-```
-
-## GitHub Release Flow
-
-1. Validate the skill locally.
-2. Commit focused changes.
-3. Push `main` to GitHub.
-4. GitHub Actions sync public skill metadata to Selofy Web when sync secrets are configured.
-5. Verify remote install:
-
-```bash
-npx skills add lvsao/shopify-skill-hub --list
-```
-
-## Selofy Web Sync
-
-This repository can sync public skills into Selofy Web's Skill Hub pages.
-
-Sync path:
-
-```text
-GitHub push -> GitHub Actions -> /api/internal/skill-hub/sync -> Postgres -> /shopify-skill-hub
-```
-
-Required GitHub repository secrets:
-
-```text
-SKILL_HUB_SYNC_TOKEN=<same value as Selofy Web SKILL_HUB_SYNC_TOKEN>
-SELOFY_SKILL_HUB_SYNC_URL=https://selofy.com/api/internal/skill-hub/sync
-```
-
-`SELOFY_SKILL_HUB_SYNC_URL` is optional if the production endpoint is `https://selofy.com/api/internal/skill-hub/sync`; the workflow uses that URL by default.
 
 ## License
 
