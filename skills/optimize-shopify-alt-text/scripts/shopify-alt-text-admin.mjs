@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
-import path from "node:path";
 
 const DEFAULT_ENV = "skill-hub.env";
 const DEFAULT_VERSION_CANDIDATES = ["2026-04", "2026-01", "2025-10", "2025-07"];
@@ -443,13 +442,29 @@ function validatePlan(plan) {
     if (!change.id) errors.push(`changes[${index}].id is required`);
     if (typeof change.alt !== "string" || !change.alt.trim()) errors.push(`changes[${index}].alt is required`);
     if (change.alt && change.alt.length > HARD_ALT_LIMIT) errors.push(`changes[${index}].alt exceeds ${HARD_ALT_LIMIT} characters`);
+    if (change.source === "vision" && (typeof change.visualEvidence !== "string" || !change.visualEvidence.trim())) {
+      errors.push(`changes[${index}].visualEvidence is required when source is "vision"`);
+    }
   }
   if (errors.length) fail(errors.join("\n"));
 }
 
 async function loadPlan(file) {
-  const text = await fs.readFile(file, "utf8").catch(() => null);
-  if (!text) fail(`Missing plan file: ${file}`);
+  let text;
+  if (file === "-") {
+    text = await new Promise((resolve, reject) => {
+      let input = "";
+      process.stdin.setEncoding("utf8");
+      process.stdin.on("data", (chunk) => {
+        input += chunk;
+      });
+      process.stdin.on("end", () => resolve(input));
+      process.stdin.on("error", reject);
+    });
+  } else {
+    text = await fs.readFile(file, "utf8").catch(() => null);
+  }
+  if (!text) fail(`Missing plan input: ${file || "(missing)"}`);
   const plan = JSON.parse(text);
   validatePlan(plan);
   return plan;

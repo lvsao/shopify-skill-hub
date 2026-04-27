@@ -12,10 +12,13 @@ description: Audit, plan, and safely optimize Shopify image alt text for product
 - Never publish content, edit product copy, replace images, delete files, or change article body text other than inline image `alt` attributes.
 - Do not trust a model's self-report about image capability. Test whether the active model can inspect a local image before using the multimodal path.
 - If image understanding is unavailable, use context-only fallback and mark lower confidence. Do not pretend the model inspected pixels.
+- Downloading an image is not image inspection. The agent must actually open, attach, or view the local image through the host model's native image input or image-view tool before claiming visual understanding.
+- Never generate a `vision` alt text from product title, collection title, article title, filename, URL, or surrounding context alone. That is context-only fallback.
+- Do not create process notes, summary documents, ad hoc code files, or persistent JSON files in the user's working folder. Use stdout/stdin or the operating system temp directory, then delete temp files immediately.
 - Keep alt text concise: target 60-120 characters, keep 125 characters or fewer by default, and never exceed Shopify's 512-character maximum.
 - Prefer `fileUpdate` for product `MediaImage` alt text. `productUpdateMedia` is deprecated.
 - Preserve existing image URLs when updating collection featured images and article featured images.
-- Keep the user's working folder clean. Delete temporary downloaded images, JSON plans, generated helper files, and one-off scripts after each run.
+- Keep the user's working folder clean. The only expected local config file is `skill-hub.env`; all temporary downloaded images or machine-readable plans must live outside the working folder or be streamed through stdin, then be deleted immediately.
 - Never print or store access tokens, client secrets, short-lived tokens, session cookies, or real merchant data in public files.
 
 Read `references/alt-text-rules.md` before generating or reviewing alt text candidates.
@@ -132,6 +135,8 @@ This skill scans and writes only these surfaces:
 
 Before generating multimodal alt text, test the active model on a known local image.
 
+The probe must force real image input. Use the host environment's native image mechanism, for example a local image attachment, a file-view image tool, or another explicit multimodal image input. A shell command such as `curl`, `dir`, `Get-Item`, metadata extraction, OCR library, filename parsing, or product-title lookup does not count.
+
 Use a prompt like:
 
 ```text
@@ -142,19 +147,24 @@ Return VISION_UNAVAILABLE if you cannot inspect the image directly.
 
 Evaluate the answer against expected visual facts for the test image. Do not ask "are you multimodal?" and do not trust a yes/no self-report.
 
+The answer must include at least three visual facts that are not inferable from filename, URL, product title, collection title, article title, or nearby text. Examples: object type, color, layout, background, visible text, material, shape, or scene. If the answer only restates Shopify context, product names, filenames, or generic ecommerce assumptions, the probe failed.
+
 If the active model passes the probe, use Strategy A. If it fails or is ambiguous, use Strategy B.
 
 ### Strategy A: Multimodal Image Understanding
 
 1. Scan Shopify images.
-2. Download only the current batch of image URLs to a temporary folder.
-3. Ask the model to inspect local image files one by one or in small batches.
+2. Download only the current batch of image URLs to a temporary folder outside the working directory.
+3. Open or attach each local image through the model's real image input before generating any visual description.
 4. Ask for a visual description first, not the final alt text.
-5. Generate final alt text from visual description plus Shopify page context.
-6. Validate length, uniqueness, and confidence.
-7. Delete downloaded images after the batch is reviewed.
+5. Require the visual description to include concrete pixel-derived facts. If the model mentions only product context, reject the result and retry with the actual image attached.
+6. Generate final alt text from visual description plus Shopify page context.
+7. Validate length, uniqueness, and confidence.
+8. Delete downloaded images after the batch is reviewed.
 
 If the model cannot inspect a downloaded image, mark that item as `vision_unavailable` and switch that item to context-only fallback.
+
+Do not label an item `source: "vision"` unless the agent has actually inspected the downloaded/local image and can state pixel-derived evidence. If an item was inferred from title or fields, label it `source: "context_only"` even if an image URL was downloaded.
 
 ### Strategy B: Context-Only Fallback
 
@@ -181,7 +191,7 @@ Low-confidence context-only candidates should be review-only unless the user exp
 9. Ask for explicit approval.
 10. Apply only approved changes with `--execute`.
 11. Verify by rescanning or reading changed resources.
-12. Clean up temporary images, JSON plans, and one-off helper files.
+12. Clean up temporary images and any operating-system temp files. Do not leave process JSON, generated scripts, or summary documents in the working folder.
 
 ## Bundled Script
 
@@ -192,15 +202,15 @@ node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-en
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input alt-text-plan.json
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input alt-text-plan.json --execute
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input -
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input - --execute
 ```
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.
 
-## Plan JSON Contract
+## Plan Input Contract
 
-When generating a plan, write a temporary JSON file only long enough to preview/apply the approved batch. Delete it after verification.
+Prefer piping the approved plan JSON to `apply --input -` through stdin. Do not create `alt-text-plan.json` or other persistent process files in the user's working folder unless the user explicitly asks for a file artifact. If a temporary file is unavoidable, create it in the operating system temp directory and delete it immediately after the command returns.
 
 ```json
 {
@@ -213,7 +223,8 @@ When generating a plan, write a temporary JSON file only long enough to preview/
       "alt": "Black leather tote bag with gold zipper on a white background",
       "source": "vision",
       "confidence": "high",
-      "reason": "The product and visual details match the product title and image.",
+      "visualEvidence": "Black tote bag, gold zipper, white background.",
+      "reason": "The alt text is based on pixel-derived visual evidence plus product context.",
       "url": "https://cdn.shopify.com/..."
     },
     {
@@ -222,6 +233,7 @@ When generating a plan, write a temporary JSON file only long enough to preview/
       "alt": "Minimal skincare collection arranged on a bathroom counter",
       "source": "vision",
       "confidence": "high",
+      "visualEvidence": "Skincare bottles arranged on a bathroom counter.",
       "reason": "Preserves collection image URL and updates only altText.",
       "url": "https://cdn.shopify.com/..."
     },
@@ -242,6 +254,7 @@ When generating a plan, write a temporary JSON file only long enough to preview/
       "alt": "Screenshot of a Shopify product media settings panel",
       "source": "vision",
       "confidence": "high",
+      "visualEvidence": "Shopify product media settings panel visible in screenshot.",
       "reason": "Updates only the inline img alt attribute."
     }
   ]
@@ -280,6 +293,7 @@ Before preview:
 - Rewrite alt text above 125 characters unless there is a strong accessibility reason.
 - Check duplicates within the same product, collection, or article.
 - Check generic patterns like repeated product title, comma-separated keyword lists, and "image of".
+- Reject any `source: "vision"` candidate that does not include concrete `visualEvidence`.
 - Mark low-confidence context-only items as review-only.
 - For shared product files, explain that a `fileUpdate` can affect every reference.
 
@@ -312,7 +326,7 @@ Dependency order:
 3. Main agent merges results, validates limits, and shows one preview plan.
 4. Main agent applies approved writes sequentially and verifies.
 
-Do not parallelize Shopify writes. Do not let sub-agents handle secrets, create local scripts, delete files, or perform final verification.
+Do not parallelize Shopify writes. Do not let sub-agents handle secrets, create local scripts, create summary documents, write process JSON into the working folder, delete files, or perform final verification.
 
 ## Preview Approval
 
@@ -324,6 +338,7 @@ Before any write, show:
 - proposed changes grouped by product, collection, and article
 - current alt and proposed alt
 - confidence and reason
+- visual evidence for every candidate marked `source: "vision"`
 - character count for proposed alt
 - shared-file warnings
 - article body HTML warnings for inline image changes
@@ -338,10 +353,10 @@ After writes:
 - Confirm expected alt text exists.
 - Confirm article inline image `src` values were not changed.
 - Confirm no alt text exceeds 512 characters.
+- Confirm every `source: "vision"` change has visual evidence that came from actual image inspection.
 - Confirm low-confidence review-only items were not written unless approved.
 - Delete temporary image folders and downloaded images.
-- Delete `alt-text-plan.json`, scan output JSON, model review JSON, and one-off helper files.
-- Re-scan the working directory for leftovers before finishing.
+- Confirm the working folder contains no process JSON, generated scripts, summary documents, or one-off helper files created during the run.
 
 If cleanup fails, report the exact path that still needs removal.
 

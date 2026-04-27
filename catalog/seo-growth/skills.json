@@ -104,38 +104,14 @@
       ],
       "prerequisites": [
         {
-          "id": "shopify-admin-access",
+          "id": "multimodal-model",
           "label": {
-            "en": "Shopify Admin API access",
-            "zh": "Shopify Admin API 访问权限"
+            "en": "Multimodal model required",
+            "zh": "需要多模态大模型"
           },
           "badge": {
-            "en": "Required",
-            "zh": "必需"
-          },
-          "icon": "KeyRound"
-        },
-        {
-          "id": "node-runtime",
-          "label": {
-            "en": "Node.js runtime",
-            "zh": "Node.js 运行环境"
-          },
-          "badge": {
-            "en": "Scripts",
-            "zh": "脚本"
-          },
-          "icon": "Terminal"
-        },
-        {
-          "id": "multimodal-recommended",
-          "label": {
-            "en": "Multimodal model recommended",
-            "zh": "建议使用多模态模型"
-          },
-          "badge": {
-            "en": "Recommended",
-            "zh": "建议"
+            "en": "Image understanding",
+            "zh": "图片识别"
           },
           "icon": "Sparkles"
         }
