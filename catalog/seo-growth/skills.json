@@ -4,7 +4,7 @@
       "name": "optimize-shopify-alt-text",
       "displayName": "Optimize Shopify Alt Text",
       "path": "../../skills/optimize-shopify-alt-text",
-      "tags": ["shopify", "alt-text", "seo", "accessibility", "product-media"],
+      "tags": ["shopify", "seo", "alt-text"],
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
       "status": "PUBLISHED",

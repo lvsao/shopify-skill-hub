@@ -2,6 +2,10 @@
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 function parseArgs(argv) {
   const args = {
@@ -80,7 +84,18 @@ async function loadEnv(envPath) {
 
   env.SHOPIFY_STORE_DOMAIN = normalizeDomain(env.SHOPIFY_STORE_DOMAIN);
 
+  const accessMethod = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || (env.SHOPIFY_CLIENT_ID ? "dev_dashboard_app" : "admin_custom_app");
+
   if (!env.SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
+    if (accessMethod === "dev_dashboard_app") {
+      if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
+        throw new Error("Dev Dashboard app setup requires SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
+      }
+      env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
+      env.SHOPIFY_API_VERSION = "shopify-cli";
+      env.SHOPIFY_TRANSPORT = "shopify_cli";
+      return env;
+    }
     if (!env.SHOPIFY_CLIENT_ID || !env.SHOPIFY_CLIENT_SECRET) {
       throw new Error(
         `Missing Shopify credentials in ${envPath}. Provide either SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN or both SKILL_HUB_SHOPIFY_CLIENT_ID and SKILL_HUB_SHOPIFY_CLIENT_SECRET.`,
@@ -204,6 +219,10 @@ async function resolveAdminEndpoint(env, preferredVersion) {
 }
 
 async function graphql(env, query, variables = {}) {
+  if (env.SHOPIFY_TRANSPORT === "shopify_cli") {
+    return shopifyCliGraphql(env, query, variables);
+  }
+
   const endpoint = `https://${env.SHOPIFY_API_DOMAIN}/admin/api/${env.SHOPIFY_API_VERSION}/graphql.json`;
   const response = await fetch(endpoint, {
     method: "POST",
@@ -218,6 +237,33 @@ async function graphql(env, query, variables = {}) {
     throw new Error(JSON.stringify({ status: response.status, errors: json.errors }, null, 2));
   }
   return json.data;
+}
+
+async function shopifyCliGraphql(env, query, variables = {}) {
+  const args = ["store", "execute", "--store", env.SHOPIFY_API_DOMAIN, "--query", query, "--json", "--no-color"];
+  if (Object.keys(variables || {}).length > 0) {
+    args.push("--variables", JSON.stringify(variables));
+  }
+
+  const isMutation = /(^|\n)\s*mutation\b/i.test(query);
+  if (isMutation) args.push("--allow-mutations");
+
+  try {
+    const { stdout } = await execFileAsync("shopify", args, {
+      timeout: 120000,
+      maxBuffer: 1024 * 1024 * 20,
+      windowsHide: true,
+    });
+    const json = JSON.parse(stdout);
+    if (json.errors) throw new Error(JSON.stringify(json.errors, null, 2));
+    return json.data;
+  } catch (error) {
+    const stderr = error.stderr ? String(error.stderr) : "";
+    const stdout = error.stdout ? String(error.stdout) : "";
+    throw new Error(
+      `Shopify CLI store auth is required or expired. Run: shopify store auth --store ${env.SHOPIFY_API_DOMAIN} --scopes read_products,write_content,write_files --json --no-color. ${stderr || stdout || error.message}`,
+    );
+  }
 }
 
 const CONTEXT_QUERY = `#graphql

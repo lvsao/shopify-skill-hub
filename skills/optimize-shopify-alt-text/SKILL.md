@@ -30,7 +30,7 @@ Start every first-time run with one short setup question:
 ```text
 Where did you create your Shopify app?
 
-A - Shopify Admin custom app
+A - Shopify store Settings custom app (Legacy Custom App)
 B - Dev Dashboard app
 ```
 
@@ -42,7 +42,7 @@ skill-hub.env
 
 Immediately ensure `.gitignore` contains `skill-hub.env`. Do not ask the user to create the env file or update `.gitignore` manually.
 
-### Path A: Shopify Admin Custom App
+### Path A: Shopify Store Settings Custom App (Legacy Custom App)
 
 Create the env file with:
 
@@ -72,8 +72,9 @@ node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-en
 Ask the user to fill only:
 
 - `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: the store's exact `.myshopify.com` domain.
-- `SKILL_HUB_SHOPIFY_CLIENT_ID`: the app Client ID from Dev Dashboard settings.
-- `SKILL_HUB_SHOPIFY_CLIENT_SECRET`: the app Client secret from Dev Dashboard settings.
+- `SKILL_HUB_SHOPIFY_CLIENT_ID`: the app Client ID from Dev Dashboard settings. This is used for Shopify CLI config link and deploy.
+
+Do not ask for the Client secret for this workflow unless a future helper explicitly implements client credential token exchange. The bundled helper uses Shopify CLI store authorization after deploy.
 
 Check Node.js, npm, and Shopify CLI:
 
@@ -112,9 +113,13 @@ shopify app config validate --path $tmp --no-color
 shopify app deploy --client-id <client-id> --path $tmp --allow-updates --no-color
 ```
 
-Ask the merchant to approve the app permission update in Shopify Admin or Dev Dashboard. This approval is required when new scopes are released to an already installed app.
+After deployment, do not send the user to Dev Dashboard to look for a manual approval button. Instead, run Shopify CLI store authorization with the required scopes. Tell the user before running it: "A Shopify permission authorization page may open next. Please review the scopes and click authorize."
 
-Verify after approval:
+```powershell
+shopify store auth --store <store>.myshopify.com --scopes read_products,write_products,read_content,write_content,read_files,write_files --json --no-color
+```
+
+Verify after the browser authorization:
 
 ```powershell
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
@@ -208,6 +213,8 @@ node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply -
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.
 
+Do not use `shopify store execute` directly for scanning images or updating alt text, except for the single connection-check command in Path B setup. Direct terminal mutations are easy to run one image at a time, can stall in some IDE terminals, and bypass the helper's pagination, batching, duplicate checks, and cleanup rules. The helper internally uses Shopify CLI store auth when Path B is selected and adds `--json --no-color` so commands return structured output promptly.
+
 ## Plan Input Contract
 
 Prefer piping the approved plan JSON to `apply --input -` through stdin. Do not create `alt-text-plan.json` or other persistent process files in the user's working folder unless the user explicitly asks for a file artifact. If a temporary file is unavoidable, create it in the operating system temp directory and delete it immediately after the command returns.
@@ -272,8 +279,11 @@ Always scan before writing. The scan output reports:
 - article count, article featured image count, and article inline image count
 - how many images need optimization
 - shared product files that may affect multiple products if updated
+- whether the scan paginated through all products, collections, and articles
 
-Sort the first batch by value and safety:
+`--page-size` is a page size, not a maximum. The helper keeps paging until Shopify reports no next page. Do not stop after the first page or after the first batch unless the user explicitly asks to pause.
+
+Sort each batch by value and safety:
 
 1. Missing product primary image alt.
 2. Missing collection featured image alt.
@@ -283,7 +293,7 @@ Sort the first batch by value and safety:
 6. Repetitive or low-quality existing alt.
 7. Lower-confidence context-only items.
 
-If the scan finds more than one batch of work, do not try to optimize everything at once. Show the total count and propose the first batch.
+If the scan finds more than one batch of work, do not try to optimize everything at once. Show the total count, estimated number of batches, and the first batch. After each approved batch, continue to the next batch or explicitly ask the user whether to pause. Do not silently stop after a partial batch.
 
 ## Duplicate And Quality Gate
 
