@@ -16,6 +16,8 @@ description: Convert an owned or authorized WeChat Official Account article into
 - Never print or store access tokens, session cookies, or merchant data in public files.
 - Do not create hidden onboarding folders. Keep the shared env as one `skill-hub.env` file in the user's current working directory.
 - Keep the user's working folder clean. Delete every temporary image, JSON plan, downloaded file, generated helper file, and ad hoc script after the workflow completes or fails.
+- Do not create a text-only Shopify article when the WeChat article has selected images. If Shopify image upload fails, stop, report the exact failed step, and ask before retrying or creating a text-only fallback.
+- Do not replace the bundled Shopify helper with ad hoc REST, PowerShell, or temporary Node scripts. If the helper fails, inspect its error, fix the helper or input manifest, and rerun the helper.
 
 ## Beginner Onboarding First
 
@@ -118,8 +120,9 @@ node skills/wechat-to-shopify-blog/scripts/fetch-wechat-article.mjs --url <mp.we
 node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs context --env skill-hub.env --product-page-size 50
 node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json
 node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json --execute
-node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json
-node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --require-images
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute --require-images
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs update-draft --env skill-hub.env --article-id gid://shopify/Article/... --input draft-article.json --execute --require-images
 node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs verify --env skill-hub.env --article-id gid://shopify/Article/...
 ```
 
@@ -163,8 +166,9 @@ Always complete brand context before fetching or rewriting the WeChat article.
 7. Select one related product when the internal rewrite mode is `English deep rewrite`.
 8. Prepare the preview plan.
 9. After approval, upload selected images to Shopify Files.
-10. Create the draft article.
-11. Verify the draft and delete temporary files.
+10. Replace every kept WeChat image reference in the article HTML with the Shopify CDN URLs returned by the upload helper.
+11. Create or update the draft article with `--require-images`.
+12. Verify the draft contains Shopify CDN image URLs and delete temporary files.
 
 ## Safe Parallel Work
 
@@ -275,6 +279,7 @@ It uses only Node.js built-ins and extracts from the WeChat HTML:
 - publish date if available
 - article body text and heading-like blocks
 - image URLs from `data-src` first, then `src`
+- `shopifyUploadManifest` when images are downloaded, so the upload helper can consume it directly
 
 When image files need local inspection or Shopify upload preparation, use:
 
@@ -283,6 +288,8 @@ node skills/wechat-to-shopify-blog/scripts/fetch-wechat-article.mjs --url <mp.we
 ```
 
 Delete that output folder after the task. Do not keep WeChat images in the user's project folder after the final Shopify draft is verified.
+
+When saving extraction output, create a temporary JSON file only long enough to pass `shopifyUploadManifest` into `shopify-blog-admin.mjs upload-images`. Delete it after upload succeeds.
 
 Map the WeChat subtitle/description to Shopify `summary`. Never use an image, image alt text, or image URL as the subtitle or summary.
 
@@ -347,6 +354,8 @@ node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs upload-images 
 node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json --execute
 ```
 
+`image-manifest.json` should be the `shopifyUploadManifest` array returned by `fetch-wechat-article.mjs`, or an object with `{ "images": [...] }`. Each item must include `path`, `filename`, `mimeType`, and `alt`.
+
 Do not use direct `fileCreate(originalSource: wechatImageUrl)` as the normal path. Direct transfer can work, but it can produce non-SEO filenames such as `640.png` and can fail when Shopify compares filename extensions against WeChat CDN URLs.
 
 For each selected image:
@@ -364,18 +373,24 @@ For each selected image:
    - `contentType: IMAGE`
    - `alt`
    - `filename`
-6. Poll the created `MediaImage` until `fileStatus` is `READY`.
-7. Use the returned Shopify CDN `image.url` in the article HTML.
+6. Let `shopify-blog-admin.mjs upload-images --execute` poll each created `MediaImage` until `fileStatus` is `READY`.
+7. Use the returned `files[].url` Shopify CDN URL in the article HTML and cover `article.image.url`.
 
-If any image upload fails, exclude that image from the draft and report it in the preview or final verification. Do not fall back to hotlinking WeChat images in the Shopify article.
+If any selected image upload fails, stop before article creation. Do not silently exclude the image, do not create a no-image draft, and do not fall back to hotlinking WeChat images in the Shopify article. Continue only after the user approves a retry strategy or explicitly accepts a text-only draft.
 
 ## Draft Article Creation
 
 Create the article with `articleCreate`. Prefer:
 
 ```text
-node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json
-node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --require-images
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute --require-images
+```
+
+If a previous run already created a text-only draft, fix it instead of creating another article:
+
+```text
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs update-draft --env skill-hub.env --article-id gid://shopify/Article/... --input draft-article.json --execute --require-images
 ```
 
 Set:
@@ -392,6 +407,8 @@ Set:
   - `namespace: global`, `key: description_tag`, `type: single_line_text_field`
 
 Do not add tags automatically. Do not touch tax settings.
+
+Before running `create-draft --execute` or `update-draft --execute`, confirm the draft body contains `<img>` tags using `cdn.shopify.com` URLs whenever the WeChat article has selected body images. The `--require-images` flag enforces this gate.
 
 ## Preview Approval
 

@@ -231,6 +231,16 @@ async function main() {
         coverImage,
         imageCount: images.length,
         images,
+        shopifyUploadManifest: images
+          .filter((image) => image.download && !image.downloadError)
+          .map((image) => ({
+            path: image.download.filePath,
+            filename: image.download.filename,
+            mimeType: image.download.mimeType,
+            alt: image.alt || image.nearbyText || `WeChat article image ${image.index}`,
+            sourceUrl: image.url,
+            nearbyText: image.nearbyText,
+          })),
         textBlocks: toTextBlocks(contentHtml),
         bodyHtml: contentHtml,
         outputDir,
@@ -243,5 +253,5 @@ async function main() {
 
 main().catch((error) => {
   console.error(error.message);
-  process.exit(1);
+  process.exitCode = 1;
 });
