@@ -155,30 +155,37 @@ Ask for blog container only if automatic selection is uncertain. If confidence i
 
 ## Required Order
 
-Always complete brand context before fetching or rewriting the WeChat article.
+Always validate Shopify access before any Shopify-dependent work. After access is valid, read-only context gathering can run in parallel.
 
 1. Load env and validate Shopify connection.
-2. Read Shopify brand voice context and the full product catalog.
+2. Read Shopify brand voice context and the full product catalog. This can overlap with WeChat extraction after access is valid.
 3. Choose the Shopify blog container.
-4. Fetch and parse the WeChat article.
+4. Fetch and parse the WeChat article. This can overlap with Shopify context loading, but rewriting and product matching must wait for both outputs.
 5. Inspect and filter images with the multimodal model.
 6. Translate or rewrite the article into English.
-7. Select one related product when the internal rewrite mode is `English deep rewrite`.
+7. Evaluate related products and select one product for insertion when there is a natural match.
 8. Prepare the preview plan.
 9. After approval, upload selected images to Shopify Files.
-10. Replace every kept WeChat image reference in the article HTML with the Shopify CDN URLs returned by the upload helper.
-11. Create or update the draft article with `--require-images`.
-12. Verify the draft contains Shopify CDN image URLs and delete temporary files.
+10. Build or update the related product block using the selected product.
+11. Replace every kept WeChat image reference in the article HTML with the Shopify CDN URLs returned by the upload helper.
+12. Create or update the draft article with `--require-images`.
+13. Verify the draft contains Shopify CDN image URLs and the related product block when a product was selected, then delete temporary files.
 
 ## Safe Parallel Work
 
 Use sub-agents when the host environment supports them and the work can be split safely:
 
-- Run Shopify context gathering and WeChat article extraction in parallel because both are read-only.
-- Run image relevance review in parallel batches after article extraction, but keep the final keep/reject decision in one consolidated plan.
-- Run product matching in parallel with English outline drafting after brand context and article extraction are both available.
-- Do not let sub-agents write to Shopify, create local scripts, edit the env file, or delete files. The main agent owns writes, cleanup, and final verification.
-- Give each sub-agent a bounded read-only task and ask for structured output only. Do not pass secrets to sub-agents unless the task strictly requires API access.
+- Main agent only: create or update `skill-hub.env`, add it to `.gitignore`, validate Shopify access, handle secrets, request approval, upload files, create or update the draft, verify, and clean up.
+- Phase 1 can run in parallel after access is valid:
+  - Shopify context sub-agent: summarize `shop`, blogs, recent articles, homepage meta, and product catalog.
+  - WeChat extraction sub-agent: fetch the article, download selected source images, and return the article JSON plus `shopifyUploadManifest`.
+- Phase 2 can run in parallel after both Phase 1 outputs exist:
+  - Image review sub-agent: review image batches and return keep/reject reasons.
+  - English rewrite sub-agent: draft title, summary, outline, and body direction.
+  - Product matching sub-agent: score product candidates and recommend one insertion point.
+- Do not parallelize Shopify writes. Image upload must finish before body HTML is finalized, and draft creation must wait for Shopify CDN URLs.
+- Do not let sub-agents create local scripts, edit env files, delete files, or perform final verification. Ask sub-agents for structured output only.
+- Pass sanitized context to sub-agents whenever possible. Do not pass full access tokens unless the delegated task strictly needs API access.
 
 ## Brand Voice Context
 
@@ -198,6 +205,12 @@ Read all available store context before article extraction:
   - `description`
   - `productType`
   - `vendor`
+  - `status`
+  - `tags`
+  - `seo.title`
+  - `seo.description`
+  - `collections.nodes.title`
+  - `collections.nodes.handle`
   - `onlineStoreUrl`
   - `featuredMedia.preview.image`
   - `media.nodes.preview.image` and `media.nodes.image`
@@ -237,16 +250,17 @@ If there is one blog, use it. If there are multiple blogs and one is clearly bes
 
 ## Related Product Insertion
 
-When the internal rewrite mode is `Deep rewrite`, insert one relevant related product if the store has a product that naturally fits the article.
+Always evaluate related products when Shopify products exist. When the internal rewrite mode is `Deep rewrite`, insert one relevant related product if the store has a product that naturally fits the article. Do not merely mention that a product was found in the preview plan; the final Shopify article body must include the related product block unless there is no strong match.
 
-Use the full product catalog from the brand voice step. Select the product by matching:
+Use the full product catalog from the brand voice step. Build a top-3 shortlist before selecting. Score products by matching:
 
 - article topic and keywords
-- product title, handle, description, product type, and vendor
+- product title, handle, description, product type, vendor, tags, SEO title, SEO description, and collection names
 - store positioning from the brand voice context
 - natural reader intent at a specific article section
+- product availability for the storefront, product image quality, and valid product URL
 
-If no product is relevant, do not force a product insertion. Explain that no strong match was found.
+If no product is relevant, do not force a product insertion. Explain that no strong match was found in the preview plan and in the final verification note. Do not silently skip this step.
 
 For the selected product:
 
@@ -254,11 +268,19 @@ For the selected product:
 - If `onlineStoreUrl` is missing, build the internal link as `https://<primary-domain>/products/<handle>`.
 - Embed the product image in the related product block whenever product media exists.
 - Use image priority: `featuredMedia.preview.image.url`, then the first `media.nodes` image URL.
+- Product images are already Shopify media. Do not upload product images through Shopify Files again.
 - If the best related product has no product image, do not silently omit the image. Choose the next relevant product that has an image, or ask the user to add/choose a product image before creating the draft.
 - Place the block where it best supports the article, usually after a section that mentions the product problem, workflow, or buying intent. Do not place it mechanically at the end if another location reads better.
 - Keep the block clearly editorial. Do not make unsupported claims.
+- Use the helper output as real HTML inserted into `bodyHtml`. Verify the final article contains `data-selofy-related-product="true"` and an internal `/products/` or `onlineStoreUrl` link.
 
 Use the bundled `scripts/related-product-block.mjs` helper when useful. It turns one selected product JSON object into consistent HTML with a product link and optional product image.
+
+```text
+node skills/wechat-to-shopify-blog/scripts/related-product-block.mjs --product selected-product.json --primary-domain <primary-domain> --heading "Related product"
+```
+
+Delete `selected-product.json` after the task finishes.
 
 Preserve or add external source/reference links only when they are relevant and authorized. The WeChat source URL can be included as a source link when appropriate. The related product link must be an internal Shopify product link.
 
@@ -419,7 +441,8 @@ Before any Shopify write, show a concise preview plan:
 - rewrite level and target language: English
 - title and summary
 - SEO title and SEO description
-- selected related product, link, image, and insertion location when `Deep rewrite` is selected
+- top 3 related product candidates with short reasons, plus the selected product, link, image, and insertion location when a product will be inserted
+- the no-match reason when no product is inserted
 - selected WeChat thumbnail/cover image
 - kept images with filenames and alt text
 - rejected image count and main rejection reasons
@@ -436,8 +459,10 @@ After creating the draft:
 - Confirm `author.name` equals `shop.name`.
 - Confirm `summary` comes from the WeChat subtitle/description, not an image.
 - Confirm all body image URLs are Shopify CDN URLs.
+- Confirm the related product block contains `data-selofy-related-product="true"` when a product was selected.
 - Confirm the related product block uses an internal product link when one was inserted.
 - Confirm the related product block includes a product image when one was inserted.
+- If no product was inserted, confirm the final note includes the no-match reason.
 - Confirm the article image matches the real WeChat thumbnail/cover, not the first body image.
 - Confirm SEO metafields exist.
 - Confirm no automatic tags were added.
