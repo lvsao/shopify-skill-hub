@@ -50,15 +50,29 @@ async function loadEnv(path) {
       env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || env.SHOPIFY_STORE_DOMAIN || env.SHOPIFY_TEST_STORE_DOMAIN,
     SHOPIFY_ADMIN_API_ACCESS_TOKEN:
       env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN || env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+    SHOPIFY_CLIENT_ID: env.SKILL_HUB_SHOPIFY_CLIENT_ID || env.SHOPIFY_CLIENT_ID,
+    SHOPIFY_CLIENT_SECRET: env.SKILL_HUB_SHOPIFY_CLIENT_SECRET || env.SHOPIFY_CLIENT_SECRET,
     SHOPIFY_API_VERSION: env.SKILL_HUB_SHOPIFY_API_VERSION || env.SHOPIFY_API_VERSION,
   };
 
-  for (const name of ["SHOPIFY_STORE_DOMAIN", "SHOPIFY_ADMIN_API_ACCESS_TOKEN"]) {
-    env[name] = aliases[name];
-    if (!env[name]) throw new Error(`Missing ${name} in ${path}.`);
-  }
+  env.SHOPIFY_STORE_DOMAIN = aliases.SHOPIFY_STORE_DOMAIN;
+  env.SHOPIFY_ADMIN_API_ACCESS_TOKEN = aliases.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  env.SHOPIFY_CLIENT_ID = aliases.SHOPIFY_CLIENT_ID;
+  env.SHOPIFY_CLIENT_SECRET = aliases.SHOPIFY_CLIENT_SECRET;
+
+  if (!env.SHOPIFY_STORE_DOMAIN) throw new Error(`Missing SHOPIFY_STORE_DOMAIN in ${path}.`);
 
   env.SHOPIFY_STORE_DOMAIN = normalizeDomain(env.SHOPIFY_STORE_DOMAIN);
+
+  if (!env.SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
+    if (!env.SHOPIFY_CLIENT_ID || !env.SHOPIFY_CLIENT_SECRET) {
+      throw new Error(
+        `Missing Shopify credentials in ${path}. Provide either SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN or both SKILL_HUB_SHOPIFY_CLIENT_ID and SKILL_HUB_SHOPIFY_CLIENT_SECRET.`,
+      );
+    }
+    env.SHOPIFY_ADMIN_API_ACCESS_TOKEN = await getClientCredentialsToken(env);
+  }
+
   const endpoint = await resolveAdminEndpoint(env, aliases.SHOPIFY_API_VERSION);
   env.SHOPIFY_API_DOMAIN = endpoint.host;
   env.SHOPIFY_API_VERSION = endpoint.version;
@@ -88,6 +102,31 @@ function candidateApiVersions(preferredVersion) {
   }
 
   return [...new Set(versions)];
+}
+
+async function getClientCredentialsToken(env) {
+  if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
+    throw new Error("Dev Dashboard client credentials require SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
+  }
+
+  const response = await fetch(`https://${env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: env.SHOPIFY_CLIENT_ID,
+      client_secret: env.SHOPIFY_CLIENT_SECRET,
+    }),
+  });
+
+  const json = await response.json().catch(() => null);
+  if (!response.ok || !json?.access_token) {
+    throw new Error(
+      `Could not get a Dev Dashboard access token. Check the store domain, client ID, client secret, installation, and approved scopes. HTTP ${response.status}.`,
+    );
+  }
+
+  return json.access_token;
 }
 
 async function probeAdminEndpoint(host, version, token, redirect = "follow") {

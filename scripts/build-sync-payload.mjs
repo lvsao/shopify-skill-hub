@@ -223,7 +223,10 @@ async function getLatestGitCommitIso(paths) {
       windowsHide: true,
     });
     const value = stdout.trim();
-    return value || null;
+    if (!value) return null;
+
+    const time = Date.parse(value);
+    return Number.isNaN(time) ? null : new Date(time).toISOString();
   } catch {
     return null;
   }

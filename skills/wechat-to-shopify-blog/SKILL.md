@@ -21,78 +21,135 @@ description: Convert an owned or authorized WeChat Official Account article into
 
 ## Beginner Onboarding First
 
-Start every first-time run by checking the shared Skill Hub env file. Do not create a separate env file or folder for this skill. Future Skill Hub skills must reuse the same file.
+Minimize user decisions and actions. Start every first-time run by asking one short setup question:
 
-Use this private shared file path in the current working directory:
+```text
+Where did you create your Shopify app?
+
+A - Shopify Admin custom app
+B - Dev Dashboard app
+```
+
+Then create or update one private shared file in the current working directory:
 
 ```text
 skill-hub.env
 ```
 
-If the file does not exist, create it for the user in the current working directory with this content:
-
-```text
-# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
-# Reuse this file for all current and future Skill Hub skills.
-
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
-SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-```
-
 Immediately ensure `.gitignore` contains `skill-hub.env`. Add that line if it is missing. Do not ask the user to create the env file or update `.gitignore` manually.
 
-PowerShell reference for agents:
+### Path A: Shopify Admin Custom App
 
-```powershell
-if (-not (Test-Path -LiteralPath "skill-hub.env")) {
-  @"
-# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
-# Reuse this file for all current and future Skill Hub skills.
-
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
-SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-"@ | Set-Content -LiteralPath "skill-hub.env" -Encoding UTF8
-}
-if ((Test-Path -LiteralPath ".gitignore") -and -not (Select-String -LiteralPath ".gitignore" -Pattern "^skill-hub\.env$" -Quiet)) {
-  Add-Content -LiteralPath ".gitignore" -Value "skill-hub.env"
-}
-```
-
-Guide the user to create a Shopify custom app and Admin API access token with Shopify's tutorial:
+Use this only when the merchant can still create a custom app from Shopify Admin. Create `skill-hub.env` with this minimal template:
 
 ```text
-https://help.shopify.com/en/manual/apps/app-types/custom-apps
+# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
+
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
+SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 ```
 
-Permission guidance:
+Ask the user to fill only `SKILL_HUB_SHOPIFY_STORE_DOMAIN` and `SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN`.
 
-- Ask the user to create only one credential: the Admin API access token.
-- Ask the user to enter the domain they know best for `SKILL_HUB_SHOPIFY_STORE_DOMAIN`, such as their storefront domain (`example.com` or `www.example.com`) or their `.myshopify.com` domain.
-- Before calling Admin GraphQL, resolve the API domain:
-  - If `SKILL_HUB_SHOPIFY_STORE_DOMAIN` already ends with `.myshopify.com`, use it directly.
-  - Otherwise, make a read-only POST request to `https://{domain}/admin/api/{version}/graphql.json` with `redirect: manual`.
-  - If Shopify returns a 301 or other 3xx redirect to a `.myshopify.com` host, use that redirected host for all Admin API calls.
-  - Do not follow the 301 automatically for the GraphQL request itself, because some clients convert the POST into a GET and then return 404.
-  - Never print the resolved API host together with the user's token.
-- Ask the user to enable only the Admin API scopes this skill needs:
-  - `read_products`
-  - `read_content` or `read_online_store_pages`
-  - `write_content` or `write_online_store_pages`
-  - `write_files` or `write_images`
-- Explain that Skill Hub uses one shared Admin API token setup for current skills that work through the Admin API.
+Use this path's domain resolution before Admin GraphQL:
 
-Do not ask for Storefront API tokens, API keys, or API secrets. This skill does not use them.
+- If the domain already ends with `.myshopify.com`, use it directly.
+- Otherwise, make a read-only POST probe to `https://{domain}/admin/api/{version}/graphql.json` with `redirect: manual`.
+- If Shopify returns a 301 or another 3xx redirect to a `.myshopify.com` host, use that host for all Admin API calls.
+- Never print the resolved API host together with the user's token.
 
-Before continuing, check:
+### Path B: Dev Dashboard App
 
-- `node -v` works. If not, ask the user to install Node.js LTS.
-- The env file exists.
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN` and `SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN` are present.
-- `skill-hub.env` is ignored by Git.
-- The provided domain resolves to a usable Shopify Admin API domain.
-- A read-only Shopify Admin GraphQL request succeeds after domain resolution.
+Use this as the preferred fallback when Shopify Admin custom app creation is unavailable. The user provides only the app and store basics; the agent handles Shopify CLI, scopes, authorization, and verification.
+
+Create `skill-hub.env` with this minimal template:
+
+```text
+# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
+
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
+SKILL_HUB_SHOPIFY_CLIENT_SECRET=shpss_xxx
+```
+
+Ask the user to fill only those three values. For Dev Dashboard apps, require the `.myshopify.com` domain because client credentials token exchange is shop-specific.
+
+Before continuing:
+
+1. Check `node -v` and `npm -v`. If either is missing, stop and ask the user to install Node.js LTS.
+2. Check `shopify version`.
+3. If Shopify CLI is missing, install it for the user:
+
+```powershell
+npm install -g @shopify/cli@latest
+```
+
+4. If Shopify CLI exists but is older than the version that supports `shopify store`, upgrade it:
+
+```powershell
+npm install -g @shopify/cli@latest
+```
+
+5. Verify `shopify store --help` works.
+
+Then let the agent configure scopes through Shopify CLI. Do not ask the user to manually enter scopes in Dev Dashboard.
+
+Required scopes for this skill:
+
+```text
+read_products,write_content,write_files
+```
+
+`write_content` covers the article/blog read-write path for this workflow. If Shopify reports that any scope has been renamed for the current API surface, use the current equivalent from Shopify docs or CLI validation and keep the scope set minimal.
+
+CLI setup sequence for agents:
+
+```powershell
+$tmp = Join-Path $env:TEMP ("skill-hub-shopify-app-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $tmp | Out-Null
+shopify app config link --client-id <client-id> --path $tmp --no-color
+```
+
+Edit only `$tmp\shopify.app.toml`:
+
+```toml
+[access_scopes]
+scopes = "read_products,write_content,write_files"
+```
+
+Then run:
+
+```powershell
+shopify app config validate --path $tmp --no-color
+shopify app deploy --client-id <client-id> --path $tmp --allow-updates --no-color
+```
+
+After deployment, the merchant must approve the newly released scopes in Shopify Admin because Shopify does not automatically apply new scopes to already installed Dev Dashboard apps. Keep this as the only manual action: tell the user to open the app in Shopify Admin or Dev Dashboard Home and approve/update the installed app permissions. Do not ask the user to edit scopes manually.
+
+After the user approves permissions, verify with the bundled helper, which requests short-lived access tokens automatically:
+
+```powershell
+node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env --product-page-size 1
+```
+
+If verification still returns `Access denied`, report the missing scope and ask the user to approve the app permission update again or reinstall the app after the CLI-deployed version is released.
+
+After successful permission approval, the bundled scripts use `SKILL_HUB_SHOPIFY_CLIENT_ID` and `SKILL_HUB_SHOPIFY_CLIENT_SECRET` to request short-lived access tokens automatically. Do not ask the user to copy or paste those access tokens.
+
+Always remove the temporary CLI app config directory after setup succeeds or fails.
+
+### Shared Checks
+
+Before continuing with article work, check:
+
+- `node -v` works.
+- `skill-hub.env` exists and is ignored by Git.
+- The selected credential path has the required fields.
+- A read-only Shopify Admin GraphQL request succeeds.
 
 Use the bundled native context script when available:
 
