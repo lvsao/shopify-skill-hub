@@ -57,7 +57,9 @@ function parseEnv(text) {
 
 async function loadEnv(file) {
   const text = await fs.readFile(file, "utf8").catch(() => null);
-  if (!text) fail(`Missing env file: ${file}. Run init-env first.`);
+  if (!text) {
+    fail(`Missing env file: ${file}. Current working directory: ${process.cwd()}. The env must be in the user's working directory, not the installed skill directory. Run from the folder that contains skill-hub.env, or pass an absolute path such as --env "<USER_WORKDIR>\\skill-hub.env".`);
+  }
   return parseEnv(text);
 }
 
