@@ -21,7 +21,16 @@ description: Convert an owned or authorized WeChat Official Account article into
 
 ## Beginner Onboarding First
 
-Minimize user decisions and actions. Start every first-time run by asking one short setup question:
+Minimize user decisions and actions. Before asking any setup question, inspect the local environment first:
+
+1. Check whether `skill-hub.env` exists in the current working directory.
+2. If it exists, read only the variable names and whether required values are present. Do not print secrets.
+3. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run the bundled context script.
+4. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the `.myshopify.com` store domain plus Client ID are present, run the bundled context script.
+5. If the context script succeeds, continue directly. Do not ask where the app was created.
+6. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
+
+Ask the setup question only when `skill-hub.env` is missing, incomplete, placeholder-only, or the access method cannot be determined:
 
 ```text
 Where did you create your Shopify app?
@@ -99,6 +108,8 @@ npm install -g @shopify/cli@latest
 
 Then let the agent configure scopes through Shopify CLI. Do not ask the user to manually enter scopes in Dev Dashboard.
 
+Do not run `shopify store list` or `shopify auth status`; these are not valid diagnostics for this workflow in current Shopify CLI. Do not repeatedly run manual `shopify store execute` commands for content work when the bundled helper is available.
+
 Required scopes for this skill:
 
 ```text
@@ -135,15 +146,17 @@ After deployment, do not send the user to Dev Dashboard to look for a manual app
 shopify store auth --store <store>.myshopify.com --scopes read_products,write_content,write_files --json --no-color
 ```
 
-After the user completes the browser authorization, verify the store command auth with Shopify CLI:
+After the user completes the browser authorization, verify with the bundled helper:
 
 ```powershell
-shopify store execute --store <store>.myshopify.com --query "query SkillHubConnectionCheck { shop { name myshopifyDomain } }" --json --no-color
+node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env --product-page-size 1
 ```
 
 If verification still returns `Access denied`, rerun `shopify store auth` with the required scopes. Do not invent a Dev Dashboard approval step.
 
 After successful authorization, do not ask the user to copy or paste short-lived access tokens.
+
+The bundled helpers run Shopify CLI through its JavaScript entrypoint and use query/output files internally. Do not replace them with shell-generated GraphQL commands unless you are doing narrow troubleshooting.
 
 Always remove the temporary CLI app config directory after setup succeeds or fails.
 

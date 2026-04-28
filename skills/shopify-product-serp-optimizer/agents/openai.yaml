@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Product SERP Optimizer"
+  short_description: "Plan five-product SERP batches and generate HTML product SEO reports"
+  default_prompt: "Use $shopify-product-serp-optimizer to scan Shopify products, plan a five-product SERP optimization batch, generate an HTML audit report, and prepare approved SEO title, meta description, or reviewed alt text updates."

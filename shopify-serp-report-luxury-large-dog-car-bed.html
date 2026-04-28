@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luxury Large Dog Car Bed SERP Audit</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: oklch(23% 0.028 68);
+      --muted: oklch(46% 0.026 68);
+      --paper: oklch(97% 0.018 80);
+      --surface: oklch(99% 0.009 82);
+      --surface-strong: oklch(94% 0.028 82);
+      --line: oklch(84% 0.027 78);
+      --accent: oklch(52% 0.12 154);
+      --accent-soft: oklch(90% 0.06 154);
+      --amber: oklch(82% 0.12 85);
+      --rose: oklch(72% 0.12 28);
+      --shadow: 0 20px 60px oklch(38% 0.04 70 / 0.12);
+      --radius: 8px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 48px;
+      --content: min(1180px, calc(100vw - 32px));
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--paper);
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, oklch(96% 0.02 78), oklch(99% 0.01 112) 44%, oklch(95% 0.025 52)),
+        var(--paper);
+      font-family: "Aptos", "Segoe UI", sans-serif;
+      line-height: 1.55;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.26;
+      background-image:
+        linear-gradient(90deg, oklch(72% 0.035 80 / 0.25) 1px, transparent 1px),
+        linear-gradient(180deg, oklch(72% 0.035 80 / 0.18) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 70%);
+    }
+
+    .report-shell {
+      position: relative;
+      width: var(--content);
+      margin: 0 auto;
+      padding: var(--space-3xl) 0;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    p {
+      margin: 0;
+    }
+
+    h1,
+    h2 {
+      font-family: "Constantia", "Georgia", serif;
+      line-height: 1.04;
+      font-weight: 700;
+    }
+
+    h1 {
+      max-width: 920px;
+      font-size: clamp(2.45rem, 7vw, 5.75rem);
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: clamp(1.6rem, 3.4vw, 3rem);
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 1rem;
+      line-height: 1.25;
+      letter-spacing: 0;
+      margin-bottom: var(--space-md);
+    }
+
+    h4 {
+      font-size: 0.88rem;
+      line-height: 1.25;
+      color: var(--muted);
+      margin-bottom: var(--space-sm);
+    }
+
+    p,
+    li,
+    dd,
+    dt {
+      font-size: 0.96rem;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .lead {
+      max-width: 780px;
+      margin-top: var(--space-lg);
+      color: var(--muted);
+      font-size: 1.14rem;
+    }
+
+    .cover {
+      min-height: 100vh;
+      display: grid;
+      align-content: center;
+      gap: var(--space-2xl);
+      padding: var(--space-2xl) 0 var(--space-3xl);
+      break-after: page;
+    }
+
+    .cover-grid,
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: var(--space-lg);
+    }
+
+    .cover-grid article,
+    .card,
+    .batch-strip article {
+      background: color-mix(in oklch, var(--surface), transparent 3%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .cover-grid article {
+      grid-column: span 3;
+      min-height: 136px;
+      padding: var(--space-xl);
+      display: grid;
+      align-content: space-between;
+      gap: var(--space-lg);
+    }
+
+    .cover-grid span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+    }
+
+    .cover-grid strong {
+      display: block;
+      font-size: clamp(1.35rem, 2.5vw, 2.25rem);
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .cover-grid small {
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .cover-section {
+      background: color-mix(in oklch, var(--surface-strong), transparent 32%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: var(--space-xl);
+    }
+
+    .cover-section h2 {
+      font-size: clamp(1.35rem, 2.5vw, 2.15rem);
+      margin-bottom: var(--space-lg);
+    }
+
+    .boundaries p {
+      max-width: 90ch;
+      color: var(--muted);
+    }
+
+    .batch-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-lg);
+    }
+
+    .batch-strip article {
+      box-shadow: none;
+      padding: var(--space-lg);
+      min-height: 180px;
+    }
+
+    .batch-strip strong {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: var(--space-sm);
+    }
+
+    .batch-strip span {
+      display: block;
+      color: var(--muted);
+      margin-bottom: var(--space-md);
+    }
+
+    .product-page {
+      min-height: 100vh;
+      padding: var(--space-3xl) 0;
+      break-after: page;
+    }
+
+    .product-page:last-child {
+      break-after: auto;
+    }
+
+    .product-hero {
+      display: grid;
+      gap: var(--space-md);
+      margin-bottom: var(--space-2xl);
+      max-width: 980px;
+    }
+
+    .product-hero p:last-child {
+      color: var(--muted);
+    }
+
+    .card {
+      grid-column: span 4;
+      min-height: 248px;
+      padding: var(--space-xl);
+      overflow: visible;
+    }
+
+    .card.wide {
+      grid-column: span 8;
+    }
+
+    .score-card {
+      background: linear-gradient(160deg, var(--accent-soft), var(--surface) 60%);
+    }
+
+    .score {
+      font-family: "Constantia", "Georgia", serif;
+      font-size: clamp(3rem, 6vw, 5.5rem);
+      line-height: 0.95;
+      color: var(--accent);
+      margin-bottom: var(--space-md);
+    }
+
+    .snippet {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-lg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: oklch(98% 0.011 82);
+    }
+
+    .snippet + .snippet {
+      margin-top: var(--space-md);
+    }
+
+    .snippet strong {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .recommend .snippet {
+      background: oklch(95% 0.04 150);
+      border-color: color-mix(in oklch, var(--accent), var(--line) 62%);
+    }
+
+    .clean-list {
+      list-style: none;
+      display: grid;
+      gap: var(--space-sm);
+      margin: 0;
+      padding: 0;
+    }
+
+    .clean-list li {
+      padding: var(--space-sm) var(--space-md);
+      background: oklch(97% 0.014 78);
+      border: 1px solid oklch(88% 0.025 78);
+      border-radius: 6px;
+    }
+
+    .kv-list {
+      display: grid;
+      gap: var(--space-md);
+    }
+
+    .kv-list div {
+      display: grid;
+      gap: var(--space-xs);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .kv-list div:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    dt {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    dd {
+      margin: 0;
+    }
+
+    dd span {
+      display: block;
+      color: var(--muted);
+      margin-top: var(--space-xs);
+    }
+
+    .mini-grid,
+    .community-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: var(--space-md);
+    }
+
+    .mini-card,
+    .community-grid > div {
+      min-height: 160px;
+      padding: var(--space-lg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: oklch(98% 0.012 78);
+    }
+
+    .mini-card p + p {
+      margin-top: var(--space-sm);
+    }
+
+    .mini-card strong {
+      color: var(--ink);
+    }
+
+    .community-grid p {
+      color: var(--ink);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .report-shell {
+        width: min(100vw - 24px, 680px);
+        padding: var(--space-xl) 0;
+      }
+
+      .cover-grid,
+      .bento {
+        grid-template-columns: 1fr;
+      }
+
+      .cover-grid article,
+      .card,
+      .card.wide {
+        grid-column: auto;
+      }
+
+      .cover {
+        min-height: auto;
+        padding-top: var(--space-2xl);
+      }
+
+      .product-page {
+        min-height: auto;
+        padding: var(--space-2xl) 0;
+      }
+    }
+
+    @media print {
+      :root {
+        --paper: white;
+        --surface: white;
+        --shadow: none;
+      }
+
+      body {
+        background: white;
+      }
+
+      body::before {
+        display: none;
+      }
+
+      .report-shell {
+        width: auto;
+        padding: 0;
+      }
+
+      .cover,
+      .product-page {
+        min-height: auto;
+        padding: 24px 0;
+        break-after: page;
+      }
+
+      .product-page:last-child {
+        break-after: auto;
+      }
+
+      .card,
+      .cover-grid article,
+      .batch-strip article {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="report-shell" aria-label="Shopify Product SERP Audit Report">
+    <section class="cover">
+    <p class="eyebrow">SERP Product Audit</p>
+    <h1>Luxury Large Dog Car Bed SERP Audit</h1>
+    <p class="lead">Evidence-backed product search snippet recommendations, content opportunities, and safe Shopify execution boundaries.</p>
+    <div class="cover-grid">
+      <article><span>Store</span><strong>Julibee&#39;s</strong><small>julibees.com</small></article>
+      <article><span>Generated</span><strong>2026-04-28T00:00:00+08:00</strong><small>Local HTML report</small></article>
+      <article><span>Products scanned</span><strong>1</strong><small>1 eligible</small></article>
+      <article><span>Executable items</span><strong>2</strong><small>Requires approval before write</small></article>
+    </div>
+    <div class="cover-section">
+      <h2>📦 Batch plan</h2>
+      <div class="batch-strip"><article>
+      <strong>Batch 1</strong>
+      <span>Single provided product; high-confidence metadata review, no Shopify write executed.</span>
+      <ul class="clean-list"><li>Luxury Large Dog Car Bed</li></ul>
+    </article></div>
+    </div>
+    <div class="cover-section boundaries">
+      <h2>🛡️ Boundaries</h2>
+      <p>This report may recommend safe seo.title, seo.description, and reviewed media alt text updates. It does not modify handles, redirects, translations, theme code, schema, reviews, ratings, prices, variants, tags, vendor, collections, or product copy.</p>
+    </div>
+  </section>
+<section class="product-page">
+    <div class="product-hero">
+      <p class="eyebrow">Product page 1</p>
+      <h2>Luxury Large Dog Car Bed</h2>
+      <p>https://julibees.com/collections/dog-car-seats/products/large-car-dog-seat</p>
+    </div>
+    <div class="bento">
+      <article class="card score-card">
+        <h3>🎯 SERP score</h3>
+        <p class="score">74</p>
+        <p>The current metadata is usable but leans broad and misses clearer product-page intent around large size, back-seat travel, comfort, and supported construction details.</p>
+      </article>
+      <article class="card">
+        <h3>🧾 Product snapshot</h3>
+        <div class="kv-list"><div><dt>Status</dt><dd>ACTIVE</dd></div><div><dt>Product type</dt><dd>Dog car seat / travel bed</dd></div><div><dt>Audience/use</dt><dd>Medium, large, or two small dog owners planning car travel</dd></div><div><dt>URL</dt><dd>https://julibees.com/collections/dog-car-seats/products/large-car-dog-seat</dd></div></div>
+      </article>
+      <article class="card wide">
+        <h3>🔎 Current search snippet</h3>
+        <div class="snippet">
+          <strong>SEO title</strong>
+          <p>Luxury Dog Car Bed for Large and Medium Dogs or Two Dogs - Julibee&#39;s</p>
+        </div>
+        <div class="snippet">
+          <strong>Meta description</strong>
+          <p>The best solution for medium and large dog or double-dog parents who want road trips with dogs. With high-quality materials and upgraded design, it provides extra comfort and safety.</p>
+        </div>
+      </article>
+      <article class="card wide recommend">
+        <h3>✍️ Recommended search snippet</h3>
+        <div class="snippet">
+          <strong>SEO title</strong>
+          <p>Luxury Large Dog Car Bed for Back Seat Travel | Julibee&#39;s</p>
+        </div>
+        <div class="snippet">
+          <strong>Meta description</strong>
+          <p>A luxury dog car bed for medium, large, or two small dogs, designed for back seat travel with secure straps, soft support, and a washable cover.</p>
+        </div>
+      </article>
+      <article class="card">
+        <h3>📌 Evidence ledger</h3>
+        <ul class="clean-list"><li>Product page is live and belongs to a dog car seats collection.</li><li>Current title already identifies large and medium dogs or two dogs.</li><li>Product description mentions upgraded design, comfort, safety positioning, and road-trip use.</li><li>Prior image audit found 10 media items with no missing alt text.</li><li>Safety language should stay conservative unless certifications or crash-testing evidence are provided.</li></ul>
+      </article>
+      <article class="card">
+        <h3>🪜 Micro-intent ladder</h3>
+        <div class="kv-list"><div><dt>Object</dt><dd>large dog car bed</dd></div><div><dt>Attribute</dt><dd>luxury large dog car bed</dd></div><div><dt>Use case</dt><dd>large dog car bed for back seat travel</dd></div><div><dt>Constraint</dt><dd>dog car bed for medium and large dogs</dd></div><div><dt>Audience</dt><dd>dog car bed for two small dogs</dd></div><div><dt>Problem</dt><dd>comfortable dog bed for car trips</dd></div><div><dt>Comparison</dt><dd>dog car bed vs dog car seat</dd></div><div><dt>Purchase stage</dt><dd>buy large dog car bed for back seat</dd></div></div>
+      </article>
+      <article class="card wide">
+        <h3>🧠 Content gap and buyer objections</h3>
+        <div class="kv-list"><div><dt>Will it fit my vehicle and dog size?</dt><dd>Add measured external dimensions, sleeping area dimensions, and a fit note for common back-seat constraints.</dd></div><div><dt>How is it secured?</dt><dd>Clarify strap placement, installation steps, and what the product can and cannot claim about safety.</dd></div><div><dt>Is the cover washable?</dt><dd>If supported, state the washable component and care steps in precise language.</dd></div><div><dt>Why choose this instead of a standard crate or booster seat?</dt><dd>Create comparison content rather than forcing all comparison intent into the product title.</dd></div><div><dt>Can two small dogs share it?</dt><dd>Support this with dimensions, weight guidance, and realistic product photography.</dd></div></div>
+      </article>
+      <article class="card">
+        <h3>🖼️ Alt text action</h3>
+        <p>No immediate alt text write recommended. Existing media had no missing alt text in the prior audit; only update alt text after a dedicated image review finds repetition, overlong wording, or visible details not captured.</p>
+      </article>
+      <article class="card wide">
+        <h3>📰 Blog/article opportunity map</h3>
+        <div class="mini-grid"><article class="mini-card"><p><strong>Cluster:</strong> Best</p><p><strong>Intent:</strong> Commercial investigation</p><p><strong>Suggested title:</strong> Best Large Dog Car Beds for Back Seat Road Trips: What to Check Before Buying</p><p><strong>Why this product supports it:</strong> The product can be one featured option if the article compares size fit, strap setup, washability, and comfort support.</p><p><strong>Reader:</strong> Owners comparing travel bed options before purchase</p><p><strong>Internal anchor:</strong> luxury large dog car bed</p><p><strong>Risk/evidence needed:</strong> Needs competitor comparison criteria and verified dimensions; avoid claiming best without a methodology.</p></article><article class="mini-card"><p><strong>Cluster:</strong> Comparison</p><p><strong>Intent:</strong> Commercial investigation</p><p><strong>Suggested title:</strong> Dog Car Bed vs Dog Car Seat: Which Works Better for Medium and Large Dogs?</p><p><strong>Why this product supports it:</strong> The product can anchor the car-bed side while explaining when a raised seat, carrier, or crate may be more appropriate.</p><p><strong>Reader:</strong> Shoppers unsure which car restraint or comfort format fits their pet</p><p><strong>Internal anchor:</strong> large dog car bed for back seat travel</p><p><strong>Risk/evidence needed:</strong> Requires careful safety language and may need advice to consult vehicle and local restraint rules.</p></article><article class="mini-card"><p><strong>Cluster:</strong> Informational</p><p><strong>Intent:</strong> Pre-purchase education</p><p><strong>Suggested title:</strong> How to Measure Your Back Seat Before Buying a Large Dog Car Bed</p><p><strong>Why this product supports it:</strong> The product page benefits from clearer fit confidence and can link from a measurement guide.</p><p><strong>Reader:</strong> Owners worried about seat width, dog length, and return risk</p><p><strong>Internal anchor:</strong> large dog car bed dimensions</p><p><strong>Risk/evidence needed:</strong> Needs actual product dimensions and fit diagrams.</p></article><article class="mini-card"><p><strong>Cluster:</strong> Problem/solution</p><p><strong>Intent:</strong> Specific travel pain</p><p><strong>Suggested title:</strong> How to Keep a Large Dog Comfortable on Long Back Seat Car Rides</p><p><strong>Why this product supports it:</strong> The product&#39;s comfort and support positioning fits this topic when paired with setup, breaks, and care advice.</p><p><strong>Reader:</strong> Owners planning longer road trips</p><p><strong>Internal anchor:</strong> comfortable large dog car bed</p><p><strong>Risk/evidence needed:</strong> Avoid medical, anxiety, or safety claims unless backed by qualified sources.</p></article><article class="mini-card"><p><strong>Cluster:</strong> Compatibility</p><p><strong>Intent:</strong> Fit and use confidence</p><p><strong>Suggested title:</strong> Large Dog Car Bed Sizing Guide for Sedans, SUVs, and Back Seats</p><p><strong>Why this product supports it:</strong> A sizing guide can reduce hesitation and internally link to the product once measurements are documented.</p><p><strong>Reader:</strong> Owners deciding whether the product will fit their vehicle</p><p><strong>Internal anchor:</strong> back seat dog car bed</p><p><strong>Risk/evidence needed:</strong> Needs real dimensions and vehicle-seat caveats.</p></article></div>
+      </article>
+      <article class="card wide">
+        <h3>🌐 Distribution and off-page opportunity</h3>
+        <div class="community-grid">
+    <div><h4>Community types</h4><ul class="clean-list"><li>pet travel</li><li>road trip planning</li><li>vehicle accessories</li><li>large breed ownership</li><li>small business product feedback</li></ul></div>
+    <div><h4>Reddit search operators</h4><ul class="clean-list"><li>site:reddit.com &quot;large dog car bed&quot;</li><li>site:reddit.com &quot;dog car seat&quot; &quot;large dog&quot;</li><li>site:reddit.com &quot;back seat&quot; &quot;dog bed&quot; &quot;road trip&quot;</li><li>site:reddit.com &quot;dog car bed vs dog car seat&quot;</li></ul></div>
+    <div><h4>Blogger search operators</h4><ul class="clean-list"><li>&quot;large dog car bed&quot; &quot;review&quot;</li><li>&quot;pet travel gear&quot; &quot;road trip&quot; &quot;large dog&quot;</li><li>&quot;dog car seat&quot; &quot;medium and large dogs&quot;</li></ul></div>
+    <div><h4>Facebook group searches</h4><ul class="clean-list"><li>&quot;dog road trip&quot; &quot;large dog&quot;</li><li>&quot;pet travel gear&quot; &quot;dog car seat&quot;</li><li>&quot;large breed dog owners&quot; &quot;car travel&quot;</li></ul></div>
+    <div><h4>Post angle</h4><p>Ask a specific fit or setup question, such as how owners measure their back seat for a large pet travel bed, and avoid posting a product link in the opening message unless the community rules allow it.</p></div>
+    <div><h4>Reply angle</h4><p>Answer the user&#39;s vehicle fit or comfort concern first; mention the guide or product only if it directly addresses the exact constraint they described.</p></div>
+  </div>
+      </article>
+      <article class="card">
+        <h3>✅ Exact executable fields</h3>
+        <ul class="clean-list"><li>seo.title</li><li>seo.description</li></ul>
+      </article>
+      <article class="card">
+        <h3>🚫 Do-not-touch fields</h3>
+        <ul class="clean-list"><li>handle</li><li>descriptionHtml</li><li>theme</li><li>redirects</li><li>translations</li><li>schema</li><li>reviews</li><li>ratings</li><li>price</li><li>variants</li><li>tags</li><li>vendor</li><li>collections</li></ul>
+      </article>
+    </div>
+  </section>
+  </main>
+</body>
+</html>

@@ -116,6 +116,110 @@
           "icon": "Sparkles"
         }
       ]
+    },
+    {
+      "name": "shopify-product-serp-optimizer",
+      "displayName": "Shopify Product SERP Optimizer",
+      "path": "../../skills/shopify-product-serp-optimizer",
+      "tags": ["shopify", "seo", "serp"],
+      "integrations": ["shopify", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Plan product SERP batches and generate HTML SEO opportunity reports",
+        "zh": "规划商品 SERP 优化批次并生成 HTML SEO 机会报告"
+      },
+      "longDescription": {
+        "en": "Scan Shopify products, score product-level SERP opportunities, plan manageable five-product batches, and generate a polished HTML audit report for each current batch. The workflow maps micro search intent to real product evidence, recommends SEO title and meta description updates only when supported, includes product-led blog and distribution opportunities, and applies only approved updates to product SEO fields or reviewed product media alt text.",
+        "zh": "扫描 Shopify 商品，评估商品级 SERP 机会，自动规划每批 5 个商品的可控优化计划，并为当前批次生成精致 HTML 审计报告。这个 workflow 会把微观搜索意图映射到真实商品证据，只在证据支撑时推荐 SEO title 和 meta description 更新，同时给出商品驱动的博客与分发机会，并且只写入用户批准的商品 SEO 字段或已审核商品图片 alt text。"
+      },
+      "introduction": {
+        "en": "Turn vague product SEO requests into five-product SERP batches, HTML audit reports, and safe approved Shopify SEO field updates.",
+        "zh": "把模糊的商品 SEO 需求转化为每批 5 个商品的 SERP 优化计划、HTML 审计报告和安全的 Shopify SEO 字段写入。"
+      },
+      "features": [
+        {
+          "id": "batch-opportunity-plan",
+          "title": {
+            "en": "Five-product batch plan",
+            "zh": "每批 5 个商品计划"
+          },
+          "description": {
+            "en": "Scans product context, ranks opportunities, and turns vague requests into a clear first batch, second batch, and later-priority plan.",
+            "zh": "扫描商品上下文、排序优化机会，并把模糊需求转化为第一批、第二批和后续低优先级计划。"
+          },
+          "badge": {
+            "en": "5 at a time",
+            "zh": "每次 5 个"
+          },
+          "icon": "ListChecks"
+        },
+        {
+          "id": "html-serp-report",
+          "title": {
+            "en": "HTML SERP audit report",
+            "zh": "HTML SERP 审计报告"
+          },
+          "description": {
+            "en": "Generates a polished single-file HTML report with one product page, evidence ledger, snippet recommendations, content gaps, and execution boundaries.",
+            "zh": "生成精致的单文件 HTML 报告，每个商品独立一页，包含证据表、搜索摘要建议、内容缺口和执行边界。"
+          },
+          "badge": {
+            "en": "Open in browser",
+            "zh": "浏览器打开"
+          },
+          "icon": "FileText"
+        },
+        {
+          "id": "intent-evidence-snippets",
+          "title": {
+            "en": "Micro-intent snippets",
+            "zh": "微观意图摘要"
+          },
+          "description": {
+            "en": "Expands broad topics into product, attribute, use case, constraint, audience, problem, comparison, and purchase-stage intent before writing metadata.",
+            "zh": "在写入元信息前，把宽泛主题下钻到商品、属性、场景、约束、人群、痛点、对比和购买阶段等微观意图。"
+          },
+          "badge": {
+            "en": "Evidence-backed",
+            "zh": "证据支撑"
+          },
+          "icon": "SearchCheck"
+        },
+        {
+          "id": "distribution-opportunity",
+          "title": {
+            "en": "Distribution opportunities",
+            "zh": "内容分发机会"
+          },
+          "description": {
+            "en": "Suggests product-led blog clusters, comparison angles, community search operators, and outreach directions without fabricating backlinks or promising rankings.",
+            "zh": "提出商品驱动的博客主题、对比角度、社区搜索式和外联方向，但不伪造外链、不承诺排名。"
+          },
+          "badge": {
+            "en": "No spam",
+            "zh": "不做垃圾外链"
+          },
+          "icon": "Megaphone"
+        },
+        {
+          "id": "safe-product-updates",
+          "title": {
+            "en": "Approved product updates",
+            "zh": "批准后商品更新"
+          },
+          "description": {
+            "en": "Applies only approved product SEO title, meta description, and reviewed product image alt updates while leaving handles, descriptions, themes, and redirects untouched.",
+            "zh": "只执行用户批准的商品 SEO title、meta description 和已审核商品图片 alt text 更新，不触碰 handle、商品描述、主题和重定向。"
+          },
+          "badge": {
+            "en": "Preview first",
+            "zh": "先预览"
+          },
+          "icon": "FileCheck2"
+        }
+      ],
+      "prerequisites": []
     }
   ]
 }

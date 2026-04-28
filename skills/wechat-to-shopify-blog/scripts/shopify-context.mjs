@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
-import { readFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import os from "node:os";
+import path from "node:path";
 
 const execFileAsync = promisify(execFile);
+const REQUIRED_SCOPES = "read_products,write_content,write_files";
 
 function parseArgs(argv) {
   const args = {
@@ -55,14 +58,12 @@ async function loadEnv(path) {
     SHOPIFY_ADMIN_API_ACCESS_TOKEN:
       env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN || env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
     SHOPIFY_CLIENT_ID: env.SKILL_HUB_SHOPIFY_CLIENT_ID || env.SHOPIFY_CLIENT_ID,
-    SHOPIFY_CLIENT_SECRET: env.SKILL_HUB_SHOPIFY_CLIENT_SECRET || env.SHOPIFY_CLIENT_SECRET,
     SHOPIFY_API_VERSION: env.SKILL_HUB_SHOPIFY_API_VERSION || env.SHOPIFY_API_VERSION,
   };
 
   env.SHOPIFY_STORE_DOMAIN = aliases.SHOPIFY_STORE_DOMAIN;
   env.SHOPIFY_ADMIN_API_ACCESS_TOKEN = aliases.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
   env.SHOPIFY_CLIENT_ID = aliases.SHOPIFY_CLIENT_ID;
-  env.SHOPIFY_CLIENT_SECRET = aliases.SHOPIFY_CLIENT_SECRET;
 
   if (!env.SHOPIFY_STORE_DOMAIN) throw new Error(`Missing SHOPIFY_STORE_DOMAIN in ${path}.`);
 
@@ -80,12 +81,7 @@ async function loadEnv(path) {
       env.SHOPIFY_TRANSPORT = "shopify_cli";
       return env;
     }
-    if (!env.SHOPIFY_CLIENT_ID || !env.SHOPIFY_CLIENT_SECRET) {
-      throw new Error(
-        `Missing Shopify credentials in ${path}. Provide either SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN or both SKILL_HUB_SHOPIFY_CLIENT_ID and SKILL_HUB_SHOPIFY_CLIENT_SECRET.`,
-      );
-    }
-    env.SHOPIFY_ADMIN_API_ACCESS_TOKEN = await getClientCredentialsToken(env);
+    throw new Error(`Missing SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN in ${path} for admin_custom_app.`);
   }
 
   const endpoint = await resolveAdminEndpoint(env, aliases.SHOPIFY_API_VERSION);
@@ -117,31 +113,6 @@ function candidateApiVersions(preferredVersion) {
   }
 
   return [...new Set(versions)];
-}
-
-async function getClientCredentialsToken(env) {
-  if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
-    throw new Error("Dev Dashboard client credentials require SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
-  }
-
-  const response = await fetch(`https://${env.SHOPIFY_STORE_DOMAIN}/admin/oauth/access_token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: env.SHOPIFY_CLIENT_ID,
-      client_secret: env.SHOPIFY_CLIENT_SECRET,
-    }),
-  });
-
-  const json = await response.json().catch(() => null);
-  if (!response.ok || !json?.access_token) {
-    throw new Error(
-      `Could not get a Dev Dashboard access token. Check the store domain, client ID, client secret, installation, and approved scopes. HTTP ${response.status}.`,
-    );
-  }
-
-  return json.access_token;
 }
 
 async function probeAdminEndpoint(host, version, token, redirect = "follow") {
@@ -237,30 +208,69 @@ async function graphql(env, query, variables = {}) {
   return json.data;
 }
 
-async function shopifyCliGraphql(env, query, variables = {}) {
-  const args = ["store", "execute", "--store", env.SHOPIFY_API_DOMAIN, "--query", query, "--json", "--no-color"];
-  if (Object.keys(variables || {}).length > 0) {
-    args.push("--variables", JSON.stringify(variables));
+async function pathExists(filePath) {
+  return access(filePath).then(() => true).catch(() => false);
+}
+
+async function resolveShopifyCliJs(env = {}) {
+  const candidates = [];
+  if (env.SKILL_HUB_SHOPIFY_CLI_JS || process.env.SKILL_HUB_SHOPIFY_CLI_JS) {
+    candidates.push(env.SKILL_HUB_SHOPIFY_CLI_JS || process.env.SKILL_HUB_SHOPIFY_CLI_JS);
   }
+  const npmRoot = await execFileAsync("npm", ["root", "-g"], { windowsHide: true })
+    .then(({ stdout }) => stdout.trim())
+    .catch(() => "");
+  if (npmRoot) candidates.push(path.join(npmRoot, "@shopify", "cli", "bin", "run.js"));
+  if (process.env.APPDATA) candidates.push(path.join(process.env.APPDATA, "npm", "node_modules", "@shopify", "cli", "bin", "run.js"));
+  for (const candidate of candidates) {
+    if (candidate && await pathExists(candidate)) return candidate;
+  }
+  const error = new Error(`CLI_NOT_FOUND: Could not locate Shopify CLI JS entrypoint. Set SKILL_HUB_SHOPIFY_CLI_JS to @shopify/cli/bin/run.js.`);
+  error.code = "CLI_NOT_FOUND";
+  throw error;
+}
 
-  const isMutation = /(^|\n)\s*mutation\b/i.test(query);
-  if (isMutation) args.push("--allow-mutations");
+function normalizeCliJson(raw) {
+  if (raw?.errors) return { errors: raw.errors };
+  return raw?.data ? raw : { data: raw };
+}
 
+function classifyCliError(error, detail = "") {
+  const text = `${detail}\n${error?.message || ""}`;
+  if (error?.code === "CLI_NOT_FOUND") return { code: "CLI_NOT_FOUND", message: error.message };
+  if (error?.code === "ENOENT" || error?.code === "EINVAL" || error?.code === "EFTYPE") return { code: "CLI_SPAWN_FAILED", message: error.message };
+  if (/access denied|denied access/i.test(text)) return { code: "CLI_ACCESS_DENIED", message: text.trim() };
+  if (/store auth|stored store auth|auth.*required|not authenticated|login/i.test(text)) return { code: "CLI_AUTH_REQUIRED", message: text.trim() };
+  return { code: "CLI_SPAWN_FAILED", message: text.trim() || "Shopify CLI request failed." };
+}
+
+async function shopifyCliGraphql(env, query, variables = {}) {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "skill-hub-shopify-cli-"));
+  const queryFile = path.join(tempDir, "query.graphql");
+  const variableFile = path.join(tempDir, "variables.json");
+  const outputFile = path.join(tempDir, "output.json");
   try {
-    const { stdout } = await execFileAsync("shopify", args, {
-      timeout: 120000,
-      maxBuffer: 1024 * 1024 * 20,
-      windowsHide: true,
-    });
-    const json = JSON.parse(stdout);
-    if (json.errors) throw new Error(JSON.stringify(json.errors, null, 2));
+    const cliJs = await resolveShopifyCliJs(env);
+    await writeFile(queryFile, query, "utf8");
+    await writeFile(variableFile, JSON.stringify(variables || {}), "utf8");
+    const args = [cliJs, "store", "execute", "--store", env.SHOPIFY_API_DOMAIN, "--query-file", queryFile, "--variable-file", variableFile, "--output-file", outputFile, "--json", "--no-color"];
+    if (/(^|\n)\s*mutation\b/i.test(query)) args.push("--allow-mutations");
+    const execResult = await execFileAsync(process.execPath, args, { timeout: 180000, maxBuffer: 1024 * 1024 * 20, windowsHide: true })
+      .catch((error) => ({ cliError: classifyCliError(error, [error.stderr, error.stdout].filter(Boolean).map(String).join("\n")) }));
+    if (execResult.cliError) throw new Error(`${execResult.cliError.code}: ${execResult.cliError.message}`);
+    if (!await pathExists(outputFile)) throw new Error("CLI_OUTPUT_MISSING: Shopify CLI did not create output JSON.");
+    let json;
+    try {
+      json = normalizeCliJson(JSON.parse(await readFile(outputFile, "utf8")));
+    } catch (error) {
+      throw new Error(`CLI_JSON_PARSE_FAILED: ${error.message}`);
+    }
+    if (json.errors) throw new Error(`CLI_GRAPHQL_ERRORS: ${JSON.stringify(json.errors)}`);
     return json.data;
   } catch (error) {
-    const stderr = error.stderr ? String(error.stderr) : "";
-    const stdout = error.stdout ? String(error.stdout) : "";
-    throw new Error(
-      `Shopify CLI store auth is required or expired. Run: shopify store auth --store ${env.SHOPIFY_API_DOMAIN} --scopes read_products,write_content,write_files --json --no-color. ${stderr || stdout || error.message}`,
-    );
+    throw new Error(`${error.message}\nIf this is CLI_AUTH_REQUIRED, run: shopify store auth --store ${env.SHOPIFY_API_DOMAIN} --scopes ${REQUIRED_SCOPES} --json --no-color`);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
 }
 

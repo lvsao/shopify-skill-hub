@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const DEFAULT_ENV = "skill-hub.env";
 const DEFAULT_VERSION_CANDIDATES = ["2026-04", "2026-01", "2025-10", "2025-07"];
+const REQUIRED_SCOPES = "read_products,write_products,read_content,write_content,read_files,write_files";
 const SOFT_ALT_LIMIT = 125;
 const HARD_ALT_LIMIT = 512;
 const execFileAsync = promisify(execFile);
@@ -99,51 +102,99 @@ SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
   console.log(JSON.stringify({ envFile, created: !exists, gitignore }, null, 2));
 }
 
-async function requestClientCredentialsToken(shop, env) {
-  const clientId = env.SKILL_HUB_SHOPIFY_CLIENT_ID;
-  const clientSecret = env.SKILL_HUB_SHOPIFY_CLIENT_SECRET;
-  if (!clientId || !clientSecret) fail("Client ID and client secret are required for dev_dashboard_app.");
-  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "client_credentials",
-      client_id: clientId,
-      client_secret: clientSecret,
-    }),
-  });
-  const json = await response.json().catch(() => ({}));
-  if (!response.ok || !json.access_token) {
-    fail(`Client credentials token request failed for ${shop}: ${json.error_description || json.error || response.status}`);
-  }
-  return json.access_token;
+async function pathExists(filePath) {
+  return fs.access(filePath).then(() => true).catch(() => false);
 }
 
-async function shopifyCliFetch({ shop, query, variables, allowMutations = false }) {
-  const args = ["store", "execute", "--store", shop, "--query", query, "--json", "--no-color"];
-  if (Object.keys(variables || {}).length > 0) {
-    args.push("--variables", JSON.stringify(variables));
+async function resolveShopifyCliJs(env = {}) {
+  const configured = env.SKILL_HUB_SHOPIFY_CLI_JS || process.env.SKILL_HUB_SHOPIFY_CLI_JS;
+  const candidates = [];
+  if (configured) candidates.push(configured);
+
+  const npmRoot = await execFileAsync("npm", ["root", "-g"], { windowsHide: true })
+    .then(({ stdout }) => stdout.trim())
+    .catch(() => "");
+  if (npmRoot) candidates.push(path.join(npmRoot, "@shopify", "cli", "bin", "run.js"));
+  if (process.env.APPDATA) candidates.push(path.join(process.env.APPDATA, "npm", "node_modules", "@shopify", "cli", "bin", "run.js"));
+
+  for (const candidate of candidates) {
+    if (candidate && await pathExists(candidate)) return candidate;
   }
-  if (allowMutations) {
-    args.push("--allow-mutations");
+  const searched = candidates.filter(Boolean).join("; ") || "(none)";
+  const error = new Error(`CLI_NOT_FOUND: Could not locate Shopify CLI JS entrypoint. Set SKILL_HUB_SHOPIFY_CLI_JS to @shopify/cli/bin/run.js. Searched: ${searched}`);
+  error.code = "CLI_NOT_FOUND";
+  throw error;
+}
+
+function normalizeCliJson(raw) {
+  if (raw?.errors) return { errors: raw.errors };
+  return raw?.data ? raw : { data: raw };
+}
+
+function classifyCliError(error, detail) {
+  const text = `${detail || ""}\n${error?.message || ""}`;
+  if (error?.code === "CLI_NOT_FOUND") return { code: "CLI_NOT_FOUND", message: error.message };
+  if (error?.code === "ENOENT" || error?.code === "EINVAL" || error?.code === "EFTYPE") {
+    return { code: "CLI_SPAWN_FAILED", message: `Could not start Shopify CLI: ${error.message}` };
   }
+  if (/access denied|Access denied|denied access/i.test(text)) return { code: "CLI_ACCESS_DENIED", message: text.trim() };
+  if (/store auth|stored store auth|auth.*required|not authenticated|login/i.test(text)) return { code: "CLI_AUTH_REQUIRED", message: text.trim() };
+  return { code: "CLI_SPAWN_FAILED", message: text.trim() || "Shopify CLI request failed." };
+}
+
+async function shopifyCliFetch({ cliJs, shop, query, variables, allowMutations = false }) {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-hub-shopify-cli-"));
+  const queryFile = path.join(tempDir, "query.graphql");
+  const variableFile = path.join(tempDir, "variables.json");
+  const outputFile = path.join(tempDir, "output.json");
   try {
-    const { stdout } = await execFileAsync("shopify", args, {
-      timeout: 120000,
+    await fs.writeFile(queryFile, query, "utf8");
+    await fs.writeFile(variableFile, JSON.stringify(variables || {}), "utf8");
+    const args = [
+      cliJs,
+      "store",
+      "execute",
+      "--store",
+      shop,
+      "--query-file",
+      queryFile,
+      "--variable-file",
+      variableFile,
+      "--output-file",
+      outputFile,
+      "--json",
+      "--no-color",
+    ];
+    if (allowMutations) args.push("--allow-mutations");
+
+    const execResult = await execFileAsync(process.execPath, args, {
+      timeout: 180000,
       maxBuffer: 1024 * 1024 * 20,
       windowsHide: true,
+    }).catch((error) => {
+      const detail = [error.stderr, error.stdout].filter(Boolean).map(String).join("\n");
+      const classified = classifyCliError(error, detail);
+      return { cliError: classified, stdout: error.stdout || "", stderr: error.stderr || "" };
     });
-    const json = JSON.parse(stdout);
+
+    if (execResult.cliError) return { ok: false, status: execResult.cliError.code, apiVersion: "shopify-cli", json: { errors: [execResult.cliError] } };
+    if (!await pathExists(outputFile)) {
+      return { ok: false, status: "CLI_OUTPUT_MISSING", apiVersion: "shopify-cli", json: { errors: [{ code: "CLI_OUTPUT_MISSING", message: `Shopify CLI did not create output JSON. ${execResult.stderr || execResult.stdout || ""}`.trim() }] } };
+    }
+
+    const output = await fs.readFile(outputFile, "utf8");
+    let json;
+    try {
+      json = normalizeCliJson(JSON.parse(output));
+    } catch (error) {
+      return { ok: false, status: "CLI_JSON_PARSE_FAILED", apiVersion: "shopify-cli", json: { errors: [{ code: "CLI_JSON_PARSE_FAILED", message: error.message }] } };
+    }
     return { ok: !json.errors, status: 200, apiVersion: "shopify-cli", json };
   } catch (error) {
-    const stderr = error.stderr ? String(error.stderr) : "";
-    const stdout = error.stdout ? String(error.stdout) : "";
-    return {
-      ok: false,
-      status: error.code || 1,
-      apiVersion: "shopify-cli",
-      json: { errors: [{ message: stderr || stdout || error.message }] },
-    };
+    const classified = classifyCliError(error);
+    return { ok: false, status: classified.code, apiVersion: "shopify-cli", json: { errors: [classified] } };
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
 }
 
@@ -193,16 +244,19 @@ async function resolveAdmin(env) {
 
   if (method === "dev_dashboard_app") {
     if (!shop.endsWith(".myshopify.com")) fail("Dev Dashboard app setup requires a .myshopify.com store domain.");
+    const cliJs = await resolveShopifyCliJs(env);
     const cliProbe = await shopifyCliFetch({
+      cliJs,
       shop,
       query: `query SkillHubAltTextConnectionCheck { shop { name myshopifyDomain } }`,
       variables: {},
     });
     if (cliProbe.ok) {
-      return { shop, version: "shopify-cli", transport: "shopify_cli", shopInfo: cliProbe.json.data.shop };
+      return { shop, version: "shopify-cli", transport: "shopify_cli", cliJs, shopInfo: cliProbe.json.data.shop };
     }
+    const detail = JSON.stringify(cliProbe.json.errors || cliProbe.json, null, 2);
     fail(
-      `Shopify CLI store authentication is required for Dev Dashboard setup. Run: shopify store auth --store ${shop} --scopes read_products,write_products,read_content,write_content,read_files,write_files --json --no-color`,
+      `Shopify CLI connection check failed. Run store auth only for CLI_AUTH_REQUIRED. Command: shopify store auth --store ${shop} --scopes ${REQUIRED_SCOPES} --json --no-color\n${detail}`,
     );
   }
 
@@ -224,7 +278,7 @@ async function resolveAdmin(env) {
 async function gql(client, query, variables = {}) {
   if (client.transport === "shopify_cli") {
     const allowMutations = /(^|\n)\s*mutation\b/i.test(query);
-    const result = await shopifyCliFetch({ shop: client.shop, query, variables, allowMutations });
+    const result = await shopifyCliFetch({ cliJs: client.cliJs, shop: client.shop, query, variables, allowMutations });
     if (!result.ok) {
       const detail = JSON.stringify(result.json.errors || result.json, null, 2);
       fail(`Shopify CLI GraphQL request failed: ${detail}`);
@@ -484,6 +538,119 @@ async function scan(args) {
   console.log(JSON.stringify(inventory, null, 2));
 }
 
+function extensionFromUrl(url) {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    const ext = path.extname(pathname);
+    return ext && ext.length <= 6 ? ext : ".jpg";
+  } catch {
+    return ".jpg";
+  }
+}
+
+async function downloadImage(url, filePath) {
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      await fs.writeFile(filePath, bytes);
+      return bytes.length;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+    }
+  }
+  throw new Error(lastError?.cause?.message || lastError?.message || "download failed");
+}
+
+async function visionSample(args) {
+  const env = await loadEnv(args.env || DEFAULT_ENV);
+  const client = await resolveAdmin(env);
+  const limit = Math.min(Math.max(Number(args.limit || 3), 1), 10);
+  const pageSize = Number(args["page-size"] || 50);
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-hub-alt-vision-"));
+  const candidates = [];
+
+  const products = await readProducts(client, pageSize);
+  for (const product of products) {
+    let position = 0;
+    for (const media of product.media.nodes.filter(Boolean)) {
+      const url = firstImageUrl(media);
+      if (url) {
+        candidates.push({
+          type: "product_media",
+          id: media.id,
+          url,
+          currentAlt: normalizeAlt(media.alt),
+          context: { productId: product.id, productTitle: product.title, productHandle: product.handle, position },
+        });
+      }
+      position += 1;
+    }
+  }
+
+  if (candidates.length < limit) {
+    const collections = await readCollections(client, pageSize);
+    for (const collection of collections) {
+      if (collection.image?.url) {
+        candidates.push({
+          type: "collection_featured_image",
+          id: collection.id,
+          url: collection.image.url,
+          currentAlt: normalizeAlt(collection.image.altText),
+          context: { collectionTitle: collection.title, collectionHandle: collection.handle },
+        });
+      }
+    }
+  }
+
+  if (candidates.length < limit) {
+    const articles = await readArticles(client, pageSize);
+    for (const article of articles) {
+      if (article.image?.url) {
+        candidates.push({
+          type: "article_featured_image",
+          id: article.id,
+          url: article.image.url,
+          currentAlt: normalizeAlt(article.image.altText),
+          context: { articleTitle: article.title, articleHandle: article.handle, blogTitle: article.blog?.title },
+        });
+      }
+      for (const image of extractInlineImages(article.body)) {
+        if (!image.src) continue;
+        candidates.push({
+          type: "article_inline_image",
+          id: `${article.id}#inline-${image.index}`,
+          url: image.src,
+          currentAlt: normalizeAlt(image.alt),
+          context: { articleId: article.id, articleTitle: article.title, inlineIndex: image.index },
+        });
+      }
+    }
+  }
+
+  const samples = [];
+  for (const [index, candidate] of candidates.slice(0, limit).entries()) {
+    const localPath = path.join(tempDir, `sample-${index + 1}${extensionFromUrl(candidate.url)}`);
+    try {
+      const bytes = await downloadImage(candidate.url, localPath);
+      samples.push({ ...candidate, localPath, bytes, status: "downloaded" });
+    } catch (error) {
+      samples.push({ ...candidate, localPath, status: "download_failed", error: error.message });
+    }
+  }
+
+  console.log(JSON.stringify({
+    ok: true,
+    tempDir,
+    cleanupRequired: true,
+    instruction: "Open each localPath with the host-native image input or Read/image-view tool, report at least 3 pixel-derived facts, then delete tempDir after the probe.",
+    samples,
+  }, null, 2));
+}
+
 function validatePlan(plan) {
   if (!plan || !Array.isArray(plan.changes)) fail("Plan JSON must contain a changes array.");
   const errors = [];
@@ -492,8 +659,17 @@ function validatePlan(plan) {
     if (!change.id) errors.push(`changes[${index}].id is required`);
     if (typeof change.alt !== "string" || !change.alt.trim()) errors.push(`changes[${index}].alt is required`);
     if (change.alt && change.alt.length > HARD_ALT_LIMIT) errors.push(`changes[${index}].alt exceeds ${HARD_ALT_LIMIT} characters`);
-    if (change.source === "vision" && (typeof change.visualEvidence !== "string" || !change.visualEvidence.trim())) {
-      errors.push(`changes[${index}].visualEvidence is required when source is "vision"`);
+    if (change.source === "vision") {
+      const evidenceParts = String(change.visualEvidence || "")
+        .split(/[.;,\n]+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+      if (evidenceParts.length < 3) {
+        errors.push(`changes[${index}].visualEvidence must include at least 3 pixel-derived facts when source is "vision"`);
+      }
+    }
+    if (change.source === "context_only" && change.action !== "approved_context_only") {
+      errors.push(`changes[${index}] is context_only and must be marked action:"approved_context_only" after explicit user approval before apply`);
     }
   }
   if (errors.length) fail(errors.join("\n"));
@@ -652,6 +828,7 @@ async function main() {
   if (command === "init-env") return initEnv(args);
   if (command === "connection-check") return connectionCheck(args);
   if (command === "scan") return scan(args);
+  if (command === "vision-sample") return visionSample(args);
   if (command === "apply") return applyPlan(args);
   fail(`Unknown command: ${command || "(missing)"}`);
 }

@@ -38,6 +38,8 @@ Downloading a file is not enough. The agent must open, attach, or view the local
 
 A valid vision result must include concrete visual evidence, such as color, object type, layout, background, visible text, material, shape, or scene. If the answer only repeats Shopify context or product naming, reject it as context-only.
 
+Before using context-only fallback, the agent must try one real image from the current Shopify scan: download it to an operating-system temp directory, open it with the host-native image input path, and report at least three pixel-derived facts. If this succeeds, use multimodal generation for every reasonably downloadable image in the batch. Context-only fallback is allowed only when image download, local image opening, or pixel interpretation fails, and the failure layer must be reported.
+
 If the model cannot inspect images, use context-only fallback and lower confidence.
 
 ## Context-Only Fallback
@@ -52,6 +54,8 @@ When image understanding is unavailable, generate candidates only from Shopify f
 For context-only candidates:
 
 - Mark `source` as `context_only`.
+- Mark `action` as `review_only` unless the user explicitly approves the exact candidate for application.
+- Use `action: "approved_context_only"` only after explicit user approval.
 - Mark confidence as `low` when the same context could apply to multiple images.
 - Do not apply low-confidence candidates without explicit user review.
 - If uniqueness cannot be achieved without guessing, set `action` to `review_only`.

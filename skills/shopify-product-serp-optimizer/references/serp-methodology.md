@@ -1,0 +1,355 @@
+# Product SERP Methodology
+
+Use this reference before scanning, batching, scoring, reporting, or rewriting product SERP metadata.
+
+## Core Frame
+
+Optimize this chain:
+
+```text
+Search intent -> product evidence -> SERP promise -> safe Shopify fields -> distribution opportunity
+```
+
+Do not start from character counts. Start from whether the product page is the right target for a query and whether the page can prove the promise made in search results.
+
+## SEO Category Boundary
+
+This skill is product SERP optimization.
+
+It includes:
+
+- Read-only product scanning and five-product opportunity batches.
+- Query intent and query class mapping for product pages.
+- SEO title and meta description scoring.
+- Evidence-backed candidates for Shopify `seo.title` and `seo.description`.
+- Image alt text assessment and handoff to the dedicated alt text workflow.
+- HTML reporting for product SERP, content, and distribution opportunities.
+- Product-led content and community opportunity guidance.
+
+It excludes:
+
+- Technical SEO: canonical, indexability, performance, Core Web Vitals, rendered HTML, browser console, and theme source.
+- Structured data repair: Product, Offer, Review, AggregateRating, Breadcrumb, FAQ, and ProductGroup JSON-LD.
+- Search Console opportunity mapping.
+- Merchant Center feed optimization.
+- Automated backlink building or external posting.
+- Redirects, translations, handles, theme code, reviews, ratings, prices, variants, tags, vendor, collections, and product description edits.
+
+## Opportunity Scoring
+
+Use scoring to decide where to start, not to replace judgment.
+
+Add priority when:
+
+- Product is `ACTIVE` and has `onlineStoreUrl`.
+- SEO title is missing, templated, vague, duplicated, or not aligned to product evidence.
+- Meta description is missing, too generic, unsupported, or fails to address buyer intent.
+- Product description has concrete evidence that metadata does not use.
+- Product description is thin but the product category supports clear micro-intents.
+- Product media alt text is missing, repeated, overlong, or generic.
+- The product is a natural product-page result, not a collection, guide, or comparison result.
+
+Subtract or exclude when:
+
+- Product is archived, unpublished, or lacks storefront visibility.
+- The page needs handle, redirect, translation, schema, theme, review, rating, price, variant, tag, collection, vendor, or product copy edits.
+- The product evidence is too thin to support claims.
+- The available opportunity is mainly technical, informational, or collection-level.
+
+Batch interpretation:
+
+- Batch 1: highest-confidence, safest product SERP metadata opportunities.
+- Batch 2: product SERP opportunities that also need content support.
+- Batch 3+: lower certainty, thinner evidence, or opportunities needing merchant/external proof first.
+
+## Query Class Taxonomy
+
+Classify candidate queries before writing metadata.
+
+| Query class | Definition | Product page fit | Better target when not product |
+| --- | --- | --- | --- |
+| Product type | Names the exact product category, such as "carry-on laptop backpack" | High when the product is a strong match | Collection if broad or many products match |
+| Attribute | Adds color, material, feature, size, or capacity, such as "water-resistant carry-on laptop backpack" | High when evidence exists | Collection/filter page if many products share it |
+| Use case | Describes the situation, such as "laptop backpack for business trips" | Medium-high if page explains the use case | Blog/guide if mostly educational |
+| Audience | Names the buyer or user, such as "for remote workers" | High when fit is supported by specs or copy | Collection if many products serve the same audience |
+| Problem/solution | Names a specific pain, such as "backpack with padded laptop compartment" | Medium-high if the product directly solves it | Guide if it needs education or comparison |
+| Brand | Includes brand name | High for owned products | Brand homepage or collection if query is broad |
+| Model/SKU | Specific model, variant, SKU, or product name | High | Product page |
+| Size/fit | Fit-specific query, such as "for 16-inch laptop" | High only with dimensions/compatibility evidence | Guide or size chart when evidence is incomplete |
+| Material | Material-specific query, such as "nylon travel backpack" | High only when material is explicit | Collection/filter page |
+| Occasion/season | Seasonal or occasion modifier | Medium | Collection or campaign page |
+| Commercial investigation | "best", "review", "vs", "comparison", "alternative" | Usually low for a single product page | Blog, collection, comparison page |
+| Informational | "how to", "what is", "guide", "tips" | Low | Blog/guide |
+| Navigational | Store, brand, or known URL intent | Depends | Homepage, brand page, or product page |
+| Transactional | "buy", "shop", "near me" | High when product is purchasable | Collection if query is broad |
+
+If the target query is not product-page intent, do not force product metadata. Recommend collection, blog, technical, structured-data, or search-opportunity work instead.
+
+## Micro-Intent Expansion Ladder
+
+Never stop at a broad theme. Expand from macro to micro until the target is concrete enough to support a product page, article, comparison page, or community post.
+
+Use these layers:
+
+| Layer | Question | Example |
+| --- | --- | --- |
+| Object | What is the product? | carry-on laptop backpack |
+| Attribute | What visible or documented feature matters? | water-resistant carry-on laptop backpack |
+| Use case | Where or when is it used? | carry-on laptop backpack for business trips |
+| Constraint | What limitation shapes the search? | carry-on laptop backpack under airplane seat |
+| Audience | Who is it for? | carry-on laptop backpack for remote workers |
+| Problem | What specific pain does it solve? | carry-on laptop backpack with padded 16-inch device compartment |
+| Comparison | What alternative is being evaluated? | carry-on laptop backpack vs rolling laptop bag |
+| Purchase stage | What is the shopper trying to do now? | buy carry-on laptop backpack for 16-inch laptop |
+
+Expansion rule:
+
+```text
+Broad theme -> object -> attribute -> use case -> constraint -> audience/problem -> comparison or purchase stage
+```
+
+Example:
+
+```text
+travel backpack
+carry-on laptop backpack
+carry-on laptop backpack for 16-inch laptop
+carry-on laptop backpack under airplane seat
+water-resistant carry-on laptop backpack for business trips
+carry-on laptop backpack vs rolling laptop bag
+```
+
+Use the broad theme only as a starting point. The final recommendation must be specific enough to evaluate evidence and choose the right page type.
+
+## Evidence Ledger
+
+Separate supported facts from unsupported claims.
+
+Supported evidence can come from:
+
+- Product title and SEO fields.
+- Product description and description HTML.
+- Product type, vendor, tags, options, variants, SKU, price, and availability.
+- Collections and product URL.
+- Product media alt text and filenames.
+- Verified review/rating data when available.
+- Merchant-provided target query or positioning.
+- GSC query evidence when the user provides it.
+
+Unsupported or high-risk claims include:
+
+- "Best", "safest", "guaranteed", "certified", "doctor recommended", "eco-friendly", "non-toxic", "waterproof", "crash tested", "free shipping", and warranty or return claims unless directly evidenced.
+- Ratings, review counts, certifications, and awards unless verified.
+- Compatibility, size fit, material, performance, or compliance claims not present in product data.
+
+## SEO Title Rubric
+
+Score out of 100.
+
+| Criterion | Points | Rule |
+| --- | ---: | --- |
+| Product-page intent fit | 20 | Title targets a query class suitable for the product page. |
+| Specific product identity | 20 | Names the product type clearly enough for shoppers and search engines. |
+| Evidence-backed qualifier | 20 | Includes only supported attributes, audience, use case, brand, model, or fit. |
+| Uniqueness | 15 | Avoids duplicate boilerplate across products. |
+| Readability | 15 | Reads naturally and avoids awkward keyword stacking. |
+| Risk control | 10 | Avoids unsupported superlatives, compliance claims, and URL/handle pressure. |
+
+Use character length only as a soft warning. A shorter title that misses intent is not better than a slightly longer title that is clear and accurate.
+
+Good title patterns:
+
+```text
+[Product type] for [audience/use case] | [Brand]
+[Attribute] [product type] for [specific use] | [Brand]
+[Model/product line] [product type] with [supported qualifier] | [Brand]
+```
+
+Avoid:
+
+- Keyword lists.
+- Repeating the same brand boilerplate on every product.
+- Claims that are not visible in the product page evidence.
+- Collection-level head terms when the product is only one option.
+- Broad topics that should become guides or collections.
+
+## Meta Description Rubric
+
+Score out of 100.
+
+| Criterion | Points | Rule |
+| --- | ---: | --- |
+| Accurate page summary | 20 | Describes the actual product page, not a category or guide. |
+| Search intent alignment | 20 | Speaks to the buyer problem or use case behind the target query. |
+| Evidence-backed benefits | 25 | Uses only facts supported by product evidence. |
+| Differentiation | 15 | Adds a meaningful reason to click beyond the product name. |
+| Natural language | 10 | Reads like a useful snippet, not a keyword list. |
+| Risk control | 10 | Avoids unsupported superlatives, shipping promises, review claims, and compliance language. |
+
+Good meta pattern:
+
+```text
+[Product type] for [audience/use case], with [supported feature 1] and [supported feature 2]. Ideal for [specific scenario].
+```
+
+Meta descriptions are not guaranteed to be shown in Google results. Treat them as a SERP promise and page summary, not a ranking loophole.
+
+## Product Description Gap Matrix
+
+Do not automatically rewrite the product description. Use this as an audit matrix.
+
+| Buyer question | Evidence to look for | Recommendation when missing |
+| --- | --- | --- |
+| What is it? | Clear product type and use case | Add a concise opening sentence. |
+| Who is it for? | Audience, size, fit, use case | Add fit guidance or size/compatibility notes. |
+| Why this one? | Specific material, function, design, proof | Add supported differentiators, not generic quality claims. |
+| Will it fit/work? | Dimensions, variant options, compatibility | Add size chart, compatibility note, or "not sure" guidance. |
+| How do I use it? | Installation, care, setup, operation | Add use/care section or FAQ. |
+| Can I trust it? | Reviews, warranty, returns, delivery, brand proof | Add verified trust signals or policy links. |
+| What else should I compare? | Related products, collection links, guides | Suggest internal links with descriptive anchors. |
+
+If product evidence is weak, recommend content improvements instead of writing aggressive metadata.
+
+## Image Alt Text Boundary
+
+Use alt text for image understanding and accessibility, not keyword stuffing.
+
+Good alt pattern:
+
+```text
+[Visible object] + [specific attribute] + [context/use]
+```
+
+Use the dedicated `optimize-shopify-alt-text` skill when:
+
+- The active model must inspect product images.
+- Existing alt text is missing, repetitive, generic, or overlong.
+- The agent needs multimodal vision capability probing.
+- Shared file risk must be assessed.
+
+This skill may apply already approved alt text through `fileUpdate`, but it must not claim image understanding unless the image workflow actually inspected pixels.
+
+## Blog And Article Opportunity Method
+
+Blog topics are not random content ideas. They must map to a search intent that is too broad or too educational for the product page, then link back to the product with a natural anchor.
+
+Use these clusters:
+
+| Cluster | Fit | Required narrowing |
+| --- | --- | --- |
+| Best | Commercial investigation | Add audience, constraint, price band, use case, or compatibility. |
+| Comparison/alternative | Shopper compares substitutes | Name the exact alternatives and the decision criteria. |
+| Informational | Buyer needs education | Narrow by use case, constraint, setup, care, or buying stage. |
+| Problem/solution | Buyer has a concrete pain | Name the pain, the situation, and what evidence is needed. |
+| Compatibility | Buyer needs fit confidence | Name the object, size, device, room, model, material, or environment. |
+
+Every topic must include:
+
+- Target intent.
+- Why this product supports the topic.
+- Suggested title.
+- Target reader.
+- Internal link anchor.
+- Risk or evidence needed.
+
+Bad topic:
+
+```text
+How to choose a backpack
+```
+
+Better topic path:
+
+```text
+How to choose a carry-on laptop backpack for a 16-inch laptop
+How to pack a carry-on laptop backpack for a two-day business trip
+Carry-on laptop backpack vs rolling laptop bag for short flights
+Best carry-on laptop backpack for under-seat storage
+```
+
+## Distribution And Community Opportunity Method
+
+This is distribution and off-page opportunity guidance, not automated backlink building.
+
+For each product, suggest:
+
+- Community types instead of invented exact opportunities when no live web search was run.
+- Reddit search operators, such as `site:reddit.com "carry-on laptop backpack under airplane seat"`.
+- Blogger search operators, such as `"carry-on laptop backpack" "review"` or `"business travel packing" "gear list"`.
+- Facebook group search operators, such as `"business travel packing" "laptop backpack"`.
+- Post angle: ask a specific, useful question or share a real experience before mentioning a product.
+- Reply angle: solve the user's problem first, then mention a guide or product only if relevant.
+- Outreach angle: explain why the product fits the creator's audience and offer useful evidence, photos, or a sample policy.
+
+Boundaries:
+
+- Do not fabricate backlinks.
+- Do not recommend spam comments, mass posting, or hidden link schemes.
+- Do not encourage review manipulation.
+- Do not promise rankings.
+- Do not automate external posting.
+- Mark external research as "not live-verified" unless a separate web search was actually run.
+
+## HTML Report Structure
+
+The final report should be a single-file HTML artifact with:
+
+- Overview cover.
+- One independent `section` per product.
+- Product snapshot.
+- SERP score.
+- Current title/meta.
+- Recommended title/meta.
+- Evidence ledger.
+- Micro-intent expansion ladder.
+- Content gap and buyer objection matrix.
+- Alt text action.
+- Blog/article opportunity map.
+- Community, Reddit, blogger, and Facebook group direction.
+- Exact executable fields.
+- Do-not-touch fields.
+
+Layout constraints:
+
+- Use bento-style cards without nesting cards inside cards.
+- Use `grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))` or similar.
+- Use `minmax(0, 1fr)` where long text might appear.
+- Use `overflow-wrap:anywhere` on content blocks.
+- Do not use one-line ellipsis for titles or meta descriptions.
+- Keep each product page printable with `break-after: page`.
+- Use a light editorial / boutique audit aesthetic, not generic dashboard decoration.
+- Use emoji as section markers only; text labels must carry the meaning.
+
+## Stop Conditions
+
+Recommend no metadata change when:
+
+- Current SEO title and meta description score 80+ and no query evidence suggests a problem.
+- The target query belongs to collection, blog, comparison, technical, or structured-data intent.
+- The product page lacks evidence for the proposed claim.
+- The only improvement is cosmetic wordsmithing.
+
+Stop completely before writes when:
+
+- A change would require handle, redirect, theme, translation, schema, review, rating, price, variant, tag, vendor, collection, or product description edits.
+- The user asks for full-store processing in one pass.
+- Product availability or status makes storefront targeting unclear.
+
+## References
+
+- Google title link best practices: https://developers.google.com/search/docs/appearance/title-link
+- Google snippets and meta descriptions: https://developers.google.com/search/docs/appearance/snippet
+- Google image SEO: https://developers.google.com/search/docs/appearance/google-images
+- Google link best practices: https://developers.google.com/search/docs/crawling-indexing/links-crawlable
+- Google helpful content guidance: https://developers.google.com/search/docs/fundamentals/creating-helpful-content
+- Google structured data policies: https://developers.google.com/search/docs/appearance/structured-data/sd-policies
+- Shopify SEO overview: https://help.shopify.com/en/manual/promoting-marketing/seo
+- Shopify product SEO field API: https://shopify.dev/docs/api/admin-graphql/latest/input-objects/SEOInput
+- Shopify product update API: https://shopify.dev/docs/api/admin-graphql/latest/mutations/productUpdate
+- Shopify file update API: https://shopify.dev/docs/api/admin-graphql/latest/mutations/fileUpdate
+- Ahrefs ecommerce product page SEO: https://ahrefs.com/blog/ecommerce-product-page-seo/
+- Semrush ecommerce keyword research: https://www.semrush.com/blog/ecommerce-keyword-research/
+- Moz keyword research: https://moz.com/beginners-guide-to-seo/keyword-research
+- Yoast product page SEO: https://yoast.com/product-page-seo/
+- Backlinko ecommerce SEO: https://backlinko.com/ecommerce-seo
+- Baymard product descriptions: https://baymard.com/blog/product-descriptions
