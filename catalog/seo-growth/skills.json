@@ -139,22 +139,6 @@
       },
       "features": [
         {
-          "id": "batch-opportunity-plan",
-          "title": {
-            "en": "Five-product batch plan",
-            "zh": "每批 5 个商品计划"
-          },
-          "description": {
-            "en": "Scans product context, ranks opportunities, and turns vague requests into a clear first batch, second batch, and later-priority plan.",
-            "zh": "扫描商品上下文、排序优化机会，并把模糊需求转化为第一批、第二批和后续低优先级计划。"
-          },
-          "badge": {
-            "en": "5 at a time",
-            "zh": "每次 5 个"
-          },
-          "icon": "ListChecks"
-        },
-        {
           "id": "html-serp-report",
           "title": {
             "en": "HTML SERP audit report",
