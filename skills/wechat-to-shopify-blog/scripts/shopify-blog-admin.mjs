@@ -114,7 +114,11 @@ function normalizeDomain(value) {
 }
 
 async function loadEnv(envPath) {
-  const env = parseEnv(await readFile(envPath, "utf8"));
+  const text = await readFile(envPath, "utf8").catch(() => null);
+  if (!text) {
+    throw new Error(`Missing env file: ${envPath}. Current working directory: ${process.cwd()}. The env must be in the user's working directory, not the installed skill directory. Run from the folder that contains skill-hub.env, or pass an absolute path such as --env "<USER_WORKDIR>\\skill-hub.env".`);
+  }
+  const env = parseEnv(text);
   env.SHOPIFY_STORE_DOMAIN =
     env.SKILL_HUB_SHOPIFY_STORE_DOMAIN ||
     env.SHOPIFY_STORE_DOMAIN ||
