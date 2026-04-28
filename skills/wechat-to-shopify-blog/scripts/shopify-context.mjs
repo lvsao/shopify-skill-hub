@@ -71,16 +71,17 @@ async function loadEnv(path) {
 
   const accessMethod = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || (env.SHOPIFY_CLIENT_ID ? "dev_dashboard_app" : "admin_custom_app");
 
-  if (!env.SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
-    if (accessMethod === "dev_dashboard_app") {
-      if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
-        throw new Error("Dev Dashboard app setup requires SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
-      }
-      env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
-      env.SHOPIFY_API_VERSION = "shopify-cli";
-      env.SHOPIFY_TRANSPORT = "shopify_cli";
-      return env;
+  if (accessMethod === "dev_dashboard_app") {
+    if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
+      throw new Error("Dev Dashboard app setup requires SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
     }
+    env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
+    env.SHOPIFY_API_VERSION = "shopify-cli";
+    env.SHOPIFY_TRANSPORT = "shopify_cli";
+    return env;
+  }
+
+  if (!env.SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
     throw new Error(`Missing SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN in ${path} for admin_custom_app.`);
   }
 
