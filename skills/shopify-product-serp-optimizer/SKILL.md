@@ -19,6 +19,8 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 - Do not edit product `title`, `descriptionHtml`, `handle`, tags, product type, vendor, price, variants, collections, redirects, translations, theme files, JSON-LD, reviews, ratings, canonical tags, app settings, or schema.
 - Do not make unsupported claims. Every title, meta description, content topic, and distribution suggestion must be tied to product evidence or marked as needing evidence.
 - Do not optimize just because a field can be changed. If the current metadata already scores well and there is no query, evidence, or SERP opportunity for improvement, recommend no change.
+- Apply Shopify's SEO fallback rules before auditing. When `seo.title` is null or empty, treat the effective current SEO title as the product title. When `seo.description` is null or empty, treat the effective current meta description as the first 155 characters of the product description. Do not call these fields "missing" unless the fallback source is also missing or unusable.
+- Match the report language to the user's language. If the user works in Chinese, German, or another language, write the HTML report content and static labels in that language whenever possible.
 - Never print or store access tokens, client secrets, short-lived tokens, session cookies, or real merchant data in public files.
 
 Read `references/serp-methodology.md` before scoring, batching, reporting, or proposing SERP metadata.
@@ -210,8 +212,9 @@ Use the helper score as a starting point, then apply judgment from `references/s
 Prioritize:
 
 - `ACTIVE` products with `onlineStoreUrl`.
-- Missing, templated, vague, duplicate, or evidence-mismatched SEO titles.
-- Missing, generic, unsupported, or intent-weak meta descriptions.
+- Custom SEO fields that are empty and fall back to weak product titles or weak product descriptions.
+- Templated, vague, duplicate, or evidence-mismatched effective SEO titles.
+- Generic, unsupported, or intent-weak effective meta descriptions.
 - Product descriptions with rich evidence that metadata fails to use.
 - Product descriptions that are thin but have clear micro-intent expansion space.
 - Media with missing, repeated, overlong, or generic alt text.
@@ -241,7 +244,7 @@ Batch meaning:
 6. Tell the user the scope, current batch, opportunity reasons, and what can or cannot be executed.
 7. Build a product evidence ledger. Separate supported facts from missing or risky claims.
 8. Classify search intent and create a micro-intent ladder. If no target query is provided, infer conservative hypotheses from product evidence and mark them as hypotheses.
-9. Score current SEO title and meta description.
+9. Resolve effective current SEO title and meta description with Shopify fallback rules, then score those effective values.
 10. Produce 1-3 candidate SEO titles and 1-3 candidate meta descriptions with evidence, why, risk flags, and score.
 11. Decide whether image alt text needs no change, should be handed to the alt text skill, or can be applied from approved candidates.
 12. Generate the HTML report with the bundled helper.
@@ -298,7 +301,7 @@ After generation, tell the user in beginner-friendly language:
 
 The report must contain:
 
-- Overview cover: store, generation time, scanned product count, batch plan, executable item count.
+- A beginner-friendly summary page: store, total product count, audited product count, average SEO score, estimated improvement percentage, and 2-5 key takeaways.
 - One independent product page per product, using `section` and print page breaks.
 - Product snapshot.
 - SERP score.
@@ -311,7 +314,6 @@ The report must contain:
 - Blog/article opportunity map.
 - Distribution and off-page opportunity direction.
 - Exact executable fields.
-- Do-not-touch fields.
 
 HTML/CSS constraints:
 
@@ -324,6 +326,8 @@ HTML/CSS constraints:
 - Do not truncate title/meta text with ellipsis.
 - Print output must preserve product page breaks.
 - Emoji may help scanning but must not carry required meaning alone.
+- Use newcomer-friendly wording. Avoid exposing internal execution reasons, raw API terminology, or long lists of protected technical fields in the report.
+- Use the report input `language`, `locale`, or `userLanguage` to localize the HTML. If not provided, infer from the user's conversation and provide report data in that language.
 
 ## Conversation Summary Contract
 
@@ -348,10 +352,15 @@ The report helper accepts this shape:
 
 ```json
 {
+  "language": "en",
   "store": { "name": "Example Store", "domain": "example.com" },
   "productCount": 42,
+  "auditedProductCount": 5,
   "eligibleProductCount": 18,
   "executableItemCount": 4,
+  "averageSeoScore": 72,
+  "expectedLiftPercent": 12,
+  "summaryBullets": ["Two products have strong metadata already.", "Three products need clearer buyer-use wording."],
   "batchPlan": [
     { "name": "Batch 1", "summary": "Highest-confidence product SERP updates", "products": ["Carry-On Laptop Backpack"] }
   ],
@@ -361,8 +370,11 @@ The report helper accepts this shape:
       "url": "https://example.com/products/carry-on-laptop-backpack",
       "status": "ACTIVE",
       "serpScore": 72,
+      "expectedLiftPercent": 12,
       "currentSeoTitle": "Travel Backpack | Example",
+      "currentSeoTitleSource": "explicit",
       "currentMetaDescription": "A useful backpack for travel.",
+      "currentMetaDescriptionSource": "explicit",
       "recommendedSeoTitle": "Carry-On Laptop Backpack for 16-Inch Devices | Example",
       "recommendedMetaDescription": "A water-resistant carry-on laptop backpack for business trips, with padded 16-inch device storage and organized cabin-ready compartments.",
       "evidence": ["Product title names a carry-on backpack", "Description mentions padded 16-inch laptop storage"],
@@ -393,12 +405,13 @@ The report helper accepts this shape:
         "facebookGroupSearches": ["\"business travel packing\" \"laptop backpack\""]
       },
       "altTextAction": "No alt text write until product images are reviewed.",
-      "executableFields": ["seo.title", "seo.description"],
-      "doNotTouch": ["handle", "descriptionHtml", "theme", "redirects", "translations"]
+      "executableFields": ["seo.title", "seo.description"]
     }
   ]
 }
 ```
+
+If `currentSeoTitle` or `currentMetaDescription` is omitted but the product payload includes `title`, `description`, or `seo`, the helper will resolve Shopify fallbacks automatically. Prefer passing `currentSeoTitleSource` and `currentMetaDescriptionSource` when the agent already knows whether the value came from a custom SEO field or a Shopify fallback.
 
 ## Approved Write Plan Contract
 
