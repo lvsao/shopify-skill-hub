@@ -8,6 +8,8 @@
 
 🛍️ Public AI agent skills for Shopify and ecommerce operators.
 
+Language: English | [中文](./README.zh-CN.md)
+
 ## About
 
 Selofy Shopify Skill Hub is a free, open-source library of AI agent skills for Shopify sellers. Use it to install transparent, reviewable workflows for Shopify content creation, SEO growth, product feed cleanup, store setup, social content repurposing, and day-to-day ecommerce operations.
@@ -173,6 +175,7 @@ examples/
 AGENTS.md
 LICENSE
 README.md
+README.zh-CN.md
 ```
 
 ## Categories

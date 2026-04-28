@@ -7,12 +7,13 @@ import { promisify } from "node:util";
 import os from "node:os";
 
 const execFileAsync = promisify(execFile);
+const DEFAULT_ENV = "skill-hub.env";
 const REQUIRED_SCOPES = "read_products,write_content,write_files";
 
 function parseArgs(argv) {
   const args = {
     command: argv[0],
-    env: "skill-hub.env",
+    env: DEFAULT_ENV,
     input: null,
     articleId: null,
     productPageSize: 50,
@@ -25,6 +26,9 @@ function parseArgs(argv) {
     const value = argv[i + 1];
     if (key === "--env") {
       args.env = value;
+      i += 1;
+    } else if (key === "--method") {
+      args.method = value;
       i += 1;
     } else if (key === "--input") {
       args.input = value;
@@ -42,9 +46,9 @@ function parseArgs(argv) {
     }
   }
 
-  if (!["context", "upload-images", "create-draft", "update-draft", "verify"].includes(args.command)) {
+  if (!["init-env", "context", "upload-images", "create-draft", "update-draft", "verify"].includes(args.command)) {
     throw new Error(
-      "Usage: node shopify-blog-admin.mjs <context|upload-images|create-draft|update-draft|verify> [--env skill-hub.env] [--input file.json] [--article-id gid://shopify/Article/...] [--execute] [--require-images]",
+      "Usage: node shopify-blog-admin.mjs <init-env|context|upload-images|create-draft|update-draft|verify> [--method admin_custom_app|dev_dashboard_app] [--env skill-hub.env] [--input file.json] [--article-id gid://shopify/Article/...] [--execute] [--require-images]",
     );
   }
 
@@ -61,6 +65,46 @@ function parseEnv(text) {
     env[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
   }
   return env;
+}
+
+async function ensureGitignoreLine(line) {
+  const gitignore = ".gitignore";
+  const existing = await readFile(gitignore, "utf8").catch(() => null);
+  if (existing === null) return { updated: false, reason: "missing .gitignore" };
+  if (existing.split(/\r?\n/).includes(line)) return { updated: false, reason: "already ignored" };
+  const next = existing.endsWith("\n") ? `${existing}${line}\n` : `${existing}\n${line}\n`;
+  await writeFile(gitignore, next, "utf8");
+  return { updated: true };
+}
+
+async function initEnv(args) {
+  const method = args.method || "admin_custom_app";
+  const envFile = args.env || DEFAULT_ENV;
+  let body;
+  if (method === "admin_custom_app") {
+    body = `# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
+
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
+SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
+`;
+  } else if (method === "dev_dashboard_app") {
+    body = `# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
+
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
+`;
+  } else {
+    throw new Error("--method must be admin_custom_app or dev_dashboard_app");
+  }
+
+  const exists = await readFile(envFile, "utf8").then(() => true).catch(() => false);
+  if (!exists) await writeFile(envFile, body, "utf8");
+  const gitignore = await ensureGitignoreLine(envFile);
+  console.log(JSON.stringify({ ok: true, envFile, created: !exists, gitignore, requiredScopes: REQUIRED_SCOPES }, null, 2));
 }
 
 function normalizeDomain(value) {
@@ -87,16 +131,17 @@ async function loadEnv(envPath) {
 
   const accessMethod = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || (env.SHOPIFY_CLIENT_ID ? "dev_dashboard_app" : "admin_custom_app");
 
-  if (!env.SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
-    if (accessMethod === "dev_dashboard_app") {
-      if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
-        throw new Error("Dev Dashboard app setup requires SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
-      }
-      env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
-      env.SHOPIFY_API_VERSION = "shopify-cli";
-      env.SHOPIFY_TRANSPORT = "shopify_cli";
-      return env;
+  if (accessMethod === "dev_dashboard_app") {
+    if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
+      throw new Error("Dev Dashboard app setup requires SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
     }
+    env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
+    env.SHOPIFY_API_VERSION = "shopify-cli";
+    env.SHOPIFY_TRANSPORT = "shopify_cli";
+    return env;
+  }
+
+  if (!env.SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
     throw new Error(`Missing SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN in ${envPath} for admin_custom_app.`);
   }
 
@@ -550,6 +595,10 @@ async function commandVerify(env, args) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.command === "init-env") {
+    await initEnv(args);
+    return;
+  }
   if (args.command === "create-draft" && !args.execute) {
     await commandCreateDraft(null, args);
     return;

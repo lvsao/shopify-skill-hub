@@ -49,7 +49,13 @@ Immediately ensure `.gitignore` contains `skill-hub.env`. Add that line if it is
 
 ### Path A: Shopify Store Settings Custom App (Legacy Custom App)
 
-Use this only when the merchant can still create a custom app from the Shopify store Settings area. Create `skill-hub.env` with this minimal template:
+Use this only when the merchant can still create a custom app from the Shopify store Settings area. Create the env file with:
+
+```powershell
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+```
+
+This creates `skill-hub.env` with this minimal template:
 
 ```text
 # Skill Hub shared Shopify configuration
@@ -73,7 +79,13 @@ Use this path's domain resolution before Admin GraphQL:
 
 Use this as the preferred fallback when Legacy Custom App creation is unavailable. The user provides only the app and store basics; the agent handles Shopify CLI, scopes, authorization, and verification.
 
-Create `skill-hub.env` with this minimal template:
+Create the env file with:
+
+```powershell
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+```
+
+This creates `skill-hub.env` with this minimal template:
 
 ```text
 # Skill Hub shared Shopify configuration
@@ -189,6 +201,8 @@ Treat script output as merchant context. Do not commit generated JSON or tempora
 Reference commands:
 
 ```text
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env --product-page-size 50
 node skills/wechat-to-shopify-blog/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>
 node skills/wechat-to-shopify-blog/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL> --download-images --output-dir <temporary-existing-or-disposable-folder>
