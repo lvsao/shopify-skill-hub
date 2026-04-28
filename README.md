@@ -1,7 +1,7 @@
 # Selofy Shopify Skill Hub
 
 [![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
-[![Skills](https://img.shields.io/badge/skills-2-2563eb)](./skills)
+[![Skills](https://img.shields.io/badge/skills-3-2563eb)](./skills)
 [![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 [![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
@@ -40,6 +40,12 @@ Or install only the Shopify alt text optimization skill:
 npx skills add lvsao/shopify-skill-hub --skill optimize-shopify-alt-text
 ```
 
+Or install only the Shopify product SERP optimization skill:
+
+```bash
+npx skills add lvsao/shopify-skill-hub --skill shopify-product-serp-optimizer
+```
+
 List available skills before installing:
 
 ```bash
@@ -60,6 +66,7 @@ This local command is for maintainers only. Regular users should install from Gi
 | --- | --- | --- |
 | `wechat-to-shopify-blog` | `content-creation` | Convert an owned or authorized WeChat Official Account article into a Shopify blog draft, including Shopify Files image hosting, brand voice adaptation, blog selection, and related product insertion. |
 | `optimize-shopify-alt-text` | `seo-growth` | Audit Shopify product media, collection featured images, article featured images, and article inline images, then prepare a preview-first alt text optimization plan with real image understanding when available and safe context-only fallback when it is not. |
+| `shopify-product-serp-optimizer` | `seo-growth` | Scan Shopify products, plan five-product SERP optimization batches, generate polished HTML audit reports, and apply only approved product SEO metadata or reviewed media alt updates. |
 
 ## Shopify API Access And Env
 
@@ -70,6 +77,8 @@ skill-hub.env
 ```
 
 Do not commit this file or paste secrets into chat. Add `skill-hub.env` to `.gitignore`.
+
+Agents should inspect this file before asking setup questions. If it already contains complete non-placeholder values and the skill's connection check succeeds, the workflow should continue without asking whether the app was created through Option A or Option B.
 
 ### Option A: Shopify store Settings custom app (Legacy Custom App)
 
@@ -108,7 +117,7 @@ SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
 ```
 
-After the app is installed, the agent uses Shopify CLI to release the skill's required scopes, then runs `shopify store auth` for the target store. A Shopify permission authorization page may open; review the scopes and click authorize. Do not look for a separate Dev Dashboard approval button. Bundled scripts should use the CLI-authenticated helper flow for routine scan, batch, and write work instead of repeated one-off `shopify store execute` commands.
+After the app is installed, the agent uses Shopify CLI to release the skill's required scopes, then runs `shopify store auth` for the target store. A Shopify permission authorization page may open; review the scopes and click authorize. Do not look for a separate Dev Dashboard approval button. Bundled scripts should use the CLI-authenticated helper flow for routine scan, batch, and write work instead of repeated one-off `shopify store execute` commands. Agents should not use `shopify store list` or `shopify auth status` for this workflow.
 
 ## Repository Layout
 
@@ -129,6 +138,16 @@ skills/
       alt-text-rules.md
     scripts/
       shopify-alt-text-admin.mjs
+  shopify-product-serp-optimizer/
+    SKILL.md
+    agents/
+      openai.yaml
+    assets/
+      report-template.html
+    references/
+      serp-methodology.md
+    scripts/
+      shopify-product-serp-admin.mjs
 catalog/
   INDEX.json
   content-creation/

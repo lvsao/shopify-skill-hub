@@ -25,7 +25,16 @@ Read `references/alt-text-rules.md` before generating or reviewing alt text cand
 
 ## Beginner Onboarding First
 
-Start every first-time run with one short setup question:
+Before asking any setup question, inspect the local environment first:
+
+1. Check whether `skill-hub.env` exists in the current working directory.
+2. If it exists, read only the variable names and whether required values are present. Do not print secrets.
+3. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run `connection-check`.
+4. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the `.myshopify.com` store domain plus Client ID are present, run `connection-check`.
+5. If `connection-check` succeeds, continue directly to scan and vision probe. Do not ask where the app was created.
+6. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
+
+Ask the setup question only when `skill-hub.env` is missing, incomplete, placeholder-only, or the access method cannot be determined:
 
 ```text
 Where did you create your Shopify app?
@@ -93,6 +102,8 @@ npm install -g @shopify/cli@latest
 
 Then configure scopes through Shopify CLI. Do not ask the user to manually enter scopes in Dev Dashboard.
 
+Do not run `shopify store list` or `shopify auth status`; these are not valid diagnostics for this workflow in current Shopify CLI. Do not repeatedly run manual `shopify store execute` commands for scan or write work.
+
 ```powershell
 $tmp = Join-Path $env:TEMP ("skill-hub-shopify-app-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tmp | Out-Null
@@ -154,7 +165,9 @@ Evaluate the answer against expected visual facts for the test image. Do not ask
 
 The answer must include at least three visual facts that are not inferable from filename, URL, product title, collection title, article title, or nearby text. Examples: object type, color, layout, background, visible text, material, shape, or scene. If the answer only restates Shopify context, product names, filenames, or generic ecommerce assumptions, the probe failed.
 
-If the active model passes the probe, use Strategy A. If it fails or is ambiguous, use Strategy B.
+Before using context-only fallback, the agent must download at least one real image from the current Shopify scan, open the local file with the host-native image input path, and report at least three pixel-derived facts. If that succeeds, use Strategy A for every reasonably downloadable image in the current batch. If it fails, report exactly which layer failed: download, local image open, or pixel interpretation.
+
+If the active model passes the probe, use Strategy A. If image download or host-native image opening fails, use Strategy B only for the affected item or batch.
 
 ### Strategy A: Multimodal Image Understanding
 
@@ -181,14 +194,14 @@ Generate candidates only from Shopify fields and nearby context. Mark each candi
 - `confidence: "high" | "medium" | "low"`
 - `reason`
 
-Low-confidence context-only candidates should be review-only unless the user explicitly approves them.
+Context-only candidates are review-only by default. Do not mark context-only candidates as directly applicable with medium confidence. To apply a context-only candidate after explicit user approval, include `action: "approved_context_only"` in the apply plan.
 
 ## Required Order
 
 1. Create or verify `skill-hub.env`.
 2. Run Shopify connection check.
 3. Run a full scan and inventory count before generating alt text.
-4. Decide Strategy A or Strategy B from the vision probe.
+4. Run `vision-sample`, open at least one downloaded local image through the host-native image input path, and decide Strategy A or Strategy B from pixel evidence.
 5. Build a batch plan. Default to 20-50 images per batch depending on user tolerance and model context.
 6. Generate alt text candidates for the first batch.
 7. Validate each candidate against `references/alt-text-rules.md`.
@@ -207,13 +220,16 @@ node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-en
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs vision-sample --env skill-hub.env --limit 3
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input -
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input - --execute
 ```
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.
 
-Do not use `shopify store execute` directly for scanning images or updating alt text, except for the single connection-check command in Path B setup. Direct terminal mutations are easy to run one image at a time, can stall in some IDE terminals, and bypass the helper's pagination, batching, duplicate checks, and cleanup rules. The helper internally uses Shopify CLI store auth when Path B is selected and adds `--json --no-color` so commands return structured output promptly.
+Do not use `shopify store execute` directly for scanning images or updating alt text, except for narrow troubleshooting. Direct terminal mutations are easy to run one image at a time, can stall in some IDE terminals, and bypass the helper's pagination, batching, duplicate checks, and cleanup rules. The helper internally uses Shopify CLI store auth when Path B is selected, runs Shopify CLI through its JavaScript entrypoint, uses query/output files, and cleans temporary CLI files.
+
+The `vision-sample` command downloads 1-3 real Shopify images to an operating-system temp directory and prints their local paths. The agent must open those files with the host-native image input path, such as Read or an image-view tool, report at least 3 pixel-derived facts, and delete the temp folder after the probe.
 
 ## Plan Input Contract
 
@@ -240,7 +256,7 @@ Prefer piping the approved plan JSON to `apply --input -` through stdin. Do not 
       "alt": "Minimal skincare collection arranged on a bathroom counter",
       "source": "vision",
       "confidence": "high",
-      "visualEvidence": "Skincare bottles arranged on a bathroom counter.",
+      "visualEvidence": "Skincare bottles, bathroom counter, neutral tile background.",
       "reason": "Preserves collection image URL and updates only altText.",
       "url": "https://cdn.shopify.com/..."
     },
@@ -250,6 +266,7 @@ Prefer piping the approved plan JSON to `apply --input -` through stdin. Do not 
       "alt": "Checkout optimization dashboard with conversion metrics",
       "source": "context_only",
       "confidence": "medium",
+      "action": "approved_context_only",
       "reason": "Based on article title, summary, and filename.",
       "url": "https://cdn.shopify.com/..."
     },
@@ -261,7 +278,7 @@ Prefer piping the approved plan JSON to `apply --input -` through stdin. Do not 
       "alt": "Screenshot of a Shopify product media settings panel",
       "source": "vision",
       "confidence": "high",
-      "visualEvidence": "Shopify product media settings panel visible in screenshot.",
+      "visualEvidence": "Shopify product media settings panel, image thumbnail grid, white admin interface.",
       "reason": "Updates only the inline img alt attribute."
     }
   ]
@@ -304,7 +321,7 @@ Before preview:
 - Check duplicates within the same product, collection, or article.
 - Check generic patterns like repeated product title, comma-separated keyword lists, and "image of".
 - Reject any `source: "vision"` candidate that does not include concrete `visualEvidence`.
-- Mark low-confidence context-only items as review-only.
+- Mark all context-only items as review-only unless the exact candidate has explicit user approval and `action: "approved_context_only"`.
 - For shared product files, explain that a `fileUpdate` can affect every reference.
 
 ## Safe Parallel Work
