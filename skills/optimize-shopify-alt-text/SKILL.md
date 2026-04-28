@@ -149,6 +149,49 @@ This skill scans and writes only these surfaces:
 - Article featured images: read `article.image`; write `articleUpdate(article.image.altText)` while preserving the current image URL.
 - Article inline images: read `article.body`; update only `<img alt="...">` attributes inside the body HTML with `articleUpdate(article.body)`.
 
+## Targeted Request Routing
+
+When the user names a specific product, collection, article, image, URL, or ID, do not start with a full-store scan. Locate the requested target first, then inspect only the relevant image set.
+
+Use the helper's `target` command for targeted requests:
+
+```text
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product "Hostinger Server"
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-handle-or-product-url>
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-handle-or-url>
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-article-url-or-title>
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
+```
+
+Add `--download --limit 3` when you need local files for visual inspection:
+
+```text
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product "Hostinger Server" --download --limit 3
+```
+
+The command returns matching resources and an `items` array with directly applicable IDs, current alt text, issue status, image URL, and context. If `--download` is used, it also returns temp local image paths that must be opened through the host's native image input before claiming visual evidence.
+
+Use these routing rules:
+
+| User input | First lookup | Expected output |
+| --- | --- | --- |
+| Product title, handle, product URL, or `gid://shopify/Product/...` | `target --product ...` | Product media images with `MediaImage` IDs, positions, URLs, current alt text, and product context. |
+| Collection title, handle, collection URL, or `gid://shopify/Collection/...` | `target --collection ...` | Collection featured image with collection ID, image URL, current alt text, and collection context. |
+| Article title, article URL, or `gid://shopify/Article/...` | `target --article ...` | Article featured image plus inline images with article ID, inline indexes, URLs, and current alt text. |
+| `gid://shopify/MediaImage/...` | `target --media-id ...` | The image file by ID. Parent product context may be unavailable; ask for product context only if needed. |
+| Shopify CDN image URL | `target --url ...` | Matching product, collection, article featured, or article inline image references. |
+| Full-store request, vague "optimize my images", or batch work | `scan --surface ...` | Inventory counts and batch planning across requested surfaces. |
+
+Only use full `scan` after target lookup when:
+
+- The user asked for a store-wide or batch plan.
+- The target lookup returns multiple ambiguous matches and you need inventory context.
+- The user provided only a broad category such as "all product images" or "all article images".
+- You need final verification counts after applying approved changes.
+
+Do not parse huge scan output with line-oriented shell filters to find a single product. Use `target` first, then download and inspect only the returned target images.
+
 ## Vision Capability Probe
 
 Before generating multimodal alt text, test the active model on a known local image.
@@ -202,9 +245,9 @@ Context-only candidates are review-only by default. Do not mark context-only can
 
 1. Create or verify `skill-hub.env`.
 2. Run Shopify connection check.
-3. Run a full scan and inventory count before generating alt text.
-4. Run `vision-sample`, open at least one downloaded local image through the host-native image input path, and decide Strategy A or Strategy B from pixel evidence.
-5. Build a batch plan. Default to 20-50 images per batch depending on user tolerance and model context.
+3. If the user gave a specific target, run `target` first and work from the returned `items`. If the user asked for broad optimization, run a full `scan` and inventory count before generating alt text.
+4. For broad work, run `vision-sample`; for targeted work, run `target --download` for the selected image(s). Open at least one downloaded local image through the host-native image input path and decide Strategy A or Strategy B from pixel evidence.
+5. Build a batch plan. For a single explicit target, the batch is just the returned target image set. For broad work, default to 20-50 images per batch depending on user tolerance and model context.
 6. Generate alt text candidates for the first batch.
 7. Validate each candidate against `references/alt-text-rules.md`.
 8. Show a concise preview plan.
@@ -221,6 +264,12 @@ Use the bundled native Node.js helper. It uses only Node.js built-ins.
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url>
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url> --download --limit 3
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-title-or-handle-or-url>
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-url-or-title>
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
+node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs vision-sample --env skill-hub.env --limit 3
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input -
@@ -228,6 +277,8 @@ node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply -
 ```
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.
+
+`scan` output uses these top-level arrays: `productImages`, `collectionImages`, `articleFeaturedImages`, and `articleInlineImages`. Do not look for a `productMedia` field.
 
 Do not use `shopify store execute` directly for scanning images or updating alt text, except for narrow troubleshooting. Direct terminal mutations are easy to run one image at a time, can stall in some IDE terminals, and bypass the helper's pagination, batching, duplicate checks, and cleanup rules. The helper internally uses Shopify CLI store auth when Path B is selected, runs Shopify CLI through its JavaScript entrypoint, uses query/output files, and cleans temporary CLI files.
 

@@ -309,6 +309,93 @@ function normalizeAlt(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function escapeSearchValue(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function gidType(value) {
+  const match = String(value || "").match(/^gid:\/\/shopify\/([^/]+)\//);
+  return match?.[1] || "";
+}
+
+function handleFromUrl(value, segment) {
+  const raw = String(value || "").trim();
+  if (!raw || !/^https?:\/\//i.test(raw)) return "";
+  try {
+    const url = new URL(raw);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const index = parts.indexOf(segment);
+    return index !== -1 && parts[index + 1] ? decodeURIComponent(parts[index + 1]) : "";
+  } catch {
+  return "";
+}
+
+function articleHandleFromUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw || !/^https?:\/\//i.test(raw)) return "";
+  try {
+    const url = new URL(raw);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const blogsIndex = parts.indexOf("blogs");
+    return blogsIndex !== -1 && parts[blogsIndex + 2] ? decodeURIComponent(parts[blogsIndex + 2]) : "";
+  } catch {
+    return "";
+  }
+}
+}
+
+function productImageRecord(product, media, position) {
+  const alt = normalizeAlt(media.alt);
+  return {
+    type: "product_media",
+    id: media.id,
+    productId: product.id,
+    productTitle: product.title,
+    productHandle: product.handle,
+    vendor: product.vendor,
+    productType: product.productType,
+    tags: product.tags,
+    status: product.status,
+    position,
+    currentAlt: alt,
+    issue: issueForAlt(alt),
+    url: firstImageUrl(media),
+  };
+}
+
+function collectionImageRecord(collection) {
+  const alt = normalizeAlt(collection.image?.altText);
+  return {
+    type: "collection_featured_image",
+    id: collection.id,
+    collectionTitle: collection.title,
+    collectionHandle: collection.handle,
+    descriptionHtml: collection.descriptionHtml,
+    currentAlt: alt,
+    issue: issueForAlt(alt),
+    url: collection.image?.url || null,
+  };
+}
+
+function articleFeaturedImageRecord(article) {
+  const alt = normalizeAlt(article.image?.altText);
+  return {
+    type: "article_featured_image",
+    id: article.id,
+    articleTitle: article.title,
+    articleHandle: article.handle,
+    blogTitle: article.blog?.title,
+    summary: article.summary,
+    currentAlt: alt,
+    issue: issueForAlt(alt),
+    url: article.image?.url || null,
+  };
+}
+
 function issueForAlt(alt) {
   if (!alt) return "missing";
   if (alt.length > SOFT_ALT_LIMIT) return "over-soft-limit";
@@ -317,6 +404,62 @@ function issueForAlt(alt) {
   if (words.length >= 8 && unique.size / words.length < 0.6) return "repetitive";
   return null;
 }
+
+const PRODUCT_TARGET_QUERY = `query SkillHubAltTextProductTarget($identifier: ProductIdentifierInput!) {
+  product: productByIdentifier(identifier: $identifier) {
+    id title handle vendor productType status tags description
+    media(first: 50) {
+      nodes {
+        ... on MediaImage {
+          id alt status fileStatus
+          image { url width height }
+          preview { image { url } }
+        }
+      }
+    }
+  }
+}`;
+
+const PRODUCTS_SEARCH_QUERY = `query SkillHubAltTextProductSearch($first: Int!, $query: String) {
+  products(first: $first, query: $query, sortKey: UPDATED_AT, reverse: true) {
+    nodes {
+      id title handle vendor productType status tags description
+      media(first: 50) {
+        nodes {
+          ... on MediaImage {
+            id alt status fileStatus
+            image { url width height }
+            preview { image { url } }
+          }
+        }
+      }
+    }
+  }
+}`;
+
+const COLLECTION_TARGET_QUERY = `query SkillHubAltTextCollectionTarget($identifier: CollectionIdentifierInput!) {
+  collection: collectionByIdentifier(identifier: $identifier) {
+    id title handle descriptionHtml image { url altText }
+  }
+}`;
+
+const ARTICLE_TARGET_QUERY = `query SkillHubAltTextArticleTarget($id: ID!) {
+  article(id: $id) {
+    id title handle summary body
+    blog { title handle }
+    image { altText url }
+  }
+}`;
+
+const MEDIA_NODE_QUERY = `query SkillHubAltTextMediaNode($id: ID!) {
+  node(id: $id) {
+    ... on MediaImage {
+      id alt status fileStatus
+      image { url width height }
+      preview { image { url } }
+    }
+  }
+}`;
 
 async function readProducts(client, first) {
   const query = `query SkillHubAltTextProducts($first: Int!, $after: String) {
@@ -346,6 +489,40 @@ async function readProducts(client, first) {
   return products;
 }
 
+async function productByIdentifier(client, identifier) {
+  const data = await gql(client, PRODUCT_TARGET_QUERY, { identifier });
+  return data.product || null;
+}
+
+async function findProductTarget(client, target) {
+  const value = String(target || "").trim();
+  if (!value) return { matches: [], method: "none" };
+
+  if (gidType(value) === "Product") {
+    const product = await productByIdentifier(client, { id: value });
+    return { matches: product ? [product] : [], method: "product_gid" };
+  }
+
+  const handle = handleFromUrl(value, "products") || (!value.includes(" ") && !value.includes("/") ? value : "");
+  if (handle) {
+    const product = await productByIdentifier(client, { handle });
+    if (product) return { matches: [product], method: "product_handle" };
+  }
+
+  const search = `title:"${escapeSearchValue(value)}"`;
+  const data = await gql(client, PRODUCTS_SEARCH_QUERY, { first: 20, query: search });
+  let matches = data.products.nodes || [];
+  const normalized = normalizeText(value);
+  const exact = matches.filter((product) => normalizeText(product.title) === normalized || normalizeText(product.handle) === normalized);
+  if (exact.length) matches = exact;
+  if (!matches.length) {
+    const products = await readProducts(client, 50);
+    matches = products.filter((product) => normalizeText(product.title).includes(normalized) || normalizeText(product.handle).includes(normalized));
+    return { matches, method: "product_inventory_filter" };
+  }
+  return { matches, method: "product_title_search" };
+}
+
 async function readCollections(client, first) {
   const query = `query SkillHubAltTextCollections($first: Int!, $after: String) {
     collections(first: $first, after: $after) {
@@ -361,6 +538,32 @@ async function readCollections(client, first) {
     after = data.collections.pageInfo.hasNextPage ? data.collections.pageInfo.endCursor : null;
   } while (after);
   return collections;
+}
+
+async function collectionByIdentifier(client, identifier) {
+  const data = await gql(client, COLLECTION_TARGET_QUERY, { identifier });
+  return data.collection || null;
+}
+
+async function findCollectionTarget(client, target, first) {
+  const value = String(target || "").trim();
+  if (!value) return { matches: [], method: "none" };
+
+  if (gidType(value) === "Collection") {
+    const collection = await collectionByIdentifier(client, { id: value });
+    return { matches: collection ? [collection] : [], method: "collection_gid" };
+  }
+
+  const handle = handleFromUrl(value, "collections") || (!value.includes(" ") && !value.includes("/") ? value : "");
+  if (handle) {
+    const collection = await collectionByIdentifier(client, { handle });
+    if (collection) return { matches: [collection], method: "collection_handle" };
+  }
+
+  const collections = await readCollections(client, first);
+  const normalized = normalizeText(value);
+  const matches = collections.filter((collection) => normalizeText(collection.title).includes(normalized) || normalizeText(collection.handle).includes(normalized));
+  return { matches, method: "collection_title_filter" };
 }
 
 async function readArticles(client, first) {
@@ -382,6 +585,31 @@ async function readArticles(client, first) {
     after = data.articles.pageInfo.hasNextPage ? data.articles.pageInfo.endCursor : null;
   } while (after);
   return articles;
+}
+
+async function articleById(client, id) {
+  const data = await gql(client, ARTICLE_TARGET_QUERY, { id });
+  return data.article || null;
+}
+
+async function findArticleTarget(client, target, first) {
+  const value = String(target || "").trim();
+  if (!value) return { matches: [], method: "none" };
+
+  if (gidType(value) === "Article") {
+    const article = await articleById(client, value);
+    return { matches: article ? [article] : [], method: "article_gid" };
+  }
+
+  const articleHandle = articleHandleFromUrl(value);
+  const articles = await readArticles(client, first);
+  const normalized = normalizeText(articleHandle || value);
+  const matches = articles.filter((article) => {
+    return normalizeText(article.title).includes(normalized) ||
+      normalizeText(article.handle).includes(normalized) ||
+      `${normalizeText(article.blog?.handle)}/${normalizeText(article.handle)}`.includes(normalized);
+  });
+  return { matches, method: articleHandle ? "article_url_handle_filter" : "article_title_filter" };
 }
 
 function extractInlineImages(html) {
@@ -538,6 +766,147 @@ async function scan(args) {
   }
 
   console.log(JSON.stringify(inventory, null, 2));
+}
+
+async function downloadTargetImages(items, limit) {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-hub-alt-target-"));
+  const downloaded = [];
+  for (const [index, item] of items.filter((entry) => entry.url).slice(0, limit).entries()) {
+    const localPath = path.join(tempDir, `target-${index + 1}${extensionFromUrl(item.url)}`);
+    try {
+      const bytes = await downloadImage(item.url, localPath);
+      downloaded.push({ id: item.id, type: item.type, url: item.url, localPath, bytes, status: "downloaded" });
+    } catch (error) {
+      downloaded.push({ id: item.id, type: item.type, url: item.url, localPath, status: "download_failed", error: error.message });
+    }
+  }
+  return {
+    tempDir,
+    cleanupRequired: true,
+    instruction: "Open localPath values with the host-native image input or image-view tool before claiming visual evidence, then delete tempDir.",
+    downloaded,
+  };
+}
+
+async function target(args) {
+  const env = await loadEnv(args.env || DEFAULT_ENV);
+  const client = await resolveAdmin(env);
+  const pageSize = Number(args["page-size"] || 50);
+  const input = args.product || args.collection || args.article || args["media-id"] || args.url || args.target || args._?.[0];
+  if (!input) fail("Use target with --product, --collection, --article, --media-id, --url, or --target.");
+
+  const result = {
+    ok: true,
+    shop: { domain: client.shop, apiVersion: client.version, name: client.shopInfo.name },
+    input,
+    method: null,
+    matches: [],
+    items: [],
+  };
+
+  if (args.product || (!args.collection && !args.article && !args["media-id"] && !args.url)) {
+    const found = await findProductTarget(client, input);
+    result.method = found.method;
+    result.matches = found.matches.map((product) => ({ type: "product", id: product.id, title: product.title, handle: product.handle, status: product.status }));
+    for (const product of found.matches) {
+      let position = 0;
+      for (const media of product.media.nodes.filter(Boolean)) {
+        result.items.push(productImageRecord(product, media, position));
+        position += 1;
+      }
+    }
+  } else if (args.collection) {
+    const found = await findCollectionTarget(client, input, pageSize);
+    result.method = found.method;
+    result.matches = found.matches.map((collection) => ({ type: "collection", id: collection.id, title: collection.title, handle: collection.handle }));
+    for (const collection of found.matches) {
+      if (collection.image?.url) result.items.push(collectionImageRecord(collection));
+    }
+  } else if (args.article) {
+    const found = await findArticleTarget(client, input, pageSize);
+    result.method = found.method;
+    result.matches = found.matches.map((article) => ({ type: "article", id: article.id, title: article.title, handle: article.handle, blogTitle: article.blog?.title }));
+    for (const article of found.matches) {
+      if (article.image?.url) result.items.push(articleFeaturedImageRecord(article));
+      for (const image of extractInlineImages(article.body)) {
+        result.items.push({
+          type: "article_inline_image",
+          id: `${article.id}#inline-${image.index}`,
+          articleId: article.id,
+          articleTitle: article.title,
+          articleHandle: article.handle,
+          blogTitle: article.blog?.title,
+          inlineIndex: image.index,
+          src: image.src,
+          url: image.src,
+          currentAlt: normalizeAlt(image.alt),
+          issue: image.issue,
+        });
+      }
+    }
+  } else if (args["media-id"]) {
+    const data = await gql(client, MEDIA_NODE_QUERY, { id: input });
+    result.method = "media_gid";
+    if (data.node) {
+      const alt = normalizeAlt(data.node.alt);
+      result.items.push({
+        type: "product_media",
+        id: data.node.id,
+        currentAlt: alt,
+        issue: issueForAlt(alt),
+        url: firstImageUrl(data.node),
+        note: "MediaImage was found by ID. Parent product context is not available from this lookup; use --product when product context is needed.",
+      });
+    }
+  } else if (args.url) {
+    const scanArgs = { ...args, surface: args.surface || "products,collections,articles" };
+    const products = await readProducts(client, pageSize);
+    result.method = "image_url_filter";
+    for (const product of products) {
+      let position = 0;
+      for (const media of product.media.nodes.filter(Boolean)) {
+        const item = productImageRecord(product, media, position);
+        if (item.url === input) result.items.push(item);
+        position += 1;
+      }
+    }
+    if (!scanArgs.surface || String(scanArgs.surface).includes("collections")) {
+      const collections = await readCollections(client, pageSize);
+      for (const collection of collections) {
+        if (collection.image?.url === input) result.items.push(collectionImageRecord(collection));
+      }
+    }
+    if (!scanArgs.surface || String(scanArgs.surface).includes("articles")) {
+      const articles = await readArticles(client, pageSize);
+      for (const article of articles) {
+        if (article.image?.url === input) result.items.push(articleFeaturedImageRecord(article));
+        for (const image of extractInlineImages(article.body)) {
+          if (image.src === input) {
+            result.items.push({
+              type: "article_inline_image",
+              id: `${article.id}#inline-${image.index}`,
+              articleId: article.id,
+              articleTitle: article.title,
+              articleHandle: article.handle,
+              blogTitle: article.blog?.title,
+              inlineIndex: image.index,
+              src: image.src,
+              url: image.src,
+              currentAlt: normalizeAlt(image.alt),
+              issue: image.issue,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  result.count = result.items.length;
+  result.needingOptimization = result.items.filter((item) => item.issue).length;
+  if (args.download) {
+    result.download = await downloadTargetImages(result.items, Math.min(Math.max(Number(args.limit || result.items.length || 1), 1), 20));
+  }
+  console.log(JSON.stringify(result, null, 2));
 }
 
 function extensionFromUrl(url) {
@@ -829,6 +1198,7 @@ async function main() {
   const args = parseArgs(rest);
   if (command === "init-env") return initEnv(args);
   if (command === "connection-check") return connectionCheck(args);
+  if (command === "target") return target(args);
   if (command === "scan") return scan(args);
   if (command === "vision-sample") return visionSample(args);
   if (command === "apply") return applyPlan(args);
