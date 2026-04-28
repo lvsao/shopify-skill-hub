@@ -23,30 +23,14 @@ description: Convert an owned or authorized WeChat Official Account article into
 
 Minimize user decisions and actions. Before asking any setup question, inspect the local environment first:
 
-0. Determine the user's working directory first. Run `pwd` or `Get-Location` in the terminal where the user is working and treat that directory as `USER_WORKDIR`. Do not use the skill installation folder, `~/.agents/skills/...`, `.codex/skills/...`, or the repository containing this skill as the env lookup location unless that is also the terminal's current working directory.
-1. Check whether `USER_WORKDIR/skill-hub.env` exists. Do not use IDE file search scoped to the skill folder to decide this, because installed skills live outside the user's project folder.
-2. If it exists, read only the variable names and whether required values are present. Do not print secrets.
-3. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run the bundled context script.
-4. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the `.myshopify.com` store domain plus Client ID are present, run the bundled context script.
-5. If the context script succeeds, continue directly. Do not ask where the app was created.
-6. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
-
-When calling the bundled helper from an installed skill, the script path may be absolute, but the env path must remain in `USER_WORKDIR`. Prefer this pattern on Windows:
-
-```powershell
-$userWorkdir = (Get-Location).Path
-$envFile = Join-Path $userWorkdir "skill-hub.env"
-node "$env:USERPROFILE\.agents\skills\wechat-to-shopify-blog\scripts\shopify-context.mjs" --env $envFile
-```
-
-If running inside a cloned Skill Hub repository, a relative script path is fine, but still pass the env from the user's working directory:
-
-```powershell
-$envFile = Join-Path (Get-Location).Path "skill-hub.env"
-node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env $envFile
-```
-
-Never `cd` into the skill folder just to run a helper. If you must use a different command working directory, pass an absolute `--env` path pointing to `USER_WORKDIR/skill-hub.env`.
+1. Identify the current working directory from the active terminal or host environment. This is the folder the user is working in, not the installed skill folder.
+2. Look for the exact filename `skill-hub.env` in that current directory. Use whatever direct file check, directory listing, or direct file-read tool is reliable in the current host.
+3. Do not rely on a broad search or glob result as the only evidence that the file is missing. If a search says "not found" but the user, file explorer, terminal, or direct path suggests the file exists, re-check by listing the current directory or reading the exact `skill-hub.env` path.
+4. If it exists, read only the variable names and whether required values are present. Do not print secrets.
+5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run the bundled context script.
+6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the `.myshopify.com` store domain plus Client ID are present, run the bundled context script.
+7. If the context script succeeds, continue directly. Do not ask where the app was created.
+8. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
 
 Ask the setup question only when `skill-hub.env` is missing, incomplete, placeholder-only, or the access method cannot be determined:
 
