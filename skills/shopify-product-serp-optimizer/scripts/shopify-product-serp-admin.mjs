@@ -401,14 +401,34 @@ function mediaStats(product) {
   return { total: media.length, missingAlt, repeatedAlt, overlongAlt, genericAlt };
 }
 
+function firstText(value, maxLength = 155) {
+  const text = String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}...` : text;
+}
+
+function resolvedSeoFields(product) {
+  const explicitTitle = product.seo?.title || product.seoTitle || product.currentSeoTitle || "";
+  const explicitDescription = product.seo?.description || product.seoDescription || product.currentMetaDescription || "";
+  const fallbackTitle = product.title || product.productTitle || "";
+  const fallbackDescription = firstText(product.description || product.productDescription || product.descriptionHtml, 155);
+  return {
+    title: explicitTitle || fallbackTitle,
+    titleSource: explicitTitle ? "explicit" : "shopify_title_fallback",
+    description: explicitDescription || fallbackDescription,
+    descriptionSource: explicitDescription ? "explicit" : "shopify_description_fallback",
+  };
+}
+
 function scoreProduct(product) {
   let score = 0;
   const reasons = [];
   const exclusions = [];
   const status = String(product.status || "");
   const hasOnlineUrl = Boolean(product.onlineStoreUrl);
-  const seoTitle = product.seo?.title || "";
-  const seoDescription = product.seo?.description || "";
+  const resolvedSeo = resolvedSeoFields(product);
+  const seoTitle = resolvedSeo.title;
+  const seoDescription = resolvedSeo.description;
   const descriptionLen = textLength(product.description);
   const titleWeak = isWeakText(seoTitle) || String(seoTitle).toLowerCase().includes(String(product.vendor || "").toLowerCase()) && String(seoTitle).length < 45;
   const metaWeak = isWeakText(seoDescription);
@@ -476,6 +496,8 @@ function scoreProduct(product) {
     vendor: product.vendor,
     seoTitle,
     seoDescription,
+    seoTitleSource: resolvedSeo.titleSource,
+    seoDescriptionSource: resolvedSeo.descriptionSource,
     descriptionLength: descriptionLen,
     media: stats,
     collections,
@@ -631,17 +653,237 @@ function plainArray(value) {
   return Array.isArray(value) ? value.filter((item) => item !== null && item !== undefined && String(item).trim() !== "") : [];
 }
 
+const REPORT_COPY = {
+  en: {
+    lang: "en",
+    reportTitle: "Product SEO Opportunity Report",
+    coverEyebrow: "Store SEO snapshot",
+    coverLead: "A quick, plain-English view of which product pages were reviewed and where the biggest search-result improvements may come from.",
+    store: "Store",
+    totalProducts: "Total products",
+    auditedProducts: "Products reviewed",
+    averageScore: "Average SEO score",
+    estimatedLift: "Estimated improvement",
+    scoreNote: "This is an estimate for product page search-snippet quality, not a ranking promise.",
+    topTakeaways: "Key takeaways",
+    noTakeaways: "No key takeaways provided.",
+    productPage: "Product",
+    score: "SEO score",
+    scoreSummary: "Higher means the product page has clearer search wording, stronger product evidence, and fewer risky claims.",
+    snapshot: "Product snapshot",
+    status: "Status",
+    productType: "Product type",
+    audience: "Best-fit shopper/use",
+    url: "Page URL",
+    currentSnippet: "What search engines can use now",
+    recommendedSnippet: "Recommended wording",
+    seoTitle: "SEO title",
+    metaDescription: "Meta description",
+    fallbackTitle: "Using Shopify default: product title",
+    fallbackDescription: "Using Shopify default: first part of product description",
+    explicitField: "Custom SEO field",
+    evidence: "Proof found on the product page",
+    evidenceEmpty: "No proof was provided.",
+    microIntent: "Search ideas to target",
+    microIntentEmpty: "No search ideas provided.",
+    contentGaps: "What shoppers may still need to know",
+    contentGapsEmpty: "No content gaps provided.",
+    altText: "Image alt text",
+    blogMap: "Blog and guide ideas",
+    blogType: "Type",
+    blogIntent: "Intent",
+    blogTitle: "Suggested title",
+    blogWhy: "Why it fits",
+    blogReader: "Reader",
+    blogAnchor: "Internal link text",
+    blogRisk: "Evidence needed",
+    noOpportunity: "No opportunity provided.",
+    community: "Where to discuss or promote carefully",
+    communityTypes: "Community types",
+    redditSearches: "Reddit searches",
+    bloggerSearches: "Blogger searches",
+    facebookSearches: "Facebook group searches",
+    postAngle: "Post idea",
+    replyAngle: "Reply idea",
+    executable: "What I can safely update after approval",
+    noExecutable: "No safe update recommended.",
+    labelNote: "Note",
+    generated: "Generated",
+    reviewed: "Reviewed",
+  },
+  zh: {
+    lang: "zh-CN",
+    reportTitle: "商品 SEO 机会报告",
+    coverEyebrow: "店铺 SEO 快速概览",
+    coverLead: "这是一份给新手也能看懂的商品搜索结果优化摘要：先看哪些商品被审查了，再看最值得改哪里。",
+    store: "店铺",
+    totalProducts: "店铺商品总数",
+    auditedProducts: "本次已审商品",
+    averageScore: "平均 SEO 分数",
+    estimatedLift: "预计改善空间",
+    scoreNote: "这是对商品搜索摘要质量的估算，不是排名承诺。",
+    topTakeaways: "关键结论",
+    noTakeaways: "暂无关键结论。",
+    productPage: "商品",
+    score: "SEO 分数",
+    scoreSummary: "分数越高，代表商品页的搜索展示文案越清楚、证据越充分、风险越少。",
+    snapshot: "商品概况",
+    status: "状态",
+    productType: "商品类型",
+    audience: "适合的人群/场景",
+    url: "页面链接",
+    currentSnippet: "当前搜索结果可能展示的内容",
+    recommendedSnippet: "建议改成这样",
+    seoTitle: "SEO 标题",
+    metaDescription: "Meta 描述",
+    fallbackTitle: "使用 Shopify 默认规则：商品标题",
+    fallbackDescription: "使用 Shopify 默认规则：商品描述前 155 个字符",
+    explicitField: "已单独设置的 SEO 字段",
+    evidence: "商品页中找到的依据",
+    evidenceEmpty: "暂未提供依据。",
+    microIntent: "可以瞄准的具体搜索词",
+    microIntentEmpty: "暂未提供具体搜索词。",
+    contentGaps: "买家可能还想知道什么",
+    contentGapsEmpty: "暂未提供内容缺口。",
+    altText: "图片 Alt Text",
+    blogMap: "博客和指南选题",
+    blogType: "类型",
+    blogIntent: "搜索意图",
+    blogTitle: "建议标题",
+    blogWhy: "为什么适合这个商品",
+    blogReader: "目标读者",
+    blogAnchor: "内链文字",
+    blogRisk: "需要补充的证据",
+    noOpportunity: "暂未提供机会。",
+    community: "可以谨慎讨论或推广的地方",
+    communityTypes: "社区类型",
+    redditSearches: "Reddit 搜索式",
+    bloggerSearches: "博主搜索式",
+    facebookSearches: "Facebook 小组搜索式",
+    postAngle: "发帖角度",
+    replyAngle: "回复角度",
+    executable: "用户批准后可以直接帮你修改",
+    noExecutable: "暂不建议直接修改。",
+    labelNote: "说明",
+    generated: "生成时间",
+    reviewed: "本次审查",
+  },
+  de: {
+    lang: "de",
+    reportTitle: "Produkt-SEO Chancenbericht",
+    coverEyebrow: "SEO Kurzüberblick",
+    coverLead: "Ein einfacher Überblick: welche Produktseiten geprüft wurden und wo die größten Verbesserungen in Suchergebnissen möglich sind.",
+    store: "Shop",
+    totalProducts: "Produkte insgesamt",
+    auditedProducts: "Geprüfte Produkte",
+    averageScore: "Durchschnittlicher SEO-Wert",
+    estimatedLift: "Geschätztes Verbesserungspotenzial",
+    scoreNote: "Dies ist eine Schätzung der Snippet-Qualität, kein Ranking-Versprechen.",
+    topTakeaways: "Wichtigste Hinweise",
+    noTakeaways: "Keine Hinweise angegeben.",
+    productPage: "Produkt",
+    score: "SEO-Wert",
+    scoreSummary: "Ein höherer Wert bedeutet klarere Suchtexte, bessere Produktbelege und weniger riskante Aussagen.",
+    snapshot: "Produktüberblick",
+    status: "Status",
+    productType: "Produkttyp",
+    audience: "Passende Käufer/Nutzung",
+    url: "Seiten-URL",
+    currentSnippet: "Was Suchmaschinen aktuell nutzen können",
+    recommendedSnippet: "Empfohlene Formulierung",
+    seoTitle: "SEO-Titel",
+    metaDescription: "Meta-Beschreibung",
+    fallbackTitle: "Shopify Standardregel: Produkttitel",
+    fallbackDescription: "Shopify Standardregel: Anfang der Produktbeschreibung",
+    explicitField: "Eigenes SEO-Feld",
+    evidence: "Belege auf der Produktseite",
+    evidenceEmpty: "Keine Belege angegeben.",
+    microIntent: "Konkrete Suchideen",
+    microIntentEmpty: "Keine Suchideen angegeben.",
+    contentGaps: "Was Käufer noch wissen möchten",
+    contentGapsEmpty: "Keine Inhaltslücken angegeben.",
+    altText: "Bild-Alt-Text",
+    blogMap: "Blog- und Ratgeberideen",
+    blogType: "Typ",
+    blogIntent: "Suchabsicht",
+    blogTitle: "Vorgeschlagener Titel",
+    blogWhy: "Warum es passt",
+    blogReader: "Leser",
+    blogAnchor: "Interner Linktext",
+    blogRisk: "Benötigte Belege",
+    noOpportunity: "Keine Gelegenheit angegeben.",
+    community: "Orte für vorsichtige Diskussion",
+    communityTypes: "Community-Typen",
+    redditSearches: "Reddit-Suchen",
+    bloggerSearches: "Blogger-Suchen",
+    facebookSearches: "Facebook-Gruppensuchen",
+    postAngle: "Beitragsidee",
+    replyAngle: "Antwortidee",
+    executable: "Nach Freigabe direkt änderbar",
+    noExecutable: "Keine sichere Änderung empfohlen.",
+    labelNote: "Hinweis",
+    generated: "Erstellt",
+    reviewed: "Geprüft",
+  },
+};
+
+function normalizeLanguage(input = {}) {
+  const raw = String(input.language || input.locale || input.userLanguage || "").toLowerCase();
+  if (raw.startsWith("zh") || /中文|chinese|简体|繁体/.test(raw)) return "zh";
+  if (raw.startsWith("de") || /german|deutsch|德语/.test(raw)) return "de";
+  return "en";
+}
+
+function getCopy(input = {}) {
+  return REPORT_COPY[normalizeLanguage(input)] || REPORT_COPY.en;
+}
+
+function sourceLabel(source, copy) {
+  if (source === "shopify_title_fallback") return copy.fallbackTitle;
+  if (source === "shopify_description_fallback") return copy.fallbackDescription;
+  return copy.explicitField;
+}
+
+function normalizeReportProduct(product) {
+  const resolvedSeo = resolvedSeoFields(product);
+  return {
+    ...product,
+    currentSeoTitle: product.currentSeoTitle || resolvedSeo.title,
+    currentMetaDescription: product.currentMetaDescription || resolvedSeo.description,
+    currentSeoTitleSource: product.currentSeoTitleSource || product.seoTitleSource || resolvedSeo.titleSource,
+    currentMetaDescriptionSource: product.currentMetaDescriptionSource || product.seoDescriptionSource || resolvedSeo.descriptionSource,
+  };
+}
+
+function averageScore(products) {
+  const scores = products
+    .map((product) => Number(product.serpScore ?? product.score))
+    .filter((value) => Number.isFinite(value));
+  if (!scores.length) return null;
+  return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+}
+
+function estimatedLift(products, average) {
+  const explicit = products
+    .map((product) => Number(product.expectedLiftPercent ?? product.estimatedLiftPercent))
+    .filter((value) => Number.isFinite(value));
+  if (explicit.length) return Math.round(explicit.reduce((sum, value) => sum + value, 0) / explicit.length);
+  const current = Number(average);
+  if (!Number.isFinite(current)) return null;
+  return Math.max(0, Math.min(35, Math.round((85 - current) * 0.45)));
+}
+
 function list(items, empty = "No item provided.") {
   const values = plainArray(items);
   if (!values.length) return `<p class="muted">${escapeHtml(empty)}</p>`;
   return `<ul class="clean-list">${values.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
-function keyValues(items, empty = "No details provided.") {
+function keyValues(items, empty = "No details provided.", copy = REPORT_COPY.en) {
   const values = plainArray(items);
   if (!values.length) return `<p class="muted">${escapeHtml(empty)}</p>`;
   return `<div class="kv-list">${values.map((item) => {
-    if (typeof item === "string") return `<div><dt>Note</dt><dd>${escapeHtml(item)}</dd></div>`;
+    if (typeof item === "string") return `<div><dt>${escapeHtml(copy.labelNote)}</dt><dd>${escapeHtml(item)}</dd></div>`;
     const key = item.label || item.key || item.question || item.layer || item.type || "Item";
     const value = item.value || item.recommendation || item.query || item.fit || item.targetIntent || item.description || item.title || "";
     const extra = item.risk || item.evidence || item.notes || "";
@@ -649,9 +891,9 @@ function keyValues(items, empty = "No details provided.") {
   }).join("")}</div>`;
 }
 
-function cards(items, fields) {
+function cards(items, fields, copy = REPORT_COPY.en) {
   const values = plainArray(items);
-  if (!values.length) return `<p class="muted">No opportunity provided.</p>`;
+  if (!values.length) return `<p class="muted">${escapeHtml(copy.noOpportunity)}</p>`;
   return `<div class="mini-grid">${values.map((item) => {
     const body = fields.map((field) => {
       const raw = item[field.key];
@@ -675,106 +917,104 @@ function renderBatchPlan(batchPlan) {
   }).join("")}</div>`;
 }
 
-function renderCommunity(community = {}) {
+function renderCommunity(community = {}, copy = REPORT_COPY.en) {
   const redditSearches = plainArray(community.redditSearches);
   const bloggerSearches = plainArray(community.bloggerSearches);
   const facebookSearches = plainArray(community.facebookGroupSearches);
   return `<div class="community-grid">
-    <div><h4>Community types</h4>${list(community.subredditTypes || community.communityTypes, "No community types provided.")}</div>
-    <div><h4>Reddit search operators</h4>${list(redditSearches, "No Reddit searches provided.")}</div>
-    <div><h4>Blogger search operators</h4>${list(bloggerSearches, "No blogger searches provided.")}</div>
-    <div><h4>Facebook group searches</h4>${list(facebookSearches, "No Facebook searches provided.")}</div>
-    <div><h4>Post angle</h4><p>${escapeHtml(community.postAngle || "Ask or share a specific useful experience before mentioning a product.")}</p></div>
-    <div><h4>Reply angle</h4><p>${escapeHtml(community.replyAngle || "Solve the problem first, then mention a relevant guide or product only when useful.")}</p></div>
+    <div><h4>${escapeHtml(copy.communityTypes)}</h4>${list(community.subredditTypes || community.communityTypes, copy.noOpportunity)}</div>
+    <div><h4>${escapeHtml(copy.redditSearches)}</h4>${list(redditSearches, copy.noOpportunity)}</div>
+    <div><h4>${escapeHtml(copy.bloggerSearches)}</h4>${list(bloggerSearches, copy.noOpportunity)}</div>
+    <div><h4>${escapeHtml(copy.facebookSearches)}</h4>${list(facebookSearches, copy.noOpportunity)}</div>
+    <div><h4>${escapeHtml(copy.postAngle)}</h4><p>${escapeHtml(community.postAngle || copy.noOpportunity)}</p></div>
+    <div><h4>${escapeHtml(copy.replyAngle)}</h4><p>${escapeHtml(community.replyAngle || copy.noOpportunity)}</p></div>
   </div>`;
 }
 
-function renderProduct(product, index) {
+function renderProduct(rawProduct, index, copy = REPORT_COPY.en) {
+  const product = normalizeReportProduct(rawProduct);
   const score = product.serpScore ?? product.score ?? "N/A";
   const executableFields = product.executableFields || [];
-  const doNotTouch = product.doNotTouch || ["handle", "descriptionHtml", "theme", "redirects", "translations"];
   return `<section class="product-page">
     <div class="product-hero">
-      <p class="eyebrow">Product page ${index + 1}</p>
+      <p class="eyebrow">${escapeHtml(copy.productPage)} ${index + 1}</p>
       <h2>${escapeHtml(product.title || "Untitled product")}</h2>
       <p>${escapeHtml(product.url || product.handle || "")}</p>
     </div>
     <div class="bento">
       <article class="card score-card">
-        <h3>🎯 SERP score</h3>
+        <h3>🎯 ${escapeHtml(copy.score)}</h3>
         <p class="score">${escapeHtml(score)}</p>
-        <p>${escapeHtml(product.scoreSummary || "Score reflects intent fit, evidence, uniqueness, readability, and risk control.")}</p>
+        <p>${escapeHtml(product.scoreSummary || copy.scoreSummary)}</p>
       </article>
-      <article class="card">
-        <h3>🧾 Product snapshot</h3>
+      <article class="card snapshot-card">
+        <h3>🧾 ${escapeHtml(copy.snapshot)}</h3>
         ${keyValues([
-          { label: "Status", value: product.status || "Unknown" },
-          { label: "Product type", value: product.productType || "Not provided" },
-          { label: "Audience/use", value: product.audience || product.useCase || "Needs classification" },
-          { label: "URL", value: product.url || product.handle || "Not provided" },
-        ])}
+          { label: copy.status, value: product.status || "Unknown" },
+          { label: copy.productType, value: product.productType || "Not provided" },
+          { label: copy.audience, value: product.audience || product.useCase || "Needs classification" },
+          { label: copy.url, value: product.url || product.handle || "Not provided" },
+        ], "No details provided.", copy)}
       </article>
-      <article class="card wide">
-        <h3>🔎 Current search snippet</h3>
+      <article class="card wide current-card">
+        <h3>🔎 ${escapeHtml(copy.currentSnippet)}</h3>
         <div class="snippet">
-          <strong>SEO title</strong>
-          <p>${escapeHtml(product.currentSeoTitle || "Missing")}</p>
+          <strong>${escapeHtml(copy.seoTitle)}</strong>
+          <p>${escapeHtml(product.currentSeoTitle || "")}</p>
+          <small>${escapeHtml(sourceLabel(product.currentSeoTitleSource, copy))}</small>
         </div>
         <div class="snippet">
-          <strong>Meta description</strong>
-          <p>${escapeHtml(product.currentMetaDescription || "Missing")}</p>
+          <strong>${escapeHtml(copy.metaDescription)}</strong>
+          <p>${escapeHtml(product.currentMetaDescription || "")}</p>
+          <small>${escapeHtml(sourceLabel(product.currentMetaDescriptionSource, copy))}</small>
         </div>
       </article>
       <article class="card wide recommend">
-        <h3>✍️ Recommended search snippet</h3>
+        <h3>✍️ ${escapeHtml(copy.recommendedSnippet)}</h3>
         <div class="snippet">
-          <strong>SEO title</strong>
+          <strong>${escapeHtml(copy.seoTitle)}</strong>
           <p>${escapeHtml(product.recommendedSeoTitle || "No title change recommended.")}</p>
         </div>
         <div class="snippet">
-          <strong>Meta description</strong>
+          <strong>${escapeHtml(copy.metaDescription)}</strong>
           <p>${escapeHtml(product.recommendedMetaDescription || "No meta description change recommended.")}</p>
         </div>
       </article>
       <article class="card">
-        <h3>📌 Evidence ledger</h3>
-        ${list(product.evidence, "No evidence provided.")}
+        <h3>📌 ${escapeHtml(copy.evidence)}</h3>
+        ${list(product.evidence, copy.evidenceEmpty)}
       </article>
       <article class="card">
-        <h3>🪜 Micro-intent ladder</h3>
-        ${keyValues(product.microIntents, "No micro-intents provided.")}
+        <h3>🪜 ${escapeHtml(copy.microIntent)}</h3>
+        ${keyValues(product.microIntents, copy.microIntentEmpty, copy)}
       </article>
       <article class="card wide">
-        <h3>🧠 Content gap and buyer objections</h3>
-        ${keyValues(product.contentGaps, "No content gaps provided.")}
+        <h3>🧠 ${escapeHtml(copy.contentGaps)}</h3>
+        ${keyValues(product.contentGaps, copy.contentGapsEmpty, copy)}
       </article>
       <article class="card">
-        <h3>🖼️ Alt text action</h3>
+        <h3>🖼️ ${escapeHtml(copy.altText)}</h3>
         <p>${escapeHtml(product.altTextAction || "No alt text action provided.")}</p>
       </article>
       <article class="card wide">
-        <h3>📰 Blog/article opportunity map</h3>
+        <h3>📰 ${escapeHtml(copy.blogMap)}</h3>
         ${cards(product.blogTopics, [
-          { key: "type", label: "Cluster" },
-          { key: "targetIntent", label: "Intent" },
-          { key: "suggestedTitle", label: "Suggested title" },
-          { key: "whyProductSupportsIt", label: "Why this product supports it" },
-          { key: "targetReader", label: "Reader" },
-          { key: "internalLinkAnchor", label: "Internal anchor" },
-          { key: "risk", label: "Risk/evidence needed" },
-        ])}
+          { key: "type", label: copy.blogType },
+          { key: "targetIntent", label: copy.blogIntent },
+          { key: "suggestedTitle", label: copy.blogTitle },
+          { key: "whyProductSupportsIt", label: copy.blogWhy },
+          { key: "targetReader", label: copy.blogReader },
+          { key: "internalLinkAnchor", label: copy.blogAnchor },
+          { key: "risk", label: copy.blogRisk },
+        ], copy)}
       </article>
-      <article class="card wide">
-        <h3>🌐 Distribution and off-page opportunity</h3>
-        ${renderCommunity(product.community)}
+      <article class="card wide community-card">
+        <h3>🌐 ${escapeHtml(copy.community)}</h3>
+        ${renderCommunity(product.community, copy)}
       </article>
-      <article class="card">
-        <h3>✅ Exact executable fields</h3>
-        ${list(executableFields, "No safe executable field recommended.")}
-      </article>
-      <article class="card">
-        <h3>🚫 Do-not-touch fields</h3>
-        ${list(doNotTouch, "No protected fields listed.")}
+      <article class="card action-card">
+        <h3>✅ ${escapeHtml(copy.executable)}</h3>
+        ${list(executableFields, copy.noExecutable)}
       </article>
     </div>
   </section>`;
@@ -789,32 +1029,40 @@ function reportTimestamp() {
 async function reportCommand(args) {
   const input = await loadJsonInput(args.input || "-");
   const template = await fs.readFile(REPORT_TEMPLATE, "utf8").catch((error) => fail(`Missing report template: ${error.message}`));
+  const copy = getCopy(input);
   const generatedAt = input.generatedAt || new Date().toISOString();
-  const products = plainArray(input.products);
+  const products = plainArray(input.products).map(normalizeReportProduct);
   const output = args.output || `shopify-serp-report-${reportTimestamp()}.html`;
-  const title = input.title || "Shopify Product SERP Audit";
+  const title = input.title || copy.reportTitle;
+  const avgScore = input.averageSeoScore ?? input.averageScore ?? averageScore(products);
+  const lift = input.expectedLiftPercent ?? input.estimatedLiftPercent ?? estimatedLift(products, avgScore);
+  const takeaways = input.summaryBullets || input.keyTakeaways || input.takeaways || products.slice(0, 3).map((product) => {
+    const name = product.title || product.handle || "Product";
+    const score = product.serpScore ?? product.score;
+    return score ? `${name}: ${copy.score} ${score}` : name;
+  });
   const overview = `<section class="cover">
-    <p class="eyebrow">SERP Product Audit</p>
-    <h1>${escapeHtml(title)}</h1>
-    <p class="lead">Evidence-backed product search snippet recommendations, content opportunities, and safe Shopify execution boundaries.</p>
+    <div class="cover-heading">
+      <p class="eyebrow">${escapeHtml(copy.coverEyebrow)}</p>
+      <h1>${escapeHtml(title)}</h1>
+      <p class="lead">${escapeHtml(input.summary || copy.coverLead)}</p>
+    </div>
     <div class="cover-grid">
-      <article><span>Store</span><strong>${escapeHtml(input.store?.name || input.store?.domain || "Unknown store")}</strong><small>${escapeHtml(input.store?.domain || "")}</small></article>
-      <article><span>Generated</span><strong>${escapeHtml(generatedAt)}</strong><small>Local HTML report</small></article>
-      <article><span>Products scanned</span><strong>${escapeHtml(input.productCount ?? input.scannedProductCount ?? products.length)}</strong><small>${escapeHtml(input.eligibleProductCount ?? "")} eligible</small></article>
-      <article><span>Executable items</span><strong>${escapeHtml(input.executableItemCount ?? 0)}</strong><small>Requires approval before write</small></article>
+      <article class="metric-card store-card"><span>${escapeHtml(copy.store)}</span><strong>${escapeHtml(input.store?.name || input.store?.domain || "Unknown store")}</strong><small>${escapeHtml(input.store?.domain || "")}</small></article>
+      <article class="metric-card"><span>${escapeHtml(copy.totalProducts)}</span><strong>${escapeHtml(input.productCount ?? input.scannedProductCount ?? products.length)}</strong><small>${escapeHtml(copy.generated)} ${escapeHtml(generatedAt)}</small></article>
+      <article class="metric-card"><span>${escapeHtml(copy.auditedProducts)}</span><strong>${escapeHtml(input.auditedProductCount ?? products.length)}</strong><small>${escapeHtml(copy.reviewed)}</small></article>
+      <article class="metric-card score-metric"><span>${escapeHtml(copy.averageScore)}</span><strong>${avgScore === null || avgScore === undefined ? "N/A" : `${escapeHtml(avgScore)}/100`}</strong><small>${escapeHtml(copy.scoreNote)}</small></article>
+      <article class="metric-card lift-metric"><span>${escapeHtml(copy.estimatedLift)}</span><strong>${lift === null || lift === undefined ? "N/A" : `+${escapeHtml(lift)}%`}</strong><small>${escapeHtml(copy.scoreNote)}</small></article>
     </div>
-    <div class="cover-section">
-      <h2>📦 Batch plan</h2>
-      ${renderBatchPlan(input.batchPlan)}
-    </div>
-    <div class="cover-section boundaries">
-      <h2>🛡️ Boundaries</h2>
-      <p>This report may recommend safe seo.title, seo.description, and reviewed media alt text updates. It does not modify handles, redirects, translations, theme code, schema, reviews, ratings, prices, variants, tags, vendor, collections, or product copy.</p>
+    <div class="summary-panel">
+      <h2>📍 ${escapeHtml(copy.topTakeaways)}</h2>
+      ${list(takeaways, copy.noTakeaways)}
     </div>
   </section>`;
-  const productSections = products.map(renderProduct).join("\n");
+  const productSections = products.map((product, index) => renderProduct(product, index, copy)).join("\n");
   const html = template
     .replaceAll("{{REPORT_TITLE}}", escapeHtml(title))
+    .replaceAll("{{REPORT_LANG}}", escapeHtml(copy.lang))
     .replaceAll("{{GENERATED_AT}}", escapeHtml(generatedAt))
     .replace("{{REPORT_CONTENT}}", `${overview}\n${productSections}`);
   await fs.writeFile(output, html, "utf8");

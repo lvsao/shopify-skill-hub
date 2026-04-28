@@ -142,6 +142,19 @@ Unsupported or high-risk claims include:
 - Ratings, review counts, certifications, and awards unless verified.
 - Compatibility, size fit, material, performance, or compliance claims not present in product data.
 
+## Shopify SEO Fallback Rules
+
+Shopify SEO fields can be empty while the storefront still has effective search metadata.
+
+Use these rules before auditing:
+
+| Shopify field | If null or empty | Audit behavior |
+| --- | --- | --- |
+| `seo.title` | Falls back to `product.title` | Score the product title as the current effective SEO title. |
+| `seo.description` | Falls back to the first 155 characters of `product.description` | Score that fallback text as the current effective meta description. |
+
+Do not write "missing SEO title" or "missing meta description" in the report just because the API field is null. Say that Shopify is using the default product title or product description fallback, then judge whether the fallback is good enough.
+
 ## SEO Title Rubric
 
 Score out of 100.
@@ -294,7 +307,7 @@ Boundaries:
 
 The final report should be a single-file HTML artifact with:
 
-- Overview cover.
+- Beginner-friendly summary page with store, total products, audited products, average SEO score, estimated improvement percentage, and key takeaways.
 - One independent `section` per product.
 - Product snapshot.
 - SERP score.
@@ -307,7 +320,6 @@ The final report should be a single-file HTML artifact with:
 - Blog/article opportunity map.
 - Community, Reddit, blogger, and Facebook group direction.
 - Exact executable fields.
-- Do-not-touch fields.
 
 Layout constraints:
 
@@ -319,6 +331,9 @@ Layout constraints:
 - Keep each product page printable with `break-after: page`.
 - Use a light editorial / boutique audit aesthetic, not generic dashboard decoration.
 - Use emoji as section markers only; text labels must carry the meaning.
+- Do not show a long technical boundary section on the summary page.
+- Do not show a final protected-fields or "do-not-touch" card in each product page. Keep protected-field rules in the skill behavior, not in the merchant-facing report.
+- Localize all static report labels to the user's language when `language`, `locale`, or `userLanguage` is known. The agent should also provide product analysis text in that same language.
 
 ## Stop Conditions
 
