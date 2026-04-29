@@ -72,54 +72,64 @@ npx skills add . --list
 
 ## Shopify API 权限与 Env 配置
 
-大多数 Skill Hub skills 需要有限的 Shopify Admin API 权限，才能读取店铺上下文或准备预览。请把凭证保存在一个本地私有文件中：
+大多数 Skill Hub skills 需要有限的 Shopify Admin API 权限，才能读取店铺上下文或准备预览。主要有两种方式释放您店铺的 API 权限。如果您是新手，请放心，安装任意 skill 后，AI agents 都会从 0-1 引导您完成环境配置。请把凭证保存在当前工作目录里的一个私有本地文件中：
 
 ```text
 skill-hub.env
 ```
 
-不要提交这个文件，也不要把密钥粘贴到聊天里。请把 `skill-hub.env` 加入 `.gitignore`。
+这个仓库目前使用两种环境文件格式。
 
-Agent 在询问配置问题前，应先检查这个文件。如果文件已经包含完整的非占位值，并且当前 skill 的连接检查通过，工作流应直接继续，不要再询问 app 是通过 Option A 还是 Option B 创建的。
-
-### Option A：Shopify 店铺 Settings custom app（Legacy Custom App）
-
-如果你的 Shopify 店铺 Settings 里仍然允许创建 Legacy Custom App，可以使用这种方式。在店铺 Settings 区域创建 custom app，只开启当前 skill 需要的 Admin API scopes，然后把 Admin API access token 写入：
-
-```text
-# Skill Hub Shopify API credentials
-# Private local file. Do not commit.
-
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
-SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-```
-
-店铺域名可以填写你熟悉的域名，例如 `your-store.com` 或 `your-store.myshopify.com`。Skill 脚本会在调用 Admin GraphQL 前解析出正确的 Shopify Admin API host。
-
-Shopify 指南：[Create custom apps in Shopify](https://help.shopify.com/en/manual/apps/app-types/custom-apps)
-
-### Option B：Shopify Dev Dashboard app
-
-如果你更适合使用 Partner/Dev Dashboard app 流程，或者店铺 Settings 区域无法创建 Legacy Custom App，可以使用这种方式。
+### Dev Dashboard app（recommanded）
 
 1. 创建 Shopify Partner 账号。
 2. 在 Dev Dashboard 创建 app。
 3. 在 `Distribution` 中选择 custom distribution，并安装到自己的店铺。
-4. 在 app settings 中复制 Client ID，并使用店铺准确的 `.myshopify.com` 域名。
+4. 在 app settings 中复制 Client ID。
+5. 在 `skill-hub.env` 中使用店铺准确的 `.myshopify.com` 域名。
 
-这些值就是 Skill Hub 需要的 app key material：
+教程：https://www.selofy.com/tutorials/ai-ecommerce/shopify-ai-agents-custom-app-skill
+
+最小模板：
 
 ```text
-# Skill Hub Shopify API credentials
-# Private local file. Do not commit.
+# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
 ```
 
-App 安装后，agent 会使用 Shopify CLI 发布当前 skill 需要的 scopes，然后针对目标店铺运行 `shopify store auth`。期间可能会打开 Shopify 权限授权页面；请检查 scopes 并点击 authorize。不要去寻找单独的 Dev Dashboard approval button。日常扫描、分批和写入工作应使用随 skill 提供的 helper flow，不应反复执行一次性的 `shopify store execute` 命令。
+对于这个仓库当前使用的 Shopify CLI `store auth` 流程，不需要 `SKILL_HUB_SHOPIFY_CLIENT_SECRET`。Agent 会通过 Shopify CLI 应用所需 scopes，然后对目标店铺执行 `shopify store auth`。
+
+### Shopify 店铺 Settings custom app（Legacy Custom App）
+
+只有当你的店铺 Settings 仍允许创建 Legacy Custom App，并且你更希望直接使用 Admin token 路径时，再使用这种方式。
+
+教程：https://www.selofy.com/tutorials/ai-ecommerce/ai-agents-skills-shopify-operations
+
+最小模板：
+
+```text
+# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
+
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
+SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
+```
+
+Skill 脚本会在调用 Admin GraphQL 前解析出正确的 Shopify Admin API host。
+
+Shopify 指南：[Create custom apps in Shopify](https://help.shopify.com/en/manual/apps/app-types/custom-apps)
+
+### 重要说明
+
+- `skill-hub.env` 是当前工作目录下多个 skills 共用的配置文件。
+- 不同 skill 需要的 Admin scopes 可能不同，但 env 文件结构不变。
+- Dev Dashboard 使用 `store domain + client id`，因为授权通过 Shopify CLI 完成。
+- Legacy Custom App 使用 `store domain + admin token`，因为 token 由店铺后台创建。
 
 ## 仓库结构
 

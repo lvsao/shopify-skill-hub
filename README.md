@@ -72,54 +72,64 @@ This local command is for maintainers only. Regular users should install from Gi
 
 ## Shopify API Access And Env
 
-Most Skill Hub skills need limited Shopify Admin API access before they can read store context or prepare a preview. Keep the credentials in one private local file:
+Most Skill Hub skills need limited Shopify Admin API access before they can read store context or prepare a preview. There are mainly two ways to grant your store's API access for these skills. If you are new, install any skill first and the AI agents will guide you from 0 to 1 through the environment setup. Keep credentials in one private local file in your current working directory:
 
 ```text
 skill-hub.env
 ```
 
-Do not commit this file or paste secrets into chat. Add `skill-hub.env` to `.gitignore`.
+Two environment shapes are used in this repository.
 
-Agents should inspect this file before asking setup questions. If it already contains complete non-placeholder values and the skill's connection check succeeds, the workflow should continue without asking whether the app was created through Option A or Option B.
-
-### Option A: Shopify store Settings custom app (Legacy Custom App)
-
-Use this when your Shopify store Settings still allows Legacy Custom App creation. Create a custom app from the store Settings area, enable only the Admin API scopes required by the skill, then copy the Admin API access token into:
-
-```text
-# Skill Hub Shopify API credentials
-# Private local file. Do not commit.
-
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
-SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-```
-
-You can use the domain you normally recognize, such as `your-store.com` or `your-store.myshopify.com`. Skill scripts resolve the correct Shopify Admin API host before making Admin GraphQL calls.
-
-Shopify guide: [Create custom apps in Shopify](https://help.shopify.com/en/manual/apps/app-types/custom-apps)
-
-### Option B: Shopify Dev Dashboard app
-
-Use this when you prefer a Partner/Dev Dashboard app flow, or when Legacy Custom App creation is not available in the store Settings area.
+### Dev Dashboard app (recommanded)
 
 1. Create a Shopify Partner account.
 2. In the Dev Dashboard, create an app.
 3. In `Distribution`, choose custom distribution and install the app to your own store.
-4. In the app settings, copy the Client ID and use your store's exact `.myshopify.com` domain.
+4. In the app settings, copy the Client ID.
+5. Use your store's exact `.myshopify.com` domain in `skill-hub.env`.
 
-These values are the app's key material for Skill Hub:
+Tutorial: https://www.selofy.com/tutorials/ai-ecommerce/shopify-ai-agents-custom-app-skill
+
+Minimal template:
 
 ```text
-# Skill Hub Shopify API credentials
-# Private local file. Do not commit.
+# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
 ```
 
-After the app is installed, the agent uses Shopify CLI to release the skill's required scopes, then runs `shopify store auth` for the target store. A Shopify permission authorization page may open; review the scopes and click authorize. Do not look for a separate Dev Dashboard approval button. Bundled scripts should use the CLI-authenticated helper flow for routine scan, batch, and write work instead of repeated one-off `shopify store execute` commands. Agents should not use `shopify store list` or `shopify auth status` for this workflow.
+For this repository's current Shopify CLI store-auth workflow, `SKILL_HUB_SHOPIFY_CLIENT_SECRET` is not required. The agent uses Shopify CLI to apply the required scopes and then runs `shopify store auth` for the target store.
+
+### Shopify store Settings custom app (Legacy Custom App)
+
+Use this only when your store Settings still allows Legacy Custom App creation and you prefer the direct Admin token path.
+
+Tutorial: https://www.selofy.com/tutorials/ai-ecommerce/ai-agents-skills-shopify-operations
+
+Minimal template:
+
+```text
+# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
+
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
+SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
+```
+
+Skill scripts resolve the correct Shopify Admin API host before making Admin GraphQL calls.
+
+Shopify guide: [Create custom apps in Shopify](https://help.shopify.com/en/manual/apps/app-types/custom-apps)
+
+### Important notes
+
+- `skill-hub.env` is shared across skills in your current working directory.
+- Different skills may require different Admin scopes, but the env file shape stays the same.
+- Dev Dashboard uses `store domain + client id` because authorization is completed through Shopify CLI.
+- Legacy Custom App uses `store domain + admin token` because the token is created in Shopify store Settings.
 
 ## Repository Layout
 
