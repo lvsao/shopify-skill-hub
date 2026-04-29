@@ -33,8 +33,9 @@ Before asking any setup question, inspect the local environment first:
 4. If it exists, read only the variable names and whether required values are present. Do not print secrets.
 5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run `connection-check`.
 6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the `.myshopify.com` store domain plus Client ID are present, run `connection-check`.
-7. If `connection-check` succeeds, continue directly to scan and vision probe. Do not ask where the app was created.
-8. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
+7. If `connection-check` returns `CLI_AUTH_REQUIRED`, run the Dev Dashboard CLI auth runbook below silently, then rerun `connection-check`.
+8. If `connection-check` succeeds, continue directly to scan and vision probe. Do not ask where the app was created.
+9. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
 
 Ask the setup question only when `skill-hub.env` is missing, incomplete, placeholder-only, or the access method cannot be determined:
 
@@ -57,7 +58,7 @@ Immediately ensure `.gitignore` contains `skill-hub.env`. Do not ask the user to
 
 Create the env file with:
 
-```powershell
+```text
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 ```
 
@@ -76,7 +77,7 @@ read_products,write_products,read_content,write_content,read_files,write_files
 
 Create the env file with:
 
-```powershell
+```text
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
@@ -85,34 +86,31 @@ Ask the user to fill only:
 - `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: the store's exact `.myshopify.com` domain.
 - `SKILL_HUB_SHOPIFY_CLIENT_ID`: the app Client ID from Dev Dashboard settings. This is used for Shopify CLI config link and deploy.
 
-Do not ask for the Client secret for this workflow unless a future helper explicitly implements client credential token exchange. The bundled helper uses Shopify CLI store authorization after deploy.
+Do not ask the user to run CLI commands manually. Run this sequence silently:
 
-Check Node.js, npm, and Shopify CLI:
-
-```powershell
+```text
 node -v
 npm -v
 shopify version
 shopify store --help
 ```
 
-If Shopify CLI is missing or too old for `shopify store`, run:
+If `shopify store --help` fails, install or upgrade Shopify CLI:
 
-```powershell
+```text
 npm install -g @shopify/cli@latest
 ```
 
 Then configure scopes through Shopify CLI. Do not ask the user to manually enter scopes in Dev Dashboard.
+Do not run `shopify store list` or `shopify auth status` for this workflow.
 
-Do not run `shopify store list` or `shopify auth status`; these are not valid diagnostics for this workflow in current Shopify CLI. Do not repeatedly run manual `shopify store execute` commands for scan or write work.
+Create a temporary directory under the operating-system temp location and refer to it as `<temp-dir>`. Use the current terminal's native command set to create this directory, then run:
 
-```powershell
-$tmp = Join-Path $env:TEMP ("skill-hub-shopify-app-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $tmp | Out-Null
-shopify app config link --client-id <client-id> --path $tmp --no-color
+```text
+shopify app config link --client-id <client-id> --path <temp-dir> --no-color
 ```
 
-Edit only `$tmp\shopify.app.toml`:
+Edit only `<temp-dir>/shopify.app.toml`:
 
 ```toml
 [access_scopes]
@@ -121,24 +119,26 @@ scopes = "read_products,write_products,read_content,write_content,read_files,wri
 
 Then run:
 
-```powershell
-shopify app config validate --path $tmp --no-color
-shopify app deploy --client-id <client-id> --path $tmp --allow-updates --no-color
+```text
+shopify app config validate --path <temp-dir> --no-color
+shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color
 ```
 
 After deployment, do not send the user to Dev Dashboard to look for a manual approval button. Instead, run Shopify CLI store authorization with the required scopes. Tell the user before running it: "A Shopify permission authorization page may open next. Please review the scopes and click authorize."
 
-```powershell
+```text
 shopify store auth --store <store>.myshopify.com --scopes read_products,write_products,read_content,write_content,read_files,write_files --json --no-color
 ```
 
 Verify after the browser authorization:
 
-```powershell
+```text
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
 ```
 
-Always remove the temporary CLI app config directory after setup succeeds or fails.
+If verification still returns `CLI_AUTH_REQUIRED`, rerun `shopify store auth` with the same scopes and verify again.
+
+Always remove `<temp-dir>` after setup succeeds or fails. Use the current terminal's native recursive delete command.
 
 ## Shopify Surfaces
 
