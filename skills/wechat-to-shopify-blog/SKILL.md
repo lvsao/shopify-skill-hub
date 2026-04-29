@@ -17,7 +17,7 @@ description: Convert an owned or authorized WeChat Official Account article into
 - Do not create hidden onboarding folders. Keep the shared env as one `skill-hub.env` file in the user's current working directory.
 - Keep the user's working folder clean. Delete every temporary image, JSON plan, downloaded file, generated helper file, and ad hoc script after the workflow completes or fails.
 - Do not create a text-only Shopify article when the WeChat article has selected images. If Shopify image upload fails, stop, report the exact failed step, and ask before retrying or creating a text-only fallback.
-- Do not replace the bundled Shopify helper with ad hoc REST, PowerShell, or temporary Node scripts. If the helper fails, inspect its error, fix the helper or input manifest, and rerun the helper.
+- Do not replace the bundled Shopify helper with ad hoc REST, shell-specific commands, or temporary Node scripts. If the helper fails, inspect its error, fix the helper or input manifest, and rerun the helper.
 
 ## Beginner Onboarding First
 
@@ -29,8 +29,9 @@ Minimize user decisions and actions. Before asking any setup question, inspect t
 4. If it exists, read only the variable names and whether required values are present. Do not print secrets.
 5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run the bundled context script.
 6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the `.myshopify.com` store domain plus Client ID are present, run the bundled context script.
-7. If the context script succeeds, continue directly. Do not ask where the app was created.
-8. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
+7. If the context script returns `CLI_AUTH_REQUIRED`, run the Dev Dashboard CLI auth runbook below silently, then rerun the context script.
+8. If the context script succeeds, continue directly. Do not ask where the app was created.
+9. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
 
 Ask the setup question only when `skill-hub.env` is missing, incomplete, placeholder-only, or the access method cannot be determined:
 
@@ -53,7 +54,7 @@ Immediately ensure `.gitignore` contains `skill-hub.env`. Add that line if it is
 
 Use this only when the merchant can still create a custom app from the Shopify store Settings area. Create the env file with:
 
-```powershell
+```text
 node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 ```
 
@@ -83,7 +84,7 @@ Use this as the preferred fallback when Legacy Custom App creation is unavailabl
 
 Create the env file with:
 
-```powershell
+```text
 node skills/wechat-to-shopify-blog/scripts/shopify-blog-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
@@ -100,29 +101,18 @@ SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
 
 Ask the user to fill only those two values. For Dev Dashboard apps, require the `.myshopify.com` domain because Shopify CLI store authorization is store-specific.
 
-Do not ask for the Client secret for this workflow unless a future helper explicitly implements client credential token exchange. The bundled helpers use Shopify CLI store authorization after deploy.
+Do not ask the user to run CLI commands manually. Run this sequence silently:
 
-Before continuing:
+1. Check `node -v`, `npm -v`, `shopify version`, and `shopify store --help`.
+2. If Shopify CLI is missing or too old for `shopify store`, install or upgrade:
 
-1. Check `node -v` and `npm -v`. If either is missing, stop and ask the user to install Node.js LTS.
-2. Check `shopify version`.
-3. If Shopify CLI is missing, install it for the user:
-
-```powershell
+```text
 npm install -g @shopify/cli@latest
 ```
-
-4. If Shopify CLI exists but is older than the version that supports `shopify store`, upgrade it:
-
-```powershell
-npm install -g @shopify/cli@latest
-```
-
-5. Verify `shopify store --help` works.
 
 Then let the agent configure scopes through Shopify CLI. Do not ask the user to manually enter scopes in Dev Dashboard.
 
-Do not run `shopify store list` or `shopify auth status`; these are not valid diagnostics for this workflow in current Shopify CLI. Do not repeatedly run manual `shopify store execute` commands for content work when the bundled helper is available.
+Do not run `shopify store list` or `shopify auth status`; these are not valid diagnostics for this workflow in current Shopify CLI.
 
 Required scopes for this skill:
 
@@ -134,13 +124,13 @@ read_products,write_content,write_files
 
 CLI setup sequence for agents:
 
-```powershell
-$tmp = Join-Path $env:TEMP ("skill-hub-shopify-app-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $tmp | Out-Null
-shopify app config link --client-id <client-id> --path $tmp --no-color
+Create a temporary directory under the operating-system temp location and refer to it as `<temp-dir>`. Use the current terminal's native command set to create this directory, then run:
+
+```text
+shopify app config link --client-id <client-id> --path <temp-dir> --no-color
 ```
 
-Edit only `$tmp\shopify.app.toml`:
+Edit only `<temp-dir>/shopify.app.toml`:
 
 ```toml
 [access_scopes]
@@ -149,30 +139,30 @@ scopes = "read_products,write_content,write_files"
 
 Then run:
 
-```powershell
-shopify app config validate --path $tmp --no-color
-shopify app deploy --client-id <client-id> --path $tmp --allow-updates --no-color
+```text
+shopify app config validate --path <temp-dir> --no-color
+shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color
 ```
 
 After deployment, do not send the user to Dev Dashboard to look for a manual approval button. Instead, run Shopify CLI store authorization with the required scopes. Tell the user before running it: "A Shopify permission authorization page may open next. Please review the scopes and click authorize."
 
-```powershell
+```text
 shopify store auth --store <store>.myshopify.com --scopes read_products,write_content,write_files --json --no-color
 ```
 
-After the user completes the browser authorization, verify with the bundled helper:
+After browser authorization, verify with the bundled helper:
 
-```powershell
+```text
 node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env --product-page-size 1
 ```
 
-If verification still returns `Access denied`, rerun `shopify store auth` with the required scopes. Do not invent a Dev Dashboard approval step.
+If verification still returns `CLI_AUTH_REQUIRED` or access denied, rerun `shopify store auth` with the same scopes and verify again. Do not invent a Dev Dashboard approval step.
 
 After successful authorization, do not ask the user to copy or paste short-lived access tokens.
 
 The bundled helpers run Shopify CLI through its JavaScript entrypoint and use query/output files internally. Do not replace them with shell-generated GraphQL commands unless you are doing narrow troubleshooting.
 
-Always remove the temporary CLI app config directory after setup succeeds or fails.
+Always remove `<temp-dir>` after setup succeeds or fails. Use the current terminal's native recursive delete command.
 
 ### Shared Checks
 
