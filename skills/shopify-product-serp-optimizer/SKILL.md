@@ -5,6 +5,8 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 
 # Shopify Product SERP Optimizer
 
+<!-- update-flow-test: v1 -->
+
 ## Non-Negotiables
 
 - Treat this as a product SERP optimizer, not a generic on-page SEO, technical SEO, schema, redirect, translation, or theme skill.
