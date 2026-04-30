@@ -310,6 +310,12 @@ Generate one final `.html` report in the current working directory. Use the bund
 skills/shopify-product-serp-optimizer/assets/report-template.html
 ```
 
+Report output is not optional and the template path is not advisory.
+
+- Every HTML audit report MUST be generated from `skills/shopify-product-serp-optimizer/assets/report-template.html`.
+- Do not hand-write, substitute, or bypass the template when that file is available.
+- Do not deliver a custom HTML report that skips the template toolbar or print behavior.
+
 Report filename:
 
 ```text
@@ -361,6 +367,15 @@ HTML/CSS constraints:
 - Emoji may help scanning but must not carry required meaning alone.
 - Use newcomer-friendly wording. Avoid exposing internal execution reasons, raw API terminology, or long lists of protected technical fields in the report.
 - Use the report input `language`, `locale`, or `userLanguage` to localize the HTML. If not provided, infer from the user's conversation and provide report data in that language.
+
+Before delivery, run a final acceptance check on the generated HTML:
+
+1. The HTML file exists.
+2. The HTML was generated from the bundled template, not from a hand-written substitute.
+3. The HTML contains `class="export-button"`.
+4. The HTML contains `onclick="window.print()"`.
+5. The HTML contains `@media print`.
+6. If any of those markers are missing, the report is incomplete and must be regenerated before presenting it to the user.
 
 ## Conversation Summary Contract
 
