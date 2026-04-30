@@ -18,6 +18,7 @@ This skill is product SERP optimization.
 
 It includes:
 
+- Single-product read-only HTML audit generation when the user names one explicit product.
 - Read-only product scanning and five-product opportunity batches.
 - Query intent and query class mapping for product pages.
 - Product title, product description, SEO title, and meta description scoring.
@@ -431,6 +432,16 @@ Do not generate Enhanced snippets items when:
 - live Google evidence was not gathered
 - live Amazon evidence was not gathered
 - the item would require guessing missing product specs or unsupported buyer claims
+
+## Single-Product Delivery Rule
+
+When the user asks to optimize one explicit product:
+
+- Treat the HTML audit report as the primary deliverable.
+- Generate the report in the same turn by default.
+- Do not stop after giving chat-only title/meta suggestions.
+- Do not ask whether the user wants the report unless file creation is actually blocked.
+- If Shopify access is unavailable but the product title is specific enough, generate a provisional read-only report from merchant-visible product wording plus live Google and Amazon evidence, and label the evidence limits clearly.
 
 Stop completely before writes when:
 
