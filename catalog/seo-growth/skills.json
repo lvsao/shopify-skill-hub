@@ -217,6 +217,22 @@
             "zh": "先预览"
           },
           "icon": "FileCheck2"
+        },
+        {
+          "id": "metafield-snippet-optimizer",
+          "title": {
+            "en": "Metafield snippet optimizer",
+            "zh": "Metafields 智能优化"
+          },
+          "description": {
+            "en": "Audits product metafield definitions and values, detects missing high-impact fields such as material, specs, dimensions, reviews, and feature data, and prepares evidence-backed updates for richer snippets and cleaner product detail signals.",
+            "zh": "审计商品 metafield 的定义与实际值，识别材质、规格、尺寸、评价、特征等高影响字段的缺失与质量问题，并为更丰富的 snippets 与更清晰的商品详情信号准备基于证据的优化建议。"
+          },
+          "badge": {
+            "en": "Advanced snippets",
+            "zh": "高阶 Snippets"
+          },
+          "icon": "SearchCheck"
         }
       ],
       "prerequisites": []

@@ -1,6 +1,6 @@
 ---
 name: shopify-product-serp-optimizer
-description: Plan and optimize Shopify product SERP performance with product-level opportunity scoring, five-product batches, evidence-backed product title, product description, SEO title, meta description, and alt text recommendations, a polished HTML audit report, and preview-first approved writes applied together in one review round. Use when a merchant wants product search snippet improvement, product-led SERP content opportunities, or safe Shopify product content and SEO updates; not for technical SEO, theme/schema edits, redirects, translations, full-store rewrites, or broad content strategy.
+description: Plan and optimize Shopify product SERP performance with product-level opportunity scoring, five-product batches, evidence-backed product title, product description, SEO title, meta description, metafield, and alt text recommendations, a polished HTML audit report, and preview-first approved writes applied together in one review round. Use when a merchant wants product search snippet improvement, product-led SERP content opportunities, or safe Shopify product content, metafield, and SEO updates; not for technical SEO, theme/schema edits, redirects, translations, full-store rewrites, or broad content strategy.
 ---
 
 # Shopify Product SERP Optimizer
@@ -17,10 +17,15 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 - Whenever this skill is triggered, generate the HTML audit report in the same turn by default. Do not stop at chat-only recommendations and do not ask whether the user wants the report unless report generation is technically blocked.
 - Do not end any audit run with option menus such as "if you want, I can also..." before generating the HTML report. Generate the report first, then optionally mention next steps after the report exists.
 - Preview the full proposed Shopify write bundle before asking for confirmation. Execute writes only after one explicit user approval for the full bundle.
-- The safe automatic write bundle may include product `title`, product `descriptionHtml`, product `seo.title`, product `seo.description`, and approved product `MediaImage` alt text.
+- The safe automatic write bundle may include product `title`, product `descriptionHtml`, product `seo.title`, product `seo.description`, approved product metafield values, and approved product `MediaImage` alt text.
 - This skill owns product media alt text optimization directly. Do not route alt text work to another skill or tool family as the default path.
 - Do not edit `handle`, tags, product type, vendor, price, variants, collections, redirects, translations, theme files, JSON-LD, reviews, ratings, canonical tags, app settings, or schema.
-- If the proposed improvement touches `title`, `descriptionHtml`, `seo.title`, `seo.description`, or alt text, present all recommended changes for that product in one approval packet and apply them together after the user says yes. Do not ask follow-up approval questions field by field.
+- If the proposed improvement touches `title`, `descriptionHtml`, `seo.title`, `seo.description`, product metafields, or alt text, present all recommended changes for that product in one approval packet and apply them together after the user says yes. Do not ask follow-up approval questions field by field.
+- Audit metafields in two layers:
+  - definition layer via `metafieldDefinitions`
+  - value layer via product `metafields`
+- Do not assume that a missing product metafield value means the store lacks that field. Compare definitions against actual product instances before concluding a field is missing.
+- Metafield namespace attribution may be inferred from naming patterns such as `judgeme`, `custom`, `shopify`, or Google-shopping namespaces, but uncertain attribution must be marked as inferred rather than confirmed.
 - Do not make unsupported claims. Every title, meta description, content topic, and distribution suggestion must be tied to product evidence or marked as needing evidence.
 - For the Enhanced snippets module, do not guess. Every FAQ, comparison axis, how-to direction, details/spec direction, and feature highlight must be grounded in all three evidence layers:
   - merchant product evidence from Shopify product data
@@ -34,6 +39,7 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 - Never print or store access tokens, client secrets, short-lived tokens, session cookies, or real merchant data in public files.
 
 Read `references/serp-methodology.md` before scoring, batching, reporting, or proposing SERP metadata.
+When metafields are in scope, also read `references/metafield-audit.md`.
 When image alt text is in scope, also read `references/alt-text-rules.md`.
 
 ## Beginner Onboarding First
@@ -174,6 +180,8 @@ It can produce:
 - Product evidence ledgers separating supported facts from claims that need evidence.
 - Search intent maps and micro-intent expansion ladders for each product.
 - Product title, product description, SEO title, and meta description scoring and recommendations.
+- Metafield definition and value audit for advanced snippets, review modules, materials, specifications, dimensions, product detail, and feature modules.
+- Evidence-backed metafield optimization suggestions and approved metafield value updates.
 - Product content gaps, buyer objection matrices, and evidence-backed description rewrite opportunities.
 - Alt text action: no change or approved update included in the same approval bundle, with direct in-skill generation and review.
 - Enhanced snippets suggestions with five evidence-gated submodules:
@@ -259,25 +267,31 @@ Batch meaning:
 1. Create or verify `skill-hub.env`.
 2. Run Shopify connection check.
 3. Read `references/serp-methodology.md`.
-4. If alt text is in scope, read `references/alt-text-rules.md`.
-5. Read the explicit product context or run product scan and batch planning.
-6. Commit to generating the `.html` report in this same turn unless a hard blocker prevents file creation.
-7. Gather live Google intent evidence during the current run. Use real Google search surfaces such as autocomplete, related searches, People Also Ask, product/product-review/comparison results, or current SERP wording. Do not reuse stale memory as a substitute for live evidence.
-8. Gather live Amazon ecommerce user-intent evidence during the current run. Use real Amazon surfaces such as autocomplete, category/product result wording, titles, bullets, Compare With Similar Items, Q&A themes, and review themes. Do not reuse stale memory as a substitute for live evidence.
-9. Tell the user the scope, current batch, opportunity reasons, and what can or cannot be executed.
-10. Build a product evidence ledger. Separate supported facts from missing or risky claims.
-11. Classify search intent and create a micro-intent ladder. If no target query is provided, infer conservative hypotheses from product evidence and mark them as hypotheses.
-12. Resolve the current product title, product description, effective SEO title, and effective meta description with Shopify fallback rules, then score those values.
-13. Produce 1-3 candidate product titles, 1-3 product description rewrite directions or final descriptions, 1-3 SEO titles, and 1-3 meta descriptions with evidence, why, risk flags, and score.
-14. Generate direct product-image alt text recommendations inside this skill. Download only the current product-image batch to an operating-system temp folder, inspect images through the host's native image input when available, validate against `references/alt-text-rules.md`, and include approved candidates in the same product bundle.
-15. Build the Enhanced snippets module from merchant evidence plus the live Google and live Amazon evidence. If an item cannot meet that evidence standard, mark it blocked instead of guessing.
-16. Generate the HTML report with the bundled helper.
-17. Tell the user the most important findings directly in the chat and explain how to open the HTML report.
-18. Ask for one explicit approval to apply the exact selected field bundle. The bundle must include every recommended `title`, `descriptionHtml`, `seo.title`, `seo.description`, and approved alt text update that should be written now.
-19. Preview the approved write plan with `apply --input -`.
-20. Apply the approved bundle in one execution with `apply --input - --execute`. Do not pause for additional per-field confirmation unless a hard validation or permissions failure blocks execution.
-21. Verify by reading changed products.
-22. Clean up operating-system temp files and confirm no process JSON or generated helper files were left in the working folder.
+4. If metafields are in scope, read `references/metafield-audit.md`.
+5. If alt text is in scope, read `references/alt-text-rules.md`.
+6. Read the explicit product context or run product scan and batch planning.
+7. Commit to generating the `.html` report in this same turn unless a hard blocker prevents file creation.
+8. Gather live Google intent evidence during the current run. Use real Google search surfaces such as autocomplete, related searches, People Also Ask, product/product-review/comparison results, or current SERP wording. Do not reuse stale memory as a substitute for live evidence.
+9. Gather live Amazon ecommerce user-intent evidence during the current run. Use real Amazon surfaces such as autocomplete, category/product result wording, titles, bullets, Compare With Similar Items, Q&A themes, and review themes. Do not reuse stale memory as a substitute for live evidence.
+10. If Shopify access is available, run `metafield-audit` for the product or current batch and separate:
+  - definitions with populated values
+  - definitions missing values on the product
+  - value-only metafields without surfaced definitions
+11. Tell the user the scope, current batch, opportunity reasons, and what can or cannot be executed.
+12. Build a product evidence ledger. Separate supported facts from missing or risky claims.
+13. Classify search intent and create a micro-intent ladder. If no target query is provided, infer conservative hypotheses from product evidence and mark them as hypotheses.
+14. Resolve the current product title, product description, effective SEO title, and effective meta description with Shopify fallback rules, then score those values.
+15. Produce 1-3 candidate product titles, 1-3 product description rewrite directions or final descriptions, 1-3 SEO titles, and 1-3 meta descriptions with evidence, why, risk flags, and score.
+16. Generate metafield optimization suggestions only when the value meaning can be grounded in definition metadata plus product evidence. For missing metafield values, offer fill recommendations instead of guessing.
+17. Generate direct product-image alt text recommendations inside this skill. Download only the current product-image batch to an operating-system temp folder, inspect images through the host's native image input when available, validate against `references/alt-text-rules.md`, and include approved candidates in the same product bundle.
+18. Build the Enhanced snippets module from merchant evidence plus the live Google and live Amazon evidence. If an item cannot meet that evidence standard, mark it blocked instead of guessing.
+19. Generate the HTML report with the bundled helper.
+20. Tell the user the most important findings directly in the chat and explain how to open the HTML report.
+21. Ask for one explicit approval to apply the exact selected field bundle. The bundle must include every recommended `title`, `descriptionHtml`, `seo.title`, `seo.description`, approved metafield updates, and approved alt text update that should be written now.
+22. Preview the approved write plan with `apply --input -`.
+23. Apply the approved bundle in one execution with `apply --input - --execute`. Do not pause for additional per-field confirmation unless a hard validation or permissions failure blocks execution.
+24. Verify by reading changed products.
+25. Clean up operating-system temp files and confirm no process JSON or generated helper files were left in the working folder.
 
 ## Bundled Script
 
@@ -289,6 +303,7 @@ node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mj
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs connection-check --env skill-hub.env
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --id gid://shopify/Product/...
+node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs metafield-audit --env skill-hub.env --handle <product-handle>
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs scan-products --env skill-hub.env
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs report --input - --output shopify-serp-report-YYYYMMDD-HHMM.html
@@ -344,6 +359,11 @@ The report must contain:
 - Evidence ledger.
 - Micro-intent expansion ladder.
 - Content gap and buyer objection matrix.
+- Metafields and advanced snippets audit:
+  - detected metafield-backed modules
+  - populated metafields worth preserving or tightening
+  - defined but missing metafields worth filling
+  - value-only metafields detected from apps or legacy data
 - Enhanced snippets suggestions with these five submodules:
   - FAQ directions
   - comparison directions and comparison axes
@@ -445,6 +465,38 @@ The report helper accepts this shape:
       "contentGaps": [
         { "question": "Will it fit under an airplane seat?", "recommendation": "Add measured dimensions before targeting seat-fit queries." }
       ],
+      "metafieldsAudit": {
+        "modules": [{ "name": "Material", "count": 1 }, { "name": "Review", "count": 3 }],
+        "populatedDefinitions": [
+          {
+            "module": "Material",
+            "name": "Material",
+            "namespace": "custom",
+            "key": "material",
+            "type": "single_line_text_field",
+            "valuePreview": "Nylon"
+          }
+        ],
+        "missingDefinitions": [
+          {
+            "module": "Dimension",
+            "name": "Dimensions",
+            "namespace": "custom",
+            "key": "dimensions",
+            "type": "single_line_text_field",
+            "description": "Used to show product dimensions in snippets and product detail."
+          }
+        ],
+        "valueOnlyMetafields": [
+          {
+            "module": "Review",
+            "namespace": "judgeme",
+            "key": "review_widget_data",
+            "type": "json",
+            "valuePreview": "{\"number_of_reviews\": 0}"
+          }
+        ]
+      },
       "enhancedSnippets": {
         "evidenceRule": "Every item below is grounded in merchant evidence plus live Google and live Amazon intent evidence gathered during this run.",
         "eligibilityNote": "FAQ output is content guidance. Do not promise FAQ rich results unless the site is actually eligible under current Google rules.",
@@ -541,6 +593,14 @@ Prefer piping the approved write plan to `apply --input -` through stdin. Do not
       "descriptionHtml": "<p>A water-resistant carry-on laptop backpack with padded 16-inch device storage, organized compartments, and travel-ready access for short business trips.</p>",
       "seoTitle": "Carry-On Laptop Backpack for 16-Inch Devices | Brand",
       "seoDescription": "A supported, evidence-backed product summary for search snippets.",
+      "metafieldUpdates": [
+        {
+          "namespace": "custom",
+          "key": "material",
+          "type": "single_line_text_field",
+          "value": "Water-resistant nylon"
+        }
+      ],
       "targetIntent": "carry-on laptop backpack for 16-inch devices",
       "evidence": ["Description mentions 16-inch device storage", "Product photos show organized travel compartments"],
       "risk": "low",
@@ -558,7 +618,7 @@ Prefer piping the approved write plan to `apply --input -` through stdin. Do not
 }
 ```
 
-For `product_full_bundle`, the helper may update `title`, `descriptionHtml`, `seo.title`, `seo.description`, and any included approved alt text entries in one execution bundle. It must preserve the existing handle and reject tags, schema, theme, and unrelated product edits.
+For `product_full_bundle`, the helper may update `title`, `descriptionHtml`, `seo.title`, `seo.description`, approved product metafield values, and any included approved alt text entries in one execution bundle. It must preserve the existing handle and reject tags, schema, theme, and unrelated product edits.
 
 For alt text inside the bundle, generate it directly in this skill from real image evidence when available or conservative context-only fallback when image inspection fails. The helper rejects empty alt text and alt text longer than Shopify's 512-character hard limit.
 
