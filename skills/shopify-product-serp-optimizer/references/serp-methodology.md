@@ -417,6 +417,12 @@ Layout constraints:
 - Do not show a final protected-fields or "do-not-touch" card in each product page. Keep protected-field rules in the skill behavior, not in the merchant-facing report.
 - Localize all static report labels to the user's language when `language`, `locale`, or `userLanguage` is known. The agent should also provide product analysis text in that same language.
 - Include a built-in zero-dependency `Export as PDF` button that calls the browser's native print flow and hides itself in print mode.
+- Generate every report from `assets/report-template.html`; do not hand-write or substitute a custom HTML report when the template is available.
+- Before considering the report complete, verify the generated HTML contains:
+  - `class="export-button"`
+  - `onclick="window.print()"`
+  - `@media print`
+- If any marker is missing, regenerate the report before delivery.
 
 ## Stop Conditions
 

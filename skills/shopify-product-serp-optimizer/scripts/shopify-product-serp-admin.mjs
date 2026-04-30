@@ -21,6 +21,18 @@ function fail(message) {
   process.exit(1);
 }
 
+function assertReportTemplateCompliance(template, html) {
+  const templateChecks = [
+    { marker: 'class="export-button"', label: "template export button" },
+    { marker: 'onclick="window.print()"', label: "template print handler" },
+    { marker: "@media print", label: "template print styles" },
+  ];
+  for (const check of templateChecks) {
+    if (!String(template).includes(check.marker)) fail(`Report template is incomplete: missing ${check.label}.`);
+    if (!String(html).includes(check.marker)) fail(`Generated report is incomplete: missing ${check.label}. Regenerate from the bundled template before delivery.`);
+  }
+}
+
 function parseArgs(argv) {
   const args = { _: [] };
   for (let i = 0; i < argv.length; i += 1) {
@@ -1278,6 +1290,7 @@ async function reportCommand(args) {
     .replaceAll("{{EXPORT_PDF_LABEL}}", escapeHtml(copy.exportPdf))
     .replaceAll("{{GENERATED_AT}}", escapeHtml(generatedAt))
     .replace("{{REPORT_CONTENT}}", `${overview}\n${productSections}`);
+  assertReportTemplateCompliance(template, html);
   await fs.writeFile(output, html, "utf8");
   console.log(JSON.stringify({ ok: true, output: path.resolve(output), products: products.length }, null, 2));
 }
