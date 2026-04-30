@@ -126,18 +126,34 @@
       "public": true,
       "status": "PUBLISHED",
       "shortDescription": {
-        "en": "Plan product SERP batches and generate HTML SEO opportunity reports",
-        "zh": "规划商品 SERP 优化批次并生成 HTML SEO 机会报告"
+        "en": "Grow product search visibility with AI-driven SERP optimization and polished HTML reports",
+        "zh": "用 AI 驱动的 SERP 优化与精致 HTML 报告，提升商品搜索可见度"
       },
       "longDescription": {
-        "en": "Scan Shopify products, score product-level SERP opportunities, plan manageable five-product batches, and generate a polished HTML audit report for each current batch. The workflow maps micro search intent to real product evidence, recommends SEO title and meta description updates only when supported, includes product-led blog and distribution opportunities, and applies only approved updates to product SEO fields or reviewed product media alt text.",
-        "zh": "扫描 Shopify 商品，评估商品级 SERP 机会，自动规划每批 5 个商品的可控优化计划，并为当前批次生成精致 HTML 审计报告。这个 workflow 会把微观搜索意图映射到真实商品证据，只在证据支撑时推荐 SEO title 和 meta description 更新，同时给出商品驱动的博客与分发机会，并且只写入用户批准的商品 SEO 字段或已审核商品图片 alt text。"
+        "en": "Turn your Shopify catalog into a scalable product SEO growth engine. This skill analyzes product-level SERP opportunities, maps real buyer intent to your product evidence, and delivers polished HTML audits your team can review and execute fast. The methodology is refined with globally trusted SEO best-practice knowledge from Google documentation, Moz, Semrush, and Ahrefs, so your optimization decisions stay practical, modern, and conversion-oriented.",
+        "zh": "把你的 Shopify 商品目录升级为可持续增长的搜索流量引擎。该技能会分析商品级 SERP 机会，将真实买家搜索意图与商品证据精准匹配，并输出可直接评审与落地的精致 HTML 审计报告。方法论基于 Google 官方文档、Moz、Semrush、Ahrefs 等全球顶级 SEO 最佳实践打磨，让你的优化决策更贴近当下搜索生态，并更聚焦转化结果。"
       },
       "introduction": {
-        "en": "Turn vague product SEO requests into five-product SERP batches, HTML audit reports, and safe approved Shopify SEO field updates.",
-        "zh": "把模糊的商品 SEO 需求转化为每批 5 个商品的 SERP 优化计划、HTML 审计报告和安全的 Shopify SEO 字段写入。"
+        "en": "Convert unclear product SEO requests into a clear growth roadmap, premium HTML audits, and high-impact SERP improvements your team can launch with confidence.",
+        "zh": "把模糊的商品 SEO 需求转化为清晰的增长路线图、专业级 HTML 审计报告和高影响力 SERP 优化动作。"
       },
       "features": [
+        {
+          "id": "global-seo-best-practice-engine",
+          "title": {
+            "en": "Global SEO best-practice engine",
+            "zh": "全球 SEO 最佳实践引擎"
+          },
+          "description": {
+            "en": "Built on practical guidance distilled from Google Search documentation, Moz, Semrush, and Ahrefs to help your product pages align with what modern search and shoppers reward.",
+            "zh": "基于 Google Search 官方文档、Moz、Semrush、Ahrefs 的实战方法提炼，帮助你的商品页更贴合现代搜索机制与用户决策路径。"
+          },
+          "badge": {
+            "en": "Trusted frameworks",
+            "zh": "权威方法"
+          },
+          "icon": "Globe"
+        },
         {
           "id": "html-serp-report",
           "title": {
@@ -145,8 +161,8 @@
             "zh": "HTML SERP 审计报告"
           },
           "description": {
-            "en": "Generates a polished single-file HTML report with one product page, evidence ledger, snippet recommendations, content gaps, and execution boundaries.",
-            "zh": "生成精致的单文件 HTML 报告，每个商品独立一页，包含证据表、搜索摘要建议、内容缺口和执行边界。"
+            "en": "Delivers polished, presentation-ready HTML audits that make opportunities, priorities, and recommended actions instantly clear to marketing, SEO, and merchandising teams.",
+            "zh": "输出可直接展示给市场、SEO 与商品团队的精致 HTML 审计报告，让机会点、优先级与推荐动作一眼清晰。"
           },
           "badge": {
             "en": "Open in browser",
@@ -161,8 +177,8 @@
             "zh": "微观意图摘要"
           },
           "description": {
-            "en": "Expands broad topics into product, attribute, use case, constraint, audience, problem, comparison, and purchase-stage intent before writing metadata.",
-            "zh": "在写入元信息前，把宽泛主题下钻到商品、属性、场景、约束、人群、痛点、对比和购买阶段等微观意图。"
+            "en": "Transforms broad keywords into high-converting product intent angles across use cases, pain points, comparisons, and purchase stages to improve snippet relevance and click appeal.",
+            "zh": "把宽泛关键词拆解为更高转化的商品意图角度，覆盖场景、痛点、对比与购买阶段，提升摘要相关性与点击吸引力。"
           },
           "badge": {
             "en": "Evidence-backed",
@@ -177,8 +193,8 @@
             "zh": "内容分发机会"
           },
           "description": {
-            "en": "Suggests product-led blog clusters, comparison angles, community search operators, and outreach directions without fabricating backlinks or promising rankings.",
-            "zh": "提出商品驱动的博客主题、对比角度、社区搜索式和外联方向，但不伪造外链、不承诺排名。"
+            "en": "Uncovers product-led content and distribution opportunities so you can expand qualified search demand, support rankings over time, and create stronger acquisition flywheels.",
+            "zh": "挖掘商品驱动的内容与分发机会，帮助你持续扩大高质量搜索需求，支撑长期排名表现并强化自然获客飞轮。"
           },
           "badge": {
             "en": "No spam",
@@ -193,8 +209,8 @@
             "zh": "批准后商品更新"
           },
           "description": {
-            "en": "Applies only approved product SEO title, meta description, and reviewed product image alt updates while leaving handles, descriptions, themes, and redirects untouched.",
-            "zh": "只执行用户批准的商品 SEO title、meta description 和已审核商品图片 alt text 更新，不触碰 handle、商品描述、主题和重定向。"
+            "en": "Move from insights to execution quickly with a controlled rollout flow that keeps teams aligned and reduces rework across SEO, content, and ecommerce operations.",
+            "zh": "通过可控发布流程，把洞察快速转化为执行结果，同时提升 SEO、内容与电商运营协同效率并减少返工。"
           },
           "badge": {
             "en": "Preview first",

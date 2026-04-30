@@ -299,6 +299,16 @@ const PRODUCT_QUERY = `query SerpOptimizerProduct($identifier: ProductIdentifier
   }
 }`;
 
+const PRODUCT_UPDATE_READ_QUERY = `query SerpOptimizerProductUpdateRead($identifier: ProductIdentifierInput!) {
+  product: productByIdentifier(identifier: $identifier) {
+    id
+    title
+    handle
+    descriptionHtml
+    seo { title description }
+  }
+}`;
+
 const COLLECTION_QUERY = `query SerpOptimizerCollection($identifier: CollectionIdentifierInput!, $first: Int!, $after: String) {
   collection: collectionByIdentifier(identifier: $identifier) {
     id
@@ -611,7 +621,39 @@ function validatePlan(plan) {
   const changes = Array.isArray(plan?.changes) ? plan.changes : [];
   const errors = [];
   for (const [index, change] of changes.entries()) {
-    if (change.type === "product_seo") {
+    if (change.type === "product_full_bundle") {
+      if (!change.productId) errors.push(`changes[${index}].productId is required`);
+      const hasProductFields = ["productTitle", "descriptionHtml", "seoTitle", "seoDescription"].some((field) => {
+        const value = change[field];
+        return value !== undefined && value !== null && String(value).trim() !== "";
+      });
+      const altUpdates = Array.isArray(change.altUpdates) ? change.altUpdates : [];
+      if (!hasProductFields && !altUpdates.length) {
+        errors.push(`changes[${index}] must include at least one product field or altUpdates`);
+      }
+      for (const forbidden of ["handle", "tags", "productType", "vendor", "status", "variants", "collections"]) {
+        if (Object.prototype.hasOwnProperty.call(change, forbidden)) {
+          errors.push(`changes[${index}] must not include ${forbidden}`);
+        }
+      }
+      if (change.productTitle && String(change.productTitle).length > 255) {
+        errors.push(`changes[${index}].productTitle is unusually long; revise before applying`);
+      }
+      if (change.descriptionHtml !== undefined && !String(change.descriptionHtml).trim()) {
+        errors.push(`changes[${index}].descriptionHtml must not be empty when provided`);
+      }
+      if (change.seoTitle && String(change.seoTitle).length > 255) {
+        errors.push(`changes[${index}].seoTitle is unusually long; revise before applying`);
+      }
+      if (change.seoDescription && String(change.seoDescription).length > 500) {
+        errors.push(`changes[${index}].seoDescription is unusually long; revise before applying`);
+      }
+      for (const [altIndex, altUpdate] of altUpdates.entries()) {
+        if (!altUpdate?.id) errors.push(`changes[${index}].altUpdates[${altIndex}].id is required`);
+        if (!altUpdate?.alt || !String(altUpdate.alt).trim()) errors.push(`changes[${index}].altUpdates[${altIndex}].alt is required`);
+        if (String(altUpdate?.alt || "").length > 512) errors.push(`changes[${index}].altUpdates[${altIndex}].alt exceeds 512 characters`);
+      }
+    } else if (change.type === "product_seo") {
       if (!change.productId) errors.push(`changes[${index}].productId is required`);
       if (!change.seoTitle && !change.seoDescription) {
         errors.push(`changes[${index}] must include seoTitle or seoDescription`);
@@ -640,6 +682,12 @@ function validatePlan(plan) {
   return changes;
 }
 
+function bundleAltUpdates(change) {
+  return Array.isArray(change?.altUpdates)
+    ? change.altUpdates.map((item) => ({ id: item.id, alt: String(item.alt) }))
+    : [];
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -657,6 +705,7 @@ const REPORT_COPY = {
   en: {
     lang: "en",
     reportTitle: "Product SEO Opportunity Report",
+    exportPdf: "Export as PDF",
     coverEyebrow: "Store SEO snapshot",
     coverLead: "A quick, plain-English view of which product pages were reviewed and where the biggest search-result improvements may come from.",
     store: "Store",
@@ -671,6 +720,10 @@ const REPORT_COPY = {
     score: "SEO score",
     scoreSummary: "Higher means the product page has clearer search wording, stronger product evidence, and fewer risky claims.",
     snapshot: "Product snapshot",
+    currentProductCopy: "Current product copy",
+    recommendedProductCopy: "Recommended product copy",
+    productTitle: "Product title",
+    productDescription: "Product description",
     status: "Status",
     productType: "Product type",
     audience: "Best-fit shopper/use",
@@ -689,6 +742,26 @@ const REPORT_COPY = {
     contentGaps: "What shoppers may still need to know",
     contentGapsEmpty: "No content gaps provided.",
     altText: "Image alt text",
+    enhancedSnippets: "Enhanced snippets suggestions",
+    enhancedEvidenceRule: "Evidence rule",
+    enhancedFaq: "FAQ directions",
+    enhancedComparison: "Comparison directions",
+    enhancedHowTo: "How-to directions",
+    enhancedDetails: "Details and specs directions",
+    enhancedFeatures: "Feature highlight directions",
+    enhancedQuestion: "Question",
+    enhancedAnswerDirection: "Answer direction",
+    enhancedComparisonType: "Comparison",
+    enhancedMetrics: "Comparison axes",
+    enhancedTopic: "How-to topic",
+    enhancedUserGoal: "User goal",
+    enhancedAttribute: "Technical detail",
+    enhancedWhyItMatters: "Why it matters",
+    enhancedFeature: "Feature",
+    enhancedBuyerValue: "Buyer value",
+    enhancedMerchantEvidence: "Merchant evidence",
+    enhancedGoogleEvidence: "Google intent evidence",
+    enhancedAmazonEvidence: "Amazon intent evidence",
     blogMap: "Blog and guide ideas",
     blogType: "Type",
     blogIntent: "Intent",
@@ -714,6 +787,7 @@ const REPORT_COPY = {
   zh: {
     lang: "zh-CN",
     reportTitle: "商品 SEO 机会报告",
+    exportPdf: "导出为 PDF",
     coverEyebrow: "店铺 SEO 快速概览",
     coverLead: "这是一份给新手也能看懂的商品搜索结果优化摘要：先看哪些商品被审查了，再看最值得改哪里。",
     store: "店铺",
@@ -728,6 +802,10 @@ const REPORT_COPY = {
     score: "SEO 分数",
     scoreSummary: "分数越高，代表商品页的搜索展示文案越清楚、证据越充分、风险越少。",
     snapshot: "商品概况",
+    currentProductCopy: "当前商品文案",
+    recommendedProductCopy: "建议商品文案",
+    productTitle: "商品标题",
+    productDescription: "商品描述",
     status: "状态",
     productType: "商品类型",
     audience: "适合的人群/场景",
@@ -746,6 +824,26 @@ const REPORT_COPY = {
     contentGaps: "买家可能还想知道什么",
     contentGapsEmpty: "暂未提供内容缺口。",
     altText: "图片 Alt Text",
+    enhancedSnippets: "Enhanced snippets 建议",
+    enhancedEvidenceRule: "证据规则",
+    enhancedFaq: "FAQ 方向",
+    enhancedComparison: "Comparison 方向",
+    enhancedHowTo: "How To 方向",
+    enhancedDetails: "Details & Spec 方向",
+    enhancedFeatures: "Features（Highlight）方向",
+    enhancedQuestion: "问题",
+    enhancedAnswerDirection: "回答方向",
+    enhancedComparisonType: "对比对象",
+    enhancedMetrics: "对比指标",
+    enhancedTopic: "How To 主题",
+    enhancedUserGoal: "用户目标",
+    enhancedAttribute: "技术细节",
+    enhancedWhyItMatters: "为什么重要",
+    enhancedFeature: "Feature",
+    enhancedBuyerValue: "买家价值",
+    enhancedMerchantEvidence: "商户证据",
+    enhancedGoogleEvidence: "Google 真实意图证据",
+    enhancedAmazonEvidence: "Amazon 真实意图证据",
     blogMap: "博客和指南选题",
     blogType: "类型",
     blogIntent: "搜索意图",
@@ -771,6 +869,7 @@ const REPORT_COPY = {
   de: {
     lang: "de",
     reportTitle: "Produkt-SEO Chancenbericht",
+    exportPdf: "Als PDF exportieren",
     coverEyebrow: "SEO Kurzüberblick",
     coverLead: "Ein einfacher Überblick: welche Produktseiten geprüft wurden und wo die größten Verbesserungen in Suchergebnissen möglich sind.",
     store: "Shop",
@@ -785,6 +884,10 @@ const REPORT_COPY = {
     score: "SEO-Wert",
     scoreSummary: "Ein höherer Wert bedeutet klarere Suchtexte, bessere Produktbelege und weniger riskante Aussagen.",
     snapshot: "Produktüberblick",
+    currentProductCopy: "Aktueller Produkttext",
+    recommendedProductCopy: "Empfohlener Produkttext",
+    productTitle: "Produkttitel",
+    productDescription: "Produktbeschreibung",
     status: "Status",
     productType: "Produkttyp",
     audience: "Passende Käufer/Nutzung",
@@ -803,6 +906,26 @@ const REPORT_COPY = {
     contentGaps: "Was Käufer noch wissen möchten",
     contentGapsEmpty: "Keine Inhaltslücken angegeben.",
     altText: "Bild-Alt-Text",
+    enhancedSnippets: "Enhanced-Snippet-Empfehlungen",
+    enhancedEvidenceRule: "Belegregel",
+    enhancedFaq: "FAQ-Richtungen",
+    enhancedComparison: "Vergleichsrichtungen",
+    enhancedHowTo: "How-to-Richtungen",
+    enhancedDetails: "Details- und Spezifikationsrichtungen",
+    enhancedFeatures: "Feature-Highlights",
+    enhancedQuestion: "Frage",
+    enhancedAnswerDirection: "Antwort-Richtung",
+    enhancedComparisonType: "Vergleich",
+    enhancedMetrics: "Vergleichsachsen",
+    enhancedTopic: "How-to-Thema",
+    enhancedUserGoal: "Nutzerziel",
+    enhancedAttribute: "Technisches Detail",
+    enhancedWhyItMatters: "Warum es wichtig ist",
+    enhancedFeature: "Feature",
+    enhancedBuyerValue: "Käufernutzen",
+    enhancedMerchantEvidence: "Händlerbeleg",
+    enhancedGoogleEvidence: "Google-Intent-Beleg",
+    enhancedAmazonEvidence: "Amazon-Intent-Beleg",
     blogMap: "Blog- und Ratgeberideen",
     blogType: "Typ",
     blogIntent: "Suchabsicht",
@@ -879,6 +1002,11 @@ function list(items, empty = "No item provided.") {
   return `<ul class="clean-list">${values.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
+function displayValue(raw) {
+  if (Array.isArray(raw)) return raw.filter((item) => item !== null && item !== undefined && String(item).trim() !== "").join(" | ");
+  return String(raw ?? "");
+}
+
 function keyValues(items, empty = "No details provided.", copy = REPORT_COPY.en) {
   const values = plainArray(items);
   if (!values.length) return `<p class="muted">${escapeHtml(empty)}</p>`;
@@ -898,10 +1026,82 @@ function cards(items, fields, copy = REPORT_COPY.en) {
     const body = fields.map((field) => {
       const raw = item[field.key];
       if (raw === undefined || raw === null || raw === "") return "";
-      return `<p><strong>${escapeHtml(field.label)}:</strong> ${escapeHtml(raw)}</p>`;
+      return `<p><strong>${escapeHtml(field.label)}:</strong> ${escapeHtml(displayValue(raw))}</p>`;
     }).filter(Boolean).join("");
     return `<article class="mini-card">${body}</article>`;
   }).join("")}</div>`;
+}
+
+function renderEnhancedSnippets(enhanced = {}, copy = REPORT_COPY.en) {
+  const sections = [
+    {
+      title: copy.enhancedFaq,
+      items: enhanced.faq,
+      fields: [
+        { key: "question", label: copy.enhancedQuestion },
+        { key: "answerDirection", label: copy.enhancedAnswerDirection },
+        { key: "merchantEvidence", label: copy.enhancedMerchantEvidence },
+        { key: "googleIntentEvidence", label: copy.enhancedGoogleEvidence },
+        { key: "amazonIntentEvidence", label: copy.enhancedAmazonEvidence },
+        { key: "risk", label: copy.blogRisk },
+      ],
+    },
+    {
+      title: copy.enhancedComparison,
+      items: enhanced.comparison,
+      fields: [
+        { key: "comparisonType", label: copy.enhancedComparisonType },
+        { key: "metrics", label: copy.enhancedMetrics },
+        { key: "merchantEvidence", label: copy.enhancedMerchantEvidence },
+        { key: "googleIntentEvidence", label: copy.enhancedGoogleEvidence },
+        { key: "amazonIntentEvidence", label: copy.enhancedAmazonEvidence },
+        { key: "risk", label: copy.blogRisk },
+      ],
+    },
+    {
+      title: copy.enhancedHowTo,
+      items: enhanced.howTo,
+      fields: [
+        { key: "topic", label: copy.enhancedTopic },
+        { key: "userGoal", label: copy.enhancedUserGoal },
+        { key: "merchantEvidence", label: copy.enhancedMerchantEvidence },
+        { key: "googleIntentEvidence", label: copy.enhancedGoogleEvidence },
+        { key: "amazonIntentEvidence", label: copy.enhancedAmazonEvidence },
+        { key: "risk", label: copy.blogRisk },
+      ],
+    },
+    {
+      title: copy.enhancedDetails,
+      items: enhanced.detailsAndSpecs,
+      fields: [
+        { key: "attribute", label: copy.enhancedAttribute },
+        { key: "whyItMatters", label: copy.enhancedWhyItMatters },
+        { key: "merchantEvidence", label: copy.enhancedMerchantEvidence },
+        { key: "googleIntentEvidence", label: copy.enhancedGoogleEvidence },
+        { key: "amazonIntentEvidence", label: copy.enhancedAmazonEvidence },
+        { key: "risk", label: copy.blogRisk },
+      ],
+    },
+    {
+      title: copy.enhancedFeatures,
+      items: enhanced.features,
+      fields: [
+        { key: "feature", label: copy.enhancedFeature },
+        { key: "buyerValue", label: copy.enhancedBuyerValue },
+        { key: "merchantEvidence", label: copy.enhancedMerchantEvidence },
+        { key: "googleIntentEvidence", label: copy.enhancedGoogleEvidence },
+        { key: "amazonIntentEvidence", label: copy.enhancedAmazonEvidence },
+        { key: "risk", label: copy.blogRisk },
+      ],
+    },
+  ];
+  const hasItems = sections.some((section) => plainArray(section.items).length);
+  if (!hasItems && !enhanced.evidenceRule && !enhanced.eligibilityNote) {
+    return `<p class="muted">${escapeHtml(copy.noOpportunity)}</p>`;
+  }
+  return `${enhanced.evidenceRule ? `<p><strong>${escapeHtml(copy.enhancedEvidenceRule)}:</strong> ${escapeHtml(enhanced.evidenceRule)}</p>` : ""}
+${enhanced.eligibilityNote ? `<p><strong>${escapeHtml(copy.labelNote)}:</strong> ${escapeHtml(enhanced.eligibilityNote)}</p>` : ""}
+${sections.map((section) => `<div class="mini-section"><h4>${escapeHtml(section.title)}</h4>${cards(section.items, section.fields, copy)}</div>`).join("")}`;
 }
 
 function renderBatchPlan(batchPlan) {
@@ -934,7 +1134,10 @@ function renderCommunity(community = {}, copy = REPORT_COPY.en) {
 function renderProduct(rawProduct, index, copy = REPORT_COPY.en) {
   const product = normalizeReportProduct(rawProduct);
   const score = product.serpScore ?? product.score ?? "N/A";
-  const executableFields = product.executableFields || [];
+  const currentProductTitle = product.currentProductTitle || product.title || "";
+  const currentProductDescription = firstText(product.currentProductDescription || product.descriptionHtml || product.description || "", 320);
+  const recommendedProductTitle = product.recommendedProductTitle || product.productTitleRecommendation || "";
+  const recommendedProductDescription = firstText(product.recommendedProductDescription || product.recommendedDescriptionHtml || "", 320);
   return `<section class="product-page">
     <div class="product-hero">
       <p class="eyebrow">${escapeHtml(copy.productPage)} ${index + 1}</p>
@@ -947,14 +1150,27 @@ function renderProduct(rawProduct, index, copy = REPORT_COPY.en) {
         <p class="score">${escapeHtml(score)}</p>
         <p>${escapeHtml(product.scoreSummary || copy.scoreSummary)}</p>
       </article>
-      <article class="card snapshot-card">
-        <h3>🧾 ${escapeHtml(copy.snapshot)}</h3>
-        ${keyValues([
-          { label: copy.status, value: product.status || "Unknown" },
-          { label: copy.productType, value: product.productType || "Not provided" },
-          { label: copy.audience, value: product.audience || product.useCase || "Needs classification" },
-          { label: copy.url, value: product.url || product.handle || "Not provided" },
-        ], "No details provided.", copy)}
+      <article class="card wide current-card">
+        <h3>📝 ${escapeHtml(copy.currentProductCopy)}</h3>
+        <div class="snippet">
+          <strong>${escapeHtml(copy.productTitle)}</strong>
+          <p>${escapeHtml(currentProductTitle || copy.noOpportunity)}</p>
+        </div>
+        <div class="snippet">
+          <strong>${escapeHtml(copy.productDescription)}</strong>
+          <p>${escapeHtml(currentProductDescription || copy.noOpportunity)}</p>
+        </div>
+      </article>
+      <article class="card wide recommend">
+        <h3>✏️ ${escapeHtml(copy.recommendedProductCopy)}</h3>
+        <div class="snippet">
+          <strong>${escapeHtml(copy.productTitle)}</strong>
+          <p>${escapeHtml(recommendedProductTitle || copy.noOpportunity)}</p>
+        </div>
+        <div class="snippet">
+          <strong>${escapeHtml(copy.productDescription)}</strong>
+          <p>${escapeHtml(recommendedProductDescription || copy.noOpportunity)}</p>
+        </div>
       </article>
       <article class="card wide current-card">
         <h3>🔎 ${escapeHtml(copy.currentSnippet)}</h3>
@@ -992,9 +1208,9 @@ function renderProduct(rawProduct, index, copy = REPORT_COPY.en) {
         <h3>🧠 ${escapeHtml(copy.contentGaps)}</h3>
         ${keyValues(product.contentGaps, copy.contentGapsEmpty, copy)}
       </article>
-      <article class="card">
-        <h3>🖼️ ${escapeHtml(copy.altText)}</h3>
-        <p>${escapeHtml(product.altTextAction || "No alt text action provided.")}</p>
+      <article class="card wide">
+        <h3>🧩 ${escapeHtml(copy.enhancedSnippets)}</h3>
+        ${renderEnhancedSnippets(product.enhancedSnippets, copy)}
       </article>
       <article class="card wide">
         <h3>📰 ${escapeHtml(copy.blogMap)}</h3>
@@ -1011,10 +1227,6 @@ function renderProduct(rawProduct, index, copy = REPORT_COPY.en) {
       <article class="card wide community-card">
         <h3>🌐 ${escapeHtml(copy.community)}</h3>
         ${renderCommunity(product.community, copy)}
-      </article>
-      <article class="card action-card">
-        <h3>✅ ${escapeHtml(copy.executable)}</h3>
-        ${list(executableFields, copy.noExecutable)}
       </article>
     </div>
   </section>`;
@@ -1063,6 +1275,7 @@ async function reportCommand(args) {
   const html = template
     .replaceAll("{{REPORT_TITLE}}", escapeHtml(title))
     .replaceAll("{{REPORT_LANG}}", escapeHtml(copy.lang))
+    .replaceAll("{{EXPORT_PDF_LABEL}}", escapeHtml(copy.exportPdf))
     .replaceAll("{{GENERATED_AT}}", escapeHtml(generatedAt))
     .replace("{{REPORT_CONTENT}}", `${overview}\n${productSections}`);
   await fs.writeFile(output, html, "utf8");
@@ -1083,6 +1296,35 @@ async function applyCommand(args) {
   const client = await resolveAdmin(env);
   const results = [];
 
+  for (const change of changes.filter((item) => item.type === "product_full_bundle")) {
+    const current = await gql(client, PRODUCT_UPDATE_READ_QUERY, { identifier: { id: change.productId } });
+    if (!current.product) fail(`Could not load current product for ${change.productId}`);
+    const product = {
+      id: change.productId,
+      handle: current.product.handle,
+    };
+    if (change.productTitle) product.title = String(change.productTitle);
+    if (change.descriptionHtml !== undefined) product.descriptionHtml = String(change.descriptionHtml);
+    if (change.seoTitle || change.seoDescription) {
+      product.seo = {};
+      if (change.seoTitle) product.seo.title = String(change.seoTitle);
+      if (change.seoDescription) product.seo.description = String(change.seoDescription);
+    }
+    if (product.title || product.descriptionHtml !== undefined || product.seo) {
+      const data = await gql(
+        client,
+        `mutation SerpOptimizerProductBundleUpdate($product: ProductUpdateInput!) {
+          productUpdate(product: $product) {
+            product { id title handle descriptionHtml seo { title description } }
+            userErrors { field message }
+          }
+        }`,
+        { product },
+      );
+      results.push({ type: "product_full_bundle", productId: change.productId, response: data.productUpdate });
+    }
+  }
+
   for (const change of changes.filter((item) => item.type === "product_seo")) {
     const product = { id: change.productId, seo: {} };
     if (change.seoTitle) product.seo.title = String(change.seoTitle);
@@ -1102,7 +1344,8 @@ async function applyCommand(args) {
 
   const fileUpdates = changes
     .filter((item) => item.type === "product_media_alt")
-    .map((item) => ({ id: item.id, alt: String(item.alt) }));
+    .map((item) => ({ id: item.id, alt: String(item.alt) }))
+    .concat(changes.filter((item) => item.type === "product_full_bundle").flatMap(bundleAltUpdates));
   if (fileUpdates.length) {
     const data = await gql(
       client,

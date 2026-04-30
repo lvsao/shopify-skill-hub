@@ -1,6 +1,6 @@
 # Product SERP Methodology
 
-Use this reference before scanning, batching, scoring, reporting, or rewriting product SERP metadata.
+Use this reference before scanning, batching, scoring, reporting, or rewriting product SERP content fields.
 
 ## Core Frame
 
@@ -20,9 +20,9 @@ It includes:
 
 - Read-only product scanning and five-product opportunity batches.
 - Query intent and query class mapping for product pages.
-- SEO title and meta description scoring.
-- Evidence-backed candidates for Shopify `seo.title` and `seo.description`.
-- Image alt text assessment and handoff to the dedicated alt text workflow.
+- Product title, product description, SEO title, and meta description scoring.
+- Evidence-backed candidates for Shopify `title`, `descriptionHtml`, `seo.title`, and `seo.description`.
+- Image alt text assessment and direct in-skill optimization for product media.
 - HTML reporting for product SERP, content, and distribution opportunities.
 - Product-led content and community opportunity guidance.
 
@@ -33,7 +33,7 @@ It excludes:
 - Search Console opportunity mapping.
 - Merchant Center feed optimization.
 - Automated backlink building or external posting.
-- Redirects, translations, handles, theme code, reviews, ratings, prices, variants, tags, vendor, collections, and product description edits.
+- Redirects, translations, handles, theme code, reviews, ratings, prices, variants, tags, vendor, and collections.
 
 ## Opportunity Scoring
 
@@ -44,7 +44,7 @@ Add priority when:
 - Product is `ACTIVE` and has `onlineStoreUrl`.
 - SEO title is missing, templated, vague, duplicated, or not aligned to product evidence.
 - Meta description is missing, too generic, unsupported, or fails to address buyer intent.
-- Product description has concrete evidence that metadata does not use.
+- Product description has concrete evidence that the current title, description, or metadata does not use.
 - Product description is thin but the product category supports clear micro-intents.
 - Product media alt text is missing, repeated, overlong, or generic.
 - The product is a natural product-page result, not a collection, guide, or comparison result.
@@ -58,13 +58,13 @@ Subtract or exclude when:
 
 Batch interpretation:
 
-- Batch 1: highest-confidence, safest product SERP metadata opportunities.
+- Batch 1: highest-confidence, safest product SERP content opportunities.
 - Batch 2: product SERP opportunities that also need content support.
 - Batch 3+: lower certainty, thinner evidence, or opportunities needing merchant/external proof first.
 
 ## Query Class Taxonomy
 
-Classify candidate queries before writing metadata.
+Classify candidate queries before writing product SERP copy.
 
 | Query class | Definition | Product page fit | Better target when not product |
 | --- | --- | --- | --- |
@@ -83,7 +83,7 @@ Classify candidate queries before writing metadata.
 | Navigational | Store, brand, or known URL intent | Depends | Homepage, brand page, or product page |
 | Transactional | "buy", "shop", "near me" | High when product is purchasable | Collection if query is broad |
 
-If the target query is not product-page intent, do not force product metadata. Recommend collection, blog, technical, structured-data, or search-opportunity work instead.
+If the target query is not product-page intent, do not force product-page copy changes. Recommend collection, blog, technical, structured-data, or search-opportunity work instead.
 
 ## Micro-Intent Expansion Ladder
 
@@ -141,6 +141,39 @@ Unsupported or high-risk claims include:
 - "Best", "safest", "guaranteed", "certified", "doctor recommended", "eco-friendly", "non-toxic", "waterproof", "crash tested", "free shipping", and warranty or return claims unless directly evidenced.
 - Ratings, review counts, certifications, and awards unless verified.
 - Compatibility, size fit, material, performance, or compliance claims not present in product data.
+
+## Live Intent Evidence Gate
+
+Do not generate Enhanced snippets suggestions from memory alone.
+
+Every FAQ direction, comparison direction, how-to direction, details/spec direction, and feature highlight must have all three evidence layers:
+
+- merchant evidence from Shopify product data
+- live Google search-intent evidence gathered during the current run
+- live Amazon ecommerce user-intent evidence gathered during the current run
+
+Use live Google evidence such as:
+
+- autocomplete
+- related searches
+- People Also Ask
+- wording patterns from current product, review, comparison, and how-to results
+
+Use live Amazon evidence such as:
+
+- autocomplete
+- result-title wording
+- bullet-point wording
+- Compare With Similar Items patterns when available
+- recurring Q&A themes
+- recurring review themes
+
+If one of those evidence layers is missing, do not guess. Mark the item as blocked by missing evidence.
+
+FAQ note:
+
+- As of April 30, 2026, Google FAQ rich results are generally limited to health or government sites.
+- Therefore, FAQ suggestions in this skill are content and snippet-support recommendations, not a promise of FAQ rich-result eligibility.
 
 ## Shopify SEO Fallback Rules
 
@@ -209,7 +242,7 @@ Meta descriptions are not guaranteed to be shown in Google results. Treat them a
 
 ## Product Description Gap Matrix
 
-Do not automatically rewrite the product description. Use this as an audit matrix.
+Use this as both an audit matrix and a rewrite boundary. Description changes are allowed only when they stay evidence-backed, improve product-page intent fit, and are approved together with the rest of the product bundle.
 
 | Buyer question | Evidence to look for | Recommendation when missing |
 | --- | --- | --- |
@@ -221,7 +254,17 @@ Do not automatically rewrite the product description. Use this as an audit matri
 | Can I trust it? | Reviews, warranty, returns, delivery, brand proof | Add verified trust signals or policy links. |
 | What else should I compare? | Related products, collection links, guides | Suggest internal links with descriptive anchors. |
 
-If product evidence is weak, recommend content improvements instead of writing aggressive metadata.
+If product evidence is weak, recommend content improvements instead of writing aggressive copy.
+
+## Product Title And Description Rewrite Rules
+
+When rewriting `title` or `descriptionHtml`:
+
+- Preserve the existing handle. Do not change the URL slug as part of title optimization.
+- Prefer clearer product identity, audience, use case, and supported qualifiers over keyword repetition.
+- Keep the opening description content useful to buyers first, then search snippets second.
+- Do not inject unsupported claims, certifications, shipping promises, review claims, or legal/compliance language.
+- Treat title, description, SEO title, meta description, and alt text as one review bundle. Show all recommended fields together before asking for approval.
 
 ## Image Alt Text Boundary
 
@@ -233,14 +276,54 @@ Good alt pattern:
 [Visible object] + [specific attribute] + [context/use]
 ```
 
-Use the dedicated `optimize-shopify-alt-text` skill when:
+Use this skill's built-in product-image alt text workflow when:
 
-- The active model must inspect product images.
-- Existing alt text is missing, repetitive, generic, or overlong.
-- The agent needs multimodal vision capability probing.
-- Shared file risk must be assessed.
+- product-media alt text is missing, repetitive, generic, or overlong
+- the active model can inspect product images directly
+- a context-only fallback is needed because direct image inspection failed
 
-This skill may apply already approved alt text through `fileUpdate`, but it must not claim image understanding unless the image workflow actually inspected pixels.
+Do not claim image understanding unless the image workflow actually inspected pixels during the current run.
+
+Read `alt-text-rules.md` before generating or reviewing alt text candidates.
+
+## Enhanced Snippets Module
+
+Generate one Enhanced snippets module per product with exactly these five sections:
+
+- FAQ directions
+- comparison directions and comparison axes
+- how-to directions
+- details and specs directions
+- feature highlight directions
+
+Hard rules:
+
+- Do not guess.
+- Do not create any item without merchant evidence plus live Google plus live Amazon evidence.
+- If evidence is incomplete, report the gap instead of filling it with generic ecommerce assumptions.
+- Prefer narrow, high-intent directions over broad content buckets.
+- Keep the module tied to product-page, comparison-page, or support-content reality. Do not imply that every direction belongs on the product page itself.
+
+Required framing by section:
+
+- FAQ directions:
+  - surface the highest-friction buyer questions
+  - answer only with facts the merchant can support now
+  - do not promise FAQ rich-result eligibility
+- Comparison directions:
+  - name the real comparison target or comparison class
+  - specify the concrete axes users actually compare, such as dimensions, fit, material, speed, compatibility, quantity, warranty, maintenance, or setup complexity
+  - do not invent benchmarks or superiority claims
+- How-to directions:
+  - focus on real user tasks before purchase, during setup, or during usage
+  - tie each direction to a visible or documented product capability
+- Details and specs directions:
+  - surface technical attributes buyers repeatedly need, such as dimensions, materials, capacity, compatibility, wattage, ingredients, included parts, or care instructions
+  - mark absent data as a merchant-content gap instead of filling it in
+- Feature highlight directions:
+  - list only substantiated features
+  - connect each feature to buyer value
+  - do not convert a mere adjective into a feature without evidence
 
 ## Blog And Article Opportunity Method
 
@@ -309,17 +392,15 @@ The final report should be a single-file HTML artifact with:
 
 - Beginner-friendly summary page with store, total products, audited products, average SEO score, estimated improvement percentage, and key takeaways.
 - One independent `section` per product.
-- Product snapshot.
 - SERP score.
-- Current title/meta.
-- Recommended title/meta.
+- Current product title, product description, SEO title, and meta description.
+- Recommended product title, product description, SEO title, and meta description.
 - Evidence ledger.
 - Micro-intent expansion ladder.
 - Content gap and buyer objection matrix.
-- Alt text action.
+- Enhanced snippets suggestions with the five required sections.
 - Blog/article opportunity map.
 - Community, Reddit, blogger, and Facebook group direction.
-- Exact executable fields.
 
 Layout constraints:
 
@@ -334,19 +415,26 @@ Layout constraints:
 - Do not show a long technical boundary section on the summary page.
 - Do not show a final protected-fields or "do-not-touch" card in each product page. Keep protected-field rules in the skill behavior, not in the merchant-facing report.
 - Localize all static report labels to the user's language when `language`, `locale`, or `userLanguage` is known. The agent should also provide product analysis text in that same language.
+- Include a built-in zero-dependency `Export as PDF` button that calls the browser's native print flow and hides itself in print mode.
 
 ## Stop Conditions
 
-Recommend no metadata change when:
+Recommend no product SERP copy change when:
 
 - Current SEO title and meta description score 80+ and no query evidence suggests a problem.
 - The target query belongs to collection, blog, comparison, technical, or structured-data intent.
 - The product page lacks evidence for the proposed claim.
 - The only improvement is cosmetic wordsmithing.
 
+Do not generate Enhanced snippets items when:
+
+- live Google evidence was not gathered
+- live Amazon evidence was not gathered
+- the item would require guessing missing product specs or unsupported buyer claims
+
 Stop completely before writes when:
 
-- A change would require handle, redirect, theme, translation, schema, review, rating, price, variant, tag, vendor, collection, or product description edits.
+- A change would require handle, redirect, theme, translation, schema, review, rating, price, variant, tag, vendor, or collection edits beyond the approved SERP content bundle.
 - The user asks for full-store processing in one pass.
 - Product availability or status makes storefront targeting unclear.
 
