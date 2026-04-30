@@ -433,15 +433,16 @@ Do not generate Enhanced snippets items when:
 - live Amazon evidence was not gathered
 - the item would require guessing missing product specs or unsupported buyer claims
 
-## Single-Product Delivery Rule
+## Delivery Rule
 
-When the user asks to optimize one explicit product:
+When this skill is triggered:
 
 - Treat the HTML audit report as the primary deliverable.
 - Generate the report in the same turn by default.
 - Do not stop after giving chat-only title/meta suggestions.
 - Do not ask whether the user wants the report unless file creation is actually blocked.
 - If Shopify access is unavailable but the product title is specific enough, generate a provisional read-only report from merchant-visible product wording plus live Google and Amazon evidence, and label the evidence limits clearly.
+- For broader requests, generate the report for the current analyzed batch rather than waiting for all future batches.
 
 Stop completely before writes when:
 
