@@ -308,6 +308,7 @@ const PRODUCT_QUERY = `query SerpOptimizerProduct($identifier: ProductIdentifier
     priceRangeV2 { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } }
     media(first: 20) { nodes { id alt mediaContentType preview { image { url width height } } } }
     collections(first: 10) { nodes { id title handle } }
+    metafields(first: 50) { nodes { id namespace key type value description definition { id name namespace key description type { name category } } } }
   }
 }`;
 
@@ -355,6 +356,24 @@ const PRODUCTS_SCAN_QUERY = `query SerpOptimizerProductScan($first: Int!, $after
   }
 }`;
 
+const METAFIELD_DEFINITIONS_QUERY = `query SerpOptimizerMetafieldDefinitions($ownerType: MetafieldOwnerType!, $first: Int!, $after: String) {
+  metafieldDefinitions(ownerType: $ownerType, first: $first, after: $after) {
+    nodes {
+      id
+      name
+      namespace
+      key
+      description
+      ownerType
+      metafieldsCount
+      type { name category }
+      validations { name value }
+      access { admin storefront customerAccount }
+    }
+    pageInfo { hasNextPage endCursor }
+  }
+}`;
+
 async function connectionCheck(args) {
   const env = await loadEnv(args.env || DEFAULT_ENV);
   const client = await resolveAdmin(env);
@@ -372,6 +391,101 @@ async function productCommand(args) {
   const data = await gql(client, PRODUCT_QUERY, { identifier });
   if (!data.product) fail("Product not found.");
   console.log(JSON.stringify({ ok: true, product: data.product }, null, 2));
+}
+
+function identifierFromArgs(args) {
+  return args.id
+    ? { id: args.id }
+    : { handle: handleFromUrl(args.handle || args.url || args.product || args._[0]) };
+}
+
+function inferMetafieldModule(definition, metafield) {
+  const text = `${definition?.name || ""} ${definition?.namespace || ""} ${definition?.key || ""} ${definition?.description || ""} ${metafield?.namespace || ""} ${metafield?.key || ""}`.toLowerCase();
+  if (/review|rating|judgeme|stamped|loox/.test(text)) return "Review";
+  if (/material|fabric/.test(text)) return "Material";
+  if (/spec|technical|attribute/.test(text)) return "Specification";
+  if (/dimension|size|length|width|height|depth|weight/.test(text)) return "Dimension";
+  if (/detail|care|ingredient|compatib|fit/.test(text)) return "Product Detail";
+  if (/feature|benefit|highlight/.test(text)) return "Features";
+  if (/google|shopping/.test(text)) return "Google Shopping";
+  return "Custom Data";
+}
+
+async function fetchAllMetafieldDefinitions(client, ownerType = "PRODUCT", pageSize = 100) {
+  const nodes = [];
+  let after = null;
+  do {
+    const data = await gql(client, METAFIELD_DEFINITIONS_QUERY, { ownerType, first: pageSize, after });
+    nodes.push(...(data.metafieldDefinitions?.nodes || []));
+    after = data.metafieldDefinitions?.pageInfo?.hasNextPage ? data.metafieldDefinitions.pageInfo.endCursor : null;
+  } while (after);
+  return nodes;
+}
+
+function buildMetafieldAudit(product, definitions) {
+  const values = product?.metafields?.nodes || [];
+  const valueByKey = new Map(values.map((item) => [`${item.namespace}.${item.key}`, item]));
+  const populatedDefinitions = [];
+  const missingDefinitions = [];
+  const modules = new Map();
+
+  for (const definition of definitions) {
+    const mapKey = `${definition.namespace}.${definition.key}`;
+    const value = valueByKey.get(mapKey) || null;
+    const module = inferMetafieldModule(definition, value);
+    modules.set(module, (modules.get(module) || 0) + 1);
+    const item = {
+      module,
+      name: definition.name,
+      namespace: definition.namespace,
+      key: definition.key,
+      type: definition.type?.name,
+      category: definition.type?.category,
+      description: definition.description || "",
+      metafieldsCount: definition.metafieldsCount,
+      value: value?.value || null,
+      valuePreview: value ? String(value.value).slice(0, 180) : null,
+    };
+    if (value) populatedDefinitions.push(item);
+    else missingDefinitions.push(item);
+  }
+
+  const valueOnlyMetafields = values
+    .filter((item) => !definitions.some((definition) => definition.namespace === item.namespace && definition.key === item.key))
+    .map((item) => ({
+      module: inferMetafieldModule(null, item),
+      namespace: item.namespace,
+      key: item.key,
+      type: item.type,
+      valuePreview: String(item.value).slice(0, 180),
+    }));
+
+  return {
+    product: {
+      id: product.id,
+      title: product.title,
+      handle: product.handle,
+      status: product.status,
+    },
+    definitionCount: definitions.length,
+    productValueCount: values.length,
+    modules: [...modules.entries()].map(([name, count]) => ({ name, count })),
+    populatedDefinitions,
+    missingDefinitions,
+    valueOnlyMetafields,
+  };
+}
+
+async function metafieldAuditCommand(args) {
+  const env = await loadEnv(args.env || DEFAULT_ENV);
+  const client = await resolveAdmin(env);
+  const identifier = identifierFromArgs(args);
+  if (!identifier.id && !identifier.handle) fail("Provide --id, --handle, --url, --product, or a product URL/handle argument.");
+  const productData = await gql(client, PRODUCT_QUERY, { identifier });
+  const definitions = await fetchAllMetafieldDefinitions(client, "PRODUCT");
+  if (!productData.product) fail("Product not found.");
+  const audit = buildMetafieldAudit(productData.product, definitions);
+  console.log(JSON.stringify({ ok: true, audit }, null, 2));
 }
 
 async function collectionPreview(args) {
@@ -640,8 +754,9 @@ function validatePlan(plan) {
         return value !== undefined && value !== null && String(value).trim() !== "";
       });
       const altUpdates = Array.isArray(change.altUpdates) ? change.altUpdates : [];
-      if (!hasProductFields && !altUpdates.length) {
-        errors.push(`changes[${index}] must include at least one product field or altUpdates`);
+      const metafieldUpdates = Array.isArray(change.metafieldUpdates) ? change.metafieldUpdates : [];
+      if (!hasProductFields && !altUpdates.length && !metafieldUpdates.length) {
+        errors.push(`changes[${index}] must include at least one product field, altUpdates, or metafieldUpdates`);
       }
       for (const forbidden of ["handle", "tags", "productType", "vendor", "status", "variants", "collections"]) {
         if (Object.prototype.hasOwnProperty.call(change, forbidden)) {
@@ -665,6 +780,14 @@ function validatePlan(plan) {
         if (!altUpdate?.alt || !String(altUpdate.alt).trim()) errors.push(`changes[${index}].altUpdates[${altIndex}].alt is required`);
         if (String(altUpdate?.alt || "").length > 512) errors.push(`changes[${index}].altUpdates[${altIndex}].alt exceeds 512 characters`);
       }
+      for (const [metaIndex, metafieldUpdate] of metafieldUpdates.entries()) {
+        if (!metafieldUpdate?.namespace) errors.push(`changes[${index}].metafieldUpdates[${metaIndex}].namespace is required`);
+        if (!metafieldUpdate?.key) errors.push(`changes[${index}].metafieldUpdates[${metaIndex}].key is required`);
+        if (!metafieldUpdate?.type) errors.push(`changes[${index}].metafieldUpdates[${metaIndex}].type is required`);
+        if (metafieldUpdate?.value === undefined || metafieldUpdate?.value === null || String(metafieldUpdate.value).trim() === "") {
+          errors.push(`changes[${index}].metafieldUpdates[${metaIndex}].value is required`);
+        }
+      }
     } else if (change.type === "product_seo") {
       if (!change.productId) errors.push(`changes[${index}].productId is required`);
       if (!change.seoTitle && !change.seoDescription) {
@@ -685,6 +808,14 @@ function validatePlan(plan) {
       if (!change.id) errors.push(`changes[${index}].id is required`);
       if (!change.alt || !String(change.alt).trim()) errors.push(`changes[${index}].alt is required`);
       if (String(change.alt || "").length > 512) errors.push(`changes[${index}].alt exceeds 512 characters`);
+    } else if (change.type === "product_metafield") {
+      if (!change.productId) errors.push(`changes[${index}].productId is required`);
+      if (!change.namespace) errors.push(`changes[${index}].namespace is required`);
+      if (!change.key) errors.push(`changes[${index}].key is required`);
+      if (!change.type) errors.push(`changes[${index}].type is required`);
+      if (change.value === undefined || change.value === null || String(change.value).trim() === "") {
+        errors.push(`changes[${index}].value is required`);
+      }
     } else {
       errors.push(`changes[${index}].type is unsupported: ${change.type}`);
     }
@@ -697,6 +828,18 @@ function validatePlan(plan) {
 function bundleAltUpdates(change) {
   return Array.isArray(change?.altUpdates)
     ? change.altUpdates.map((item) => ({ id: item.id, alt: String(item.alt) }))
+    : [];
+}
+
+function bundleMetafieldUpdates(change) {
+  return Array.isArray(change?.metafieldUpdates)
+    ? change.metafieldUpdates.map((item) => ({
+      ownerId: change.productId,
+      namespace: item.namespace,
+      key: item.key,
+      type: item.type,
+      value: String(item.value),
+    }))
     : [];
 }
 
@@ -753,6 +896,16 @@ const REPORT_COPY = {
     microIntentEmpty: "No search ideas provided.",
     contentGaps: "What shoppers may still need to know",
     contentGapsEmpty: "No content gaps provided.",
+    metafieldsAudit: "Metafields and advanced snippets audit",
+    metafieldsModules: "Detected modules",
+    metafieldsPopulated: "Populated metafields",
+    metafieldsMissing: "Defined but missing values",
+    metafieldsValueOnly: "Value-only metafields",
+    metafieldsNamespace: "Namespace",
+    metafieldsKey: "Key",
+    metafieldsType: "Type",
+    metafieldsValue: "Value preview",
+    metafieldsModule: "Module",
     altText: "Image alt text",
     enhancedSnippets: "Enhanced snippets suggestions",
     enhancedEvidenceRule: "Evidence rule",
@@ -835,6 +988,16 @@ const REPORT_COPY = {
     microIntentEmpty: "暂未提供具体搜索词。",
     contentGaps: "买家可能还想知道什么",
     contentGapsEmpty: "暂未提供内容缺口。",
+    metafieldsAudit: "Metafields / 高阶 Snippets 审计",
+    metafieldsModules: "检测到的模块",
+    metafieldsPopulated: "已填写的 Metafields",
+    metafieldsMissing: "已定义但缺少值",
+    metafieldsValueOnly: "仅检测到值的 Metafields",
+    metafieldsNamespace: "命名空间",
+    metafieldsKey: "Key",
+    metafieldsType: "类型",
+    metafieldsValue: "值预览",
+    metafieldsModule: "模块",
     altText: "图片 Alt Text",
     enhancedSnippets: "Enhanced snippets 建议",
     enhancedEvidenceRule: "证据规则",
@@ -917,6 +1080,16 @@ const REPORT_COPY = {
     microIntentEmpty: "Keine Suchideen angegeben.",
     contentGaps: "Was Käufer noch wissen möchten",
     contentGapsEmpty: "Keine Inhaltslücken angegeben.",
+    metafieldsAudit: "Metafields- und Advanced-Snippets-Audit",
+    metafieldsModules: "Erkannte Module",
+    metafieldsPopulated: "Befüllte Metafields",
+    metafieldsMissing: "Definiert, aber ohne Wert",
+    metafieldsValueOnly: "Nur wertbasierte Metafields",
+    metafieldsNamespace: "Namespace",
+    metafieldsKey: "Schlüssel",
+    metafieldsType: "Typ",
+    metafieldsValue: "Wertvorschau",
+    metafieldsModule: "Modul",
     altText: "Bild-Alt-Text",
     enhancedSnippets: "Enhanced-Snippet-Empfehlungen",
     enhancedEvidenceRule: "Belegregel",
@@ -1116,6 +1289,47 @@ ${enhanced.eligibilityNote ? `<p><strong>${escapeHtml(copy.labelNote)}:</strong>
 ${sections.map((section) => `<div class="mini-section"><h4>${escapeHtml(section.title)}</h4>${cards(section.items, section.fields, copy)}</div>`).join("")}`;
 }
 
+function renderMetafieldsAudit(audit = {}, copy = REPORT_COPY.en) {
+  const modules = plainArray(audit.modules).map((item) => `${item.name}: ${item.count}`);
+  return `
+<div class="mini-section">
+  <h4>${escapeHtml(copy.metafieldsModules)}</h4>
+  ${list(modules, copy.noOpportunity)}
+</div>
+<div class="mini-section">
+  <h4>${escapeHtml(copy.metafieldsPopulated)}</h4>
+  ${cards(audit.populatedDefinitions, [
+    { key: "module", label: copy.metafieldsModule },
+    { key: "name", label: copy.labelNote },
+    { key: "namespace", label: copy.metafieldsNamespace },
+    { key: "key", label: copy.metafieldsKey },
+    { key: "type", label: copy.metafieldsType },
+    { key: "valuePreview", label: copy.metafieldsValue },
+  ], copy)}
+</div>
+<div class="mini-section">
+  <h4>${escapeHtml(copy.metafieldsMissing)}</h4>
+  ${cards(audit.missingDefinitions, [
+    { key: "module", label: copy.metafieldsModule },
+    { key: "name", label: copy.labelNote },
+    { key: "namespace", label: copy.metafieldsNamespace },
+    { key: "key", label: copy.metafieldsKey },
+    { key: "type", label: copy.metafieldsType },
+    { key: "description", label: copy.enhancedWhyItMatters },
+  ], copy)}
+</div>
+<div class="mini-section">
+  <h4>${escapeHtml(copy.metafieldsValueOnly)}</h4>
+  ${cards(audit.valueOnlyMetafields, [
+    { key: "module", label: copy.metafieldsModule },
+    { key: "namespace", label: copy.metafieldsNamespace },
+    { key: "key", label: copy.metafieldsKey },
+    { key: "type", label: copy.metafieldsType },
+    { key: "valuePreview", label: copy.metafieldsValue },
+  ], copy)}
+</div>`;
+}
+
 function renderBatchPlan(batchPlan) {
   const batches = plainArray(batchPlan);
   if (!batches.length) return `<p class="muted">No batch plan provided.</p>`;
@@ -1219,6 +1433,10 @@ function renderProduct(rawProduct, index, copy = REPORT_COPY.en) {
       <article class="card wide">
         <h3>🧠 ${escapeHtml(copy.contentGaps)}</h3>
         ${keyValues(product.contentGaps, copy.contentGapsEmpty, copy)}
+      </article>
+      <article class="card wide">
+        <h3>🧬 ${escapeHtml(copy.metafieldsAudit)}</h3>
+        ${renderMetafieldsAudit(product.metafieldsAudit, copy)}
       </article>
       <article class="card wide">
         <h3>🧩 ${escapeHtml(copy.enhancedSnippets)}</h3>
@@ -1373,6 +1591,30 @@ async function applyCommand(args) {
     results.push({ type: "product_media_alt", response: data.fileUpdate });
   }
 
+  const metafieldUpdates = changes
+    .filter((item) => item.type === "product_metafield")
+    .map((item) => ({
+      ownerId: item.productId,
+      namespace: item.namespace,
+      key: item.key,
+      type: item.type,
+      value: String(item.value),
+    }))
+    .concat(changes.filter((item) => item.type === "product_full_bundle").flatMap(bundleMetafieldUpdates));
+  if (metafieldUpdates.length) {
+    const data = await gql(
+      client,
+      `mutation SerpOptimizerMetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          metafields { id namespace key value type }
+          userErrors { field message code }
+        }
+      }`,
+      { metafields: metafieldUpdates },
+    );
+    results.push({ type: "product_metafield", response: data.metafieldsSet });
+  }
+
   console.log(JSON.stringify({ ok: true, executed: true, results }, null, 2));
 }
 
@@ -1383,6 +1625,7 @@ async function main() {
   if (command === "connection-check") return connectionCheck(args);
   if (command === "product") return productCommand(args);
   if (command === "collection-preview") return collectionPreview(args);
+  if (command === "metafield-audit") return metafieldAuditCommand(args);
   if (command === "scan-products") return scanProducts(args);
   if (command === "batch-plan") return batchPlan(args);
   if (command === "report") return reportCommand(args);

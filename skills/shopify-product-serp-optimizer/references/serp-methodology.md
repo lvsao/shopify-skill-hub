@@ -23,6 +23,7 @@ It includes:
 - Query intent and query class mapping for product pages.
 - Product title, product description, SEO title, and meta description scoring.
 - Evidence-backed candidates for Shopify `title`, `descriptionHtml`, `seo.title`, and `seo.description`.
+- Product metafield definition/value auditing and evidence-backed metafield optimization suggestions.
 - Image alt text assessment and direct in-skill optimization for product media.
 - HTML reporting for product SERP, content, and distribution opportunities.
 - Product-led content and community opportunity guidance.
@@ -133,6 +134,7 @@ Supported evidence can come from:
 - Product type, vendor, tags, options, variants, SKU, price, and availability.
 - Collections and product URL.
 - Product media alt text and filenames.
+- Product metafield definitions and populated metafield values.
 - Verified review/rating data when available.
 - Merchant-provided target query or positioning.
 - GSC query evidence when the user provides it.
@@ -266,6 +268,21 @@ When rewriting `title` or `descriptionHtml`:
 - Keep the opening description content useful to buyers first, then search snippets second.
 - Do not inject unsupported claims, certifications, shipping promises, review claims, or legal/compliance language.
 - Treat title, description, SEO title, meta description, and alt text as one review bundle. Show all recommended fields together before asking for approval.
+
+## Metafield Audit Rules
+
+Audit metafields in two layers:
+
+- definition layer through `metafieldDefinitions`
+- value layer through the product's actual `metafields`
+
+Classify findings as:
+
+- populated definitions
+- defined but missing values
+- value-only metafields without surfaced definitions
+
+Only propose metafield value optimization when the field meaning is clear and the product evidence supports a specific value.
 
 ## Image Alt Text Boundary
 
