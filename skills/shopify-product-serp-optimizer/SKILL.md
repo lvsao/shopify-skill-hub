@@ -11,9 +11,12 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 - Treat this as a product SERP optimizer, not a generic on-page SEO, technical SEO, schema, redirect, translation, or theme skill.
 - Default vague requests to a read-only product scan, opportunity scoring, and five-product batch plan. Do not ask the user to choose a collection or process an arbitrary "max 10" list.
 - If the user provides a product URL, handle, or product ID, process that product directly.
+- If the user provides a clear single product title, even without a Shopify URL or ID, treat that as enough scope to produce one read-only product HTML audit report in the same turn.
 - If the user provides a collection URL or handle, use it only as narrowing context when helpful; still plan a five-product batch instead of making collection selection the main workflow.
 - Give advice and results directly in the conversation. Do not create Markdown report files, process notes, summary documents, ad hoc scripts, or persistent JSON files.
 - The only default user-facing report artifact is the final single-file `.html` audit report.
+- For a single explicit product request such as "optimize this product's SERP", generate the HTML audit report by default in the same turn. Do not stop at chat-only recommendations and do not ask whether the user wants the report unless report generation is technically blocked.
+- Do not end a single-product audit with option menus such as "if you want, I can also..." before generating the HTML report. Generate the report first, then optionally mention next steps after the report exists.
 - Preview the full proposed Shopify write bundle before asking for confirmation. Execute writes only after one explicit user approval for the full bundle.
 - The safe automatic write bundle may include product `title`, product `descriptionHtml`, product `seo.title`, product `seo.description`, and approved product `MediaImage` alt text.
 - This skill owns product media alt text optimization directly. Do not route alt text work to another skill or tool family as the default path.
@@ -166,6 +169,7 @@ Search intent -> product evidence -> SERP promise -> safe Shopify fields -> dist
 
 It can produce:
 
+- A single-product read-only HTML audit report from a product title, product URL, or Shopify product record.
 - A read-only product inventory scan and opportunity-ranked batch plan.
 - Five-product optimization batches, with Batch 1 reserved for highest-confidence, safest opportunities.
 - Product evidence ledgers separating supported facts from claims that need evidence.
@@ -197,10 +201,12 @@ Route those to separate skills.
 
 Use this decision tree:
 
-1. If the user gives a product URL, product handle, or product ID, read that product and produce one product report.
-2. If the user gives multiple product URLs or handles, read those products and process them in batches of five.
-3. If the user gives a collection URL or handle, use it as a narrowing signal only when helpful, then still produce a five-product batch plan.
-4. If the user says a vague request such as "optimize product SEO", "improve product search", or "audit my products", scan the store and create a batch plan.
+1. If the user gives a product URL, product handle, product ID, or a clear single product title, produce one product HTML report in the same turn.
+2. If Shopify access is available, read the live product record first and use that as the main evidence source.
+3. If Shopify access is not available but the product title is specific enough, generate a provisional read-only HTML report from the title plus live Google and Amazon evidence. Do not block on setup for this case.
+4. If the user gives multiple product URLs or handles, read those products and process them in batches of five.
+5. If the user gives a collection URL or handle, use it as a narrowing signal only when helpful, then still produce a five-product batch plan.
+6. If the user says a vague request such as "optimize product SEO", "improve product search", or "audit my products", scan the store and create a batch plan.
 
 For vague requests, run:
 
@@ -256,22 +262,23 @@ Batch meaning:
 3. Read `references/serp-methodology.md`.
 4. If alt text is in scope, read `references/alt-text-rules.md`.
 5. Read the explicit product context or run product scan and batch planning.
-6. Gather live Google intent evidence during the current run. Use real Google search surfaces such as autocomplete, related searches, People Also Ask, product/product-review/comparison results, or current SERP wording. Do not reuse stale memory as a substitute for live evidence.
-7. Gather live Amazon ecommerce user-intent evidence during the current run. Use real Amazon surfaces such as autocomplete, category/product result wording, titles, bullets, Compare With Similar Items, Q&A themes, and review themes. Do not reuse stale memory as a substitute for live evidence.
-8. Tell the user the scope, current batch, opportunity reasons, and what can or cannot be executed.
-9. Build a product evidence ledger. Separate supported facts from missing or risky claims.
-10. Classify search intent and create a micro-intent ladder. If no target query is provided, infer conservative hypotheses from product evidence and mark them as hypotheses.
-11. Resolve the current product title, product description, effective SEO title, and effective meta description with Shopify fallback rules, then score those values.
-12. Produce 1-3 candidate product titles, 1-3 product description rewrite directions or final descriptions, 1-3 SEO titles, and 1-3 meta descriptions with evidence, why, risk flags, and score.
-13. Generate direct product-image alt text recommendations inside this skill. Download only the current product-image batch to an operating-system temp folder, inspect images through the host's native image input when available, validate against `references/alt-text-rules.md`, and include approved candidates in the same product bundle.
-14. Build the Enhanced snippets module from merchant evidence plus the live Google and live Amazon evidence. If an item cannot meet that evidence standard, mark it blocked instead of guessing.
-15. Generate the HTML report with the bundled helper.
-16. Tell the user the most important findings directly in the chat and explain how to open the HTML report.
-17. Ask for one explicit approval to apply the exact selected field bundle. The bundle must include every recommended `title`, `descriptionHtml`, `seo.title`, `seo.description`, and approved alt text update that should be written now.
-18. Preview the approved write plan with `apply --input -`.
-19. Apply the approved bundle in one execution with `apply --input - --execute`. Do not pause for additional per-field confirmation unless a hard validation or permissions failure blocks execution.
-20. Verify by reading changed products.
-21. Clean up operating-system temp files and confirm no process JSON or generated helper files were left in the working folder.
+6. If the request is for one explicit product, commit to generating the `.html` report in this same turn unless a hard blocker prevents file creation.
+7. Gather live Google intent evidence during the current run. Use real Google search surfaces such as autocomplete, related searches, People Also Ask, product/product-review/comparison results, or current SERP wording. Do not reuse stale memory as a substitute for live evidence.
+8. Gather live Amazon ecommerce user-intent evidence during the current run. Use real Amazon surfaces such as autocomplete, category/product result wording, titles, bullets, Compare With Similar Items, Q&A themes, and review themes. Do not reuse stale memory as a substitute for live evidence.
+9. Tell the user the scope, current batch, opportunity reasons, and what can or cannot be executed.
+10. Build a product evidence ledger. Separate supported facts from missing or risky claims.
+11. Classify search intent and create a micro-intent ladder. If no target query is provided, infer conservative hypotheses from product evidence and mark them as hypotheses.
+12. Resolve the current product title, product description, effective SEO title, and effective meta description with Shopify fallback rules, then score those values.
+13. Produce 1-3 candidate product titles, 1-3 product description rewrite directions or final descriptions, 1-3 SEO titles, and 1-3 meta descriptions with evidence, why, risk flags, and score.
+14. Generate direct product-image alt text recommendations inside this skill. Download only the current product-image batch to an operating-system temp folder, inspect images through the host's native image input when available, validate against `references/alt-text-rules.md`, and include approved candidates in the same product bundle.
+15. Build the Enhanced snippets module from merchant evidence plus the live Google and live Amazon evidence. If an item cannot meet that evidence standard, mark it blocked instead of guessing.
+16. Generate the HTML report with the bundled helper.
+17. Tell the user the most important findings directly in the chat and explain how to open the HTML report.
+18. Ask for one explicit approval to apply the exact selected field bundle. The bundle must include every recommended `title`, `descriptionHtml`, `seo.title`, `seo.description`, and approved alt text update that should be written now.
+19. Preview the approved write plan with `apply --input -`.
+20. Apply the approved bundle in one execution with `apply --input - --execute`. Do not pause for additional per-field confirmation unless a hard validation or permissions failure blocks execution.
+21. Verify by reading changed products.
+22. Clean up operating-system temp files and confirm no process JSON or generated helper files were left in the working folder.
 
 ## Bundled Script
 
@@ -309,6 +316,8 @@ Report filename:
 ```text
 shopify-serp-report-YYYYMMDD-HHMM.html
 ```
+
+For a single explicit product request, generating this file is the default completion condition. Do not treat the task as finished until the `.html` report has been created, unless a hard blocker prevented file creation.
 
 After generation, tell the user in beginner-friendly language:
 
@@ -372,6 +381,8 @@ Do not produce a Markdown report file. In the chat, give a short, direct summary
 - What can be executed safely after one approval round.
 - What cannot be executed by this skill.
 - Where the HTML report is and how to open it.
+
+For a single explicit product request, do not replace the report with a chat-only answer. The chat summary is secondary to the generated `.html` file.
 
 Use compact text, tables only when they make the answer easier to scan, and no raw JSON unless the user asks.
 
