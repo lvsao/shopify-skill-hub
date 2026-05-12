@@ -1,7 +1,7 @@
 # Selofy Shopify Skill Hub
 
 [![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
-[![Skills](https://img.shields.io/badge/skills-3-2563eb)](./skills)
+[![Skills](https://img.shields.io/badge/skills-4-2563eb)](./skills)
 [![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 [![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
@@ -69,6 +69,7 @@ This local command is for maintainers only. Regular users should install from Gi
 | `wechat-to-shopify-blog` | `content-creation` | Convert an owned or authorized WeChat Official Account article into a Shopify blog draft, including Shopify Files image hosting, brand voice adaptation, blog selection, and related product insertion. |
 | `optimize-shopify-alt-text` | `seo-growth` | Audit Shopify product media, collection featured images, article featured images, and article inline images, then prepare a preview-first alt text optimization plan with real image understanding when available and safe context-only fallback when it is not. |
 | `shopify-product-serp-optimizer` | `seo-growth` | Scan Shopify products, plan five-product SERP optimization batches, generate polished HTML audit reports, and apply only approved product SEO metadata or reviewed media alt updates. |
+| `shopify-store-translator` | `operations` | Translate all Shopify store resources (products, collections, pages, blogs, policies, and more) into any target language. Checks language and market configuration, generates a CSV audit table for review, and writes approved translations to Shopify. |
 
 ## Shopify API Access And Env
 
@@ -160,6 +161,14 @@ skills/
       serp-methodology.md
     scripts/
       shopify-product-serp-admin.mjs
+  shopify-store-translator/
+    SKILL.md
+    agents/
+      openai.yaml
+    references/
+      translation-api.md
+    scripts/
+      shopify-translator-admin.mjs
 catalog/
   INDEX.json
   content-creation/

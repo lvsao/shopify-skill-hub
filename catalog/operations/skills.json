@@ -1,3 +1,94 @@
 {
-  "skills": []
+  "skills": [
+    {
+      "name": "shopify-store-translator",
+      "displayName": "Shopify Store Translator",
+      "displayName_zh": "Shopify 店铺翻译器",
+      "path": "../../skills/shopify-store-translator",
+      "tags": ["shopify", "translation", "markets"],
+      "integrations": ["shopify", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Translate all Shopify store resources into any target language with a preview-first, approval-based workflow",
+        "zh": "用先预览再执行的流程，将 Shopify 店铺所有资源翻译成目标语言"
+      },
+      "longDescription": {
+        "en": "Translate your entire Shopify store — products, collections, pages, blogs, shop policies, menus, and more — into any target language. The skill checks your current language and market configuration, fetches all translatable content with its digest values, uses AI to translate, generates a CSV audit table for review, and writes approved translations to Shopify only after explicit confirmation. Supports both Store Settings custom app (direct token) and Dev Dashboard app (Shopify CLI) authentication paths.",
+        "zh": "将整个 Shopify 店铺——商品、集合、页面、博客、店铺政策、导航菜单等——翻译成任意目标语言。该技能会检查当前语言和市场配置，获取所有可翻译内容及其 digest 值，使用 AI 进行翻译，生成 CSV 审计表供审核，并在明确确认后才将翻译写入 Shopify。支持 Store Settings 自定义应用（直接 token）和 Dev Dashboard 应用（Shopify CLI）两种认证方式。"
+      },
+      "introduction": {
+        "en": "Go from zero to a fully translated Shopify store in one workflow: language setup, market configuration, AI translation, CSV audit, and approved writes.",
+        "zh": "一个工作流完成店铺翻译全流程：语言配置、市场设置、AI 翻译、CSV 审计、批准写入。"
+      },
+      "features": [
+        {
+          "id": "language-market-setup",
+          "title": {
+            "en": "Language and market setup",
+            "zh": "语言与市场配置"
+          },
+          "description": {
+            "en": "Checks existing locales, enables and publishes new languages, and adds them to the correct Shopify Markets with the right URL structure.",
+            "zh": "检查现有语言，启用并发布新语言，并将其添加到正确的 Shopify Markets 及 URL 结构中。"
+          },
+          "badge": { "en": "Auto-configure", "zh": "自动配置" },
+          "icon": "Globe"
+        },
+        {
+          "id": "full-resource-coverage",
+          "title": {
+            "en": "Full resource coverage",
+            "zh": "全资源覆盖"
+          },
+          "description": {
+            "en": "Translates all 30 Shopify translatable resource types. Prioritizes products, collections, pages, and policies by default. Medium-priority resources like menus and metafields on request.",
+            "zh": "支持 Shopify 全部 30 种可翻译资源类型。默认优先翻译商品、集合、页面和政策；菜单、Metafields 等中优先级资源按需翻译。"
+          },
+          "badge": { "en": "30 resource types", "zh": "30 种资源类型" },
+          "icon": "Layers"
+        },
+        {
+          "id": "csv-audit-table",
+          "title": {
+            "en": "CSV audit table",
+            "zh": "CSV 审计表"
+          },
+          "description": {
+            "en": "Generates a structured CSV with original and translated content side by side, including status (NEW / OUTDATED / CURRENT) for every field, so you can review and edit before anything is written.",
+            "zh": "生成结构化 CSV，原文与译文并排展示，每个字段标注状态（NEW / OUTDATED / CURRENT），方便在写入前审核和修改。"
+          },
+          "badge": { "en": "Preview first", "zh": "先预览" },
+          "icon": "FileSpreadsheet"
+        },
+        {
+          "id": "outdated-detection",
+          "title": {
+            "en": "Outdated translation detection",
+            "zh": "过期翻译检测"
+          },
+          "description": {
+            "en": "Detects translations that have become outdated because the source content changed. Flags them for re-translation while skipping up-to-date content.",
+            "zh": "检测因原文更新而过期的翻译，标记需要重新翻译的字段，同时跳过已是最新的内容。"
+          },
+          "badge": { "en": "Smart diff", "zh": "智能差异" },
+          "icon": "RefreshCw"
+        },
+        {
+          "id": "dual-auth-paths",
+          "title": {
+            "en": "Two authentication paths",
+            "zh": "两种认证方式"
+          },
+          "description": {
+            "en": "Works with both Store Settings custom app (static token, no CLI needed) and Dev Dashboard app (Shopify CLI OAuth). Beginner-friendly onboarding for both paths.",
+            "zh": "同时支持 Store Settings 自定义应用（静态 token，无需 CLI）和 Dev Dashboard 应用（Shopify CLI OAuth）。两种方式均提供新手友好的引导流程。"
+          },
+          "badge": { "en": "Flexible setup", "zh": "灵活配置" },
+          "icon": "KeyRound"
+        }
+      ],
+      "prerequisites": []
+    }
+  ]
 }

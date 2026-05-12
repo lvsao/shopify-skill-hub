@@ -19,7 +19,9 @@
     "launch",
     "checklist",
     "support",
-    "email"
+    "email",
+    "translation",
+    "markets"
   ],
   "integrations": [
     "shopify",
