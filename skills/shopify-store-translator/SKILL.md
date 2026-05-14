@@ -74,8 +74,8 @@ Ask user to fill:
 
 Then run this runbook silently (do not ask user to run commands):
 
-1. Check CLI: `node -v`, `npm -v`, `shopify version`, `shopify store --help`
-2. If CLI missing or < 3.93.0: `npm install -g @shopify/cli@latest`
+1. Check CLI: `node -v`, `npm -v`, `shopify --version 2>/dev/null || shopify version`, `shopify store --help`
+2. If CLI missing or < 3.93.0: run `npm install -g @shopify/cli@latest` — **on Windows, run terminal as Administrator first**
 3. Create temp dir under OS temp location
 4. Link app: `shopify app config link --client-id {CLIENT_ID} --path {TEMP_DIR} --no-color`
 5. Write scopes into `{TEMP_DIR}/shopify.app.toml`:
@@ -85,7 +85,13 @@ Then run this runbook silently (do not ask user to run commands):
 6. Deploy: `shopify app deploy --client-id {CLIENT_ID} --path {TEMP_DIR} --allow-updates --no-color`
 7. Notify user: "A Shopify authorization page will open in your browser. Please review the scopes and click Authorize."
 8. Auth: `shopify store auth --store {store}.myshopify.com --scopes "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content" --no-color`
-9. Verify: `shopify store execute --store {store}.myshopify.com --query "query { shop { name } }" --no-color`
+9. Verify — write query to file then execute:
+   ```
+   # Write query to temp file first (required on Windows)
+   echo 'query { shop { name id } }' > {TEMP_DIR}/verify.graphql
+   shopify store execute --store {store}.myshopify.com --query-file {TEMP_DIR}/verify.graphql --output-file {TEMP_DIR}/verify-out.json --no-color
+   # Check verify-out.json contains shop.name
+   ```
 10. If verify returns `CLI_AUTH_REQUIRED`: rerun step 8
 11. Delete temp dir
 
@@ -97,46 +103,105 @@ Then run this runbook silently (do not ask user to run commands):
 
 ## Translation Workflow
 
+> **Path A** uses `node ... shopify-translator-admin.mjs` commands (direct HTTP with Admin token).  
+> **Path B** uses `shopify store execute --query-file` commands (Shopify CLI OAuth). All Path B GraphQL must be written to a file first — never use inline `--query` on Windows.
+
 ### Step 1: Language Check
 
-Run:
+**Path A:**
 ```
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs check-locales --env skill-hub.env --target {locale}
 ```
 
-This queries `shopLocales` and reports:
-- Store primary language
-- Whether target locale exists and is published
-- Action needed: none / enable / publish
+**Path B:** Write query to `{TEMP_DIR}/check-locales.graphql`:
+```graphql
+query { shopLocales { locale primary published } }
+```
+Then run:
+```
+shopify store execute --store {store}.myshopify.com --query-file {TEMP_DIR}/check-locales.graphql --output-file {TEMP_DIR}/locales-out.json --no-color
+```
+Read `{TEMP_DIR}/locales-out.json` to check if target locale exists and is published.
 
 If locale needs to be added or published, confirm with user, then:
+
+**Path A:**
 ```
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs enable-locale --env skill-hub.env --locale {locale}
 ```
 
+**Path B:** Write to `{TEMP_DIR}/enable-locale.graphql`:
+```graphql
+mutation { shopLocaleEnable(locale: "{locale}") { shopLocale { locale published } userErrors { message } } }
+```
+```
+shopify store execute --store {store}.myshopify.com --allow-mutations --query-file {TEMP_DIR}/enable-locale.graphql --output-file {TEMP_DIR}/enable-out.json --no-color
+```
+Then write to `{TEMP_DIR}/publish-locale.graphql`:
+```graphql
+mutation { shopLocaleUpdate(locale: "{locale}", shopLocale: { published: true }) { shopLocale { locale published } userErrors { message } } }
+```
+```
+shopify store execute --store {store}.myshopify.com --allow-mutations --query-file {TEMP_DIR}/publish-locale.graphql --output-file {TEMP_DIR}/publish-out.json --no-color
+```
+
 ### Step 2: Market Check
 
-Run:
+**Path A:**
 ```
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs check-markets --env skill-hub.env --locale {locale}
 ```
 
-This queries `markets` and reports which markets have the target locale in their `webPresence.alternateLocales`. Confirm with user which markets should serve the new language, then:
+**Path B:** Write to `{TEMP_DIR}/check-markets.graphql`:
+```graphql
+query { markets(first: 20) { nodes { id name enabled primary webPresence { id rootUrls { locale url } defaultLocale { locale } alternateLocales { locale } } } } }
+```
+```
+shopify store execute --store {store}.myshopify.com --query-file {TEMP_DIR}/check-markets.graphql --output-file {TEMP_DIR}/markets-out.json --no-color
+```
+
+Confirm with user which markets should serve the new language, then:
+
+**Path A:**
 ```
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs add-locale-to-market --env skill-hub.env --market-web-presence-id {id} --locale {locale}
 ```
 
+**Path B:** Read current `alternateLocales` from markets-out.json, then write to `{TEMP_DIR}/add-locale.graphql` (include ALL existing locales + new one):
+```graphql
+mutation { marketWebPresenceUpdate(webPresenceId: "{webPresenceId}", webPresence: { alternateLocales: ["{existing1}", "{existing2}", "{locale}"] }) { market { webPresence { alternateLocales { locale } } } userErrors { message } } }
+```
+```
+shopify store execute --store {store}.myshopify.com --allow-mutations --query-file {TEMP_DIR}/add-locale.graphql --output-file {TEMP_DIR}/add-locale-out.json --no-color
+```
+
 ### Step 3: Fetch Translatable Content
 
+**Path A:**
 ```
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type PRODUCT --locale {locale} --output {TEMP_DIR}/fetch-output.json
 ```
 
-Supported `--resource-type` values: `PRODUCT`, `COLLECTION`, `PAGE`, `ARTICLE`, `BLOG`, `SHOP`, `SHOP_POLICY`, `PRODUCT_OPTION`, `PRODUCT_OPTION_VALUE`, `MENU`, `LINK`, `METAFIELD`, `SELLING_PLAN`, `SELLING_PLAN_GROUP`, `PAYMENT_GATEWAY`, `DELIVERY_METHOD_DEFINITION`
+**Path B:** Write to `{TEMP_DIR}/fetch.graphql`:
+```graphql
+query($cursor: String) {
+  translatableResources(first: 50, resourceType: PRODUCT, after: $cursor) {
+    nodes {
+      resourceId
+      translatableContent { key value digest locale }
+      translations(locale: "{locale}") { key value outdated }
+    }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+```
+```
+shopify store execute --store {store}.myshopify.com --query-file {TEMP_DIR}/fetch.graphql --output-file {TEMP_DIR}/fetch-output.json --no-color
+```
+Paginate by updating the `$cursor` variable until `pageInfo.hasNextPage` is false.
 
-The output JSON contains each resource with:
-- `resourceId`: GID
-- `fields`: array of `{ key, value, digest, status }` where status is `NEW`, `OUTDATED`, or `CURRENT`
+Supported `--resource-type` values (all 30 Shopify types):
+`PRODUCT`, `PRODUCT_OPTION`, `PRODUCT_OPTION_VALUE`, `COLLECTION`, `PAGE`, `ARTICLE`, `BLOG`, `SHOP`, `SHOP_POLICY`, `LINK`, `FILTER`, `METAFIELD`, `METAOBJECT`, `MEDIA_IMAGE`, `ARTICLE_IMAGE`, `COLLECTION_IMAGE`, `EMAIL_TEMPLATE`, `DELIVERY_METHOD_DEFINITION`, `MENU`, `PAYMENT_GATEWAY`, `SELLING_PLAN`, `SELLING_PLAN_GROUP`, `PACKING_SLIP_TEMPLATE`, `ONLINE_STORE_THEME`, `ONLINE_STORE_THEME_APP_EMBED`, `ONLINE_STORE_THEME_JSON_TEMPLATE`, `ONLINE_STORE_THEME_LOCALE_CONTENT`, `ONLINE_STORE_THEME_SECTION_GROUP`, `ONLINE_STORE_THEME_SETTINGS_CATEGORY`, `ONLINE_STORE_THEME_SETTINGS_DATA_SECTIONS`
 
 ### Step 4: AI Translation
 
@@ -147,7 +212,7 @@ Read the fetch output. For each field with status `NEW` or `OUTDATED`:
 - Keep SEO fields (`meta_title`, `meta_description`) within character limits: title ≤ 70 chars, description ≤ 160 chars
 
 Generate a CSV audit table at `{TEMP_DIR}/translation-audit.csv` with columns:
-`resource_id, resource_type, name_en, field_key, original, translation_{locale}, status, digest`
+`resource_id, resource_type, resource_name, field_key, original, translation_{locale}, status, digest`
 
 Present a summary to the user:
 - X fields to translate (NEW)
@@ -166,15 +231,20 @@ Do not proceed until the user explicitly approves.
 
 ### Step 6: Write Translations
 
+**Path A:**
 ```
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs write --env skill-hub.env --input {TEMP_DIR}/translation-audit.csv --locale {locale}
 ```
 
-The script batches up to 5 resources per GraphQL request using aliases, checks `userErrors` on every response, and reports a final success/failure count.
+**Path B:** For each resource in the CSV, write a mutation file to `{TEMP_DIR}/write-batch-{n}.graphql` and execute:
+```
+shopify store execute --store {store}.myshopify.com --allow-mutations --query-file {TEMP_DIR}/write-batch-{n}.graphql --output-file {TEMP_DIR}/write-out-{n}.json --no-color
+```
+Check each output file for `userErrors`. Stop and report on any error.
 
 ### Step 7: Cleanup
 
-Delete `{TEMP_DIR}/fetch-output.json` and `{TEMP_DIR}/translation-audit.csv` immediately after write completes or fails.
+Delete all files under `{TEMP_DIR}` immediately after write completes or fails.
 
 ## Resource Priority
 

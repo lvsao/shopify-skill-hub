@@ -33,17 +33,31 @@ for (let i = 1; i < args.length; i += 2) {
 // ─── Env loading ──────────────────────────────────────────────────────────────
 
 function loadEnv(envPath) {
-  const p = resolve(envPath || 'skill-hub.env');
-  if (!existsSync(p)) return {};
-  const lines = readFileSync(p, 'utf8').split('\n');
-  const env = {};
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const idx = trimmed.indexOf('=');
-    if (idx < 0) continue;
-    env[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
+  // Try skill-hub.env first, then .env as fallback
+  const candidates = envPath
+    ? [resolve(envPath)]
+    : [resolve('skill-hub.env'), resolve('.env')];
+
+  let env = {};
+  for (const p of candidates) {
+    if (!existsSync(p)) continue;
+    const lines = readFileSync(p, 'utf8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const idx = trimmed.indexOf('=');
+      if (idx < 0) continue;
+      env[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
+    }
+    break; // use first found file
   }
+
+  // Compatibility: map legacy .env variable names to skill-hub.env names
+  if (!env.SKILL_HUB_SHOPIFY_STORE_DOMAIN && env.SHOPIFY_TEST_STORE_DOMAIN)
+    env.SKILL_HUB_SHOPIFY_STORE_DOMAIN = env.SHOPIFY_TEST_STORE_DOMAIN;
+  if (!env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN && env.SHOPIFY_ADMIN_API_ACCESS_TOKEN)
+    env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN = env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+
   return env;
 }
 
@@ -362,16 +376,20 @@ async function cmdWrite() {
   const csv = readFileSync(inputFile, 'utf8');
   const rows = parseCSV(csv).filter(r => r.status === 'NEW' || r.status === 'OUTDATED' || r.status === 'UPDATE');
 
-  // Group by resource_id
+  // Group by resource_id (support both 'resource_id' and legacy 'product_id' column names)
   const byResource = {};
   for (const row of rows) {
     const id = row.resource_id || row.product_id;
     if (!id) continue;
+    // Support both 'translation_{locale}' column naming conventions
     const translationKey = `translation_${locale}`;
     const value = row[translationKey];
     if (!value || !row.digest) continue;
+    // Support both 'field_key' column names
+    const key = row.field_key;
+    if (!key) continue;
     if (!byResource[id]) byResource[id] = [];
-    byResource[id].push({ key: row.field_key, value, digest: row.digest });
+    byResource[id].push({ key, value, digest: row.digest });
   }
 
   const resourceIds = Object.keys(byResource);
