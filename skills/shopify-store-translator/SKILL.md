@@ -1,6 +1,6 @@
 ---
 name: shopify-store-translator
-description: Translate Shopify store resources (Products, Collections, Pages, Blogs, and more) from the store's primary language into one or more target languages. Use when a merchant wants to add a new language, translate all products or a specific resource type, audit existing translations for outdated content, or sync translations to a Shopify market. Follows a preview-first workflow: fetch → AI translate → CSV audit → user approval → write to Shopify.
+description: "Translate all Shopify store resources into any target language. Use when a merchant wants to add a new language, translate products, collections, pages, blogs, policies, menus, and more, audit existing translations for outdated content, or sync translations to a Shopify market. Supports both Shopify CSV import/export and direct API translation with a preview-first, approval-based workflow."
 ---
 
 # Shopify Store Translator
