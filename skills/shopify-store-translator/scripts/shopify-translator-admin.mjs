@@ -426,7 +426,90 @@ async function cmdWrite() {
   console.log(JSON.stringify({ status: 'DONE', successCount, errorCount, locale }));
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+async function cmdTranslateCSV() {
+  const inputFile = flags.input;
+  const outputFile = flags.output;
+  const locale = flags.locale;
+  if (!inputFile || !outputFile || !locale) {
+    console.error('--input, --output, and --locale are required');
+    process.exit(1);
+  }
+
+  const content = readFileSync(inputFile, 'utf8');
+  const rows = parseCSV(content);
+  const headers = rows[0];
+
+  // Column indices
+  const COL = { type:0, id:1, field:2, locale:3, market:4, status:5, default:6, translated:7 };
+
+  function shouldSkipRow(r) {
+    const type = r[COL.type], field = r[COL.field], val = r[COL.default] || '';
+    if ((r[COL.translated] || '').trim()) return true; // already translated
+    if (!val.trim()) return true;
+    if (field === 'handle') return true;
+    if (type === 'ONLINE_STORE_THEME' || type === 'PACKING_SLIP_TEMPLATE') return true;
+    if (type === 'METAOBJECT' && field === 'data') return true;
+    const v = val.trim();
+    if (v.startsWith('{%') || v.startsWith('{{')) return true;
+    if (type === 'PRODUCT_OPTION_VALUE' && /^\$?\d+(\.\d+)?$/.test(v)) return true;
+    if (field === 'description' && /^[a-z_]+$/.test(v)) return true;
+    return false;
+  }
+
+  let needsTranslation = 0, skipped = 0, alreadyDone = 0;
+  const toTranslate = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    while (r.length < 8) r.push('');
+    if ((r[COL.translated] || '').trim()) { alreadyDone++; continue; }
+    if (shouldSkipRow(r)) { skipped++; continue; }
+    needsTranslation++;
+    toTranslate.push({ rowIdx: i, type: r[COL.type], field: r[COL.field], value: r[COL.default] });
+  }
+
+  console.log(JSON.stringify({
+    status: 'READY',
+    locale,
+    totalRows: rows.length - 1,
+    alreadyDone,
+    skipped,
+    needsTranslation,
+    note: `Agent should translate the ${needsTranslation} rows listed in toTranslate and call write-csv-translations to apply them.`,
+    toTranslate: toTranslate.slice(0, 50), // first 50 for agent context
+  }, null, 2));
+}
+
+async function cmdWriteCSVTranslations() {
+  // Reads original CSV + a JSON patch file, writes translated CSV
+  const inputFile = flags.input;
+  const patchFile = flags.patch; // JSON: [{rowIdx, translation}]
+  const outputFile = flags.output;
+  if (!inputFile || !patchFile || !outputFile) {
+    console.error('--input, --patch, and --output are required');
+    process.exit(1);
+  }
+
+  const content = readFileSync(inputFile, 'utf8');
+  const rows = parseCSV(content);
+  const patches = JSON.parse(readFileSync(patchFile, 'utf8'));
+
+  for (const { rowIdx, translation } of patches) {
+    if (rows[rowIdx]) {
+      while (rows[rowIdx].length < 8) rows[rowIdx].push('');
+      rows[rowIdx][7] = translation;
+    }
+  }
+
+  const csvLines = rows.map(row => row.map(v => {
+    const s = String(v == null ? '' : v);
+    return (s.includes(',') || s.includes('"') || s.includes('\n'))
+      ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(','));
+
+  writeFileSync(outputFile, csvLines.join('\n'), 'utf8');
+  console.log(JSON.stringify({ status: 'OK', outputFile, patchedRows: patches.length }));
+}
 
 const commands = {
   'init-env': cmdInitEnv,
@@ -437,6 +520,8 @@ const commands = {
   'add-locale-to-market': cmdAddLocaleToMarket,
   'fetch': cmdFetch,
   'write': cmdWrite,
+  'translate-csv': cmdTranslateCSV,
+  'write-csv-translations': cmdWriteCSVTranslations,
 };
 
 if (!command || !commands[command]) {
