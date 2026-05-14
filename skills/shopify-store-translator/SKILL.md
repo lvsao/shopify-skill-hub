@@ -276,12 +276,109 @@ Translate only when user requests (MEDIUM):
 ## Script Commands Reference
 
 ```
-shopify-translator-admin.mjs init-env          --method admin_custom_app|dev_dashboard_app --env skill-hub.env
-shopify-translator-admin.mjs connection-check  --env skill-hub.env
-shopify-translator-admin.mjs check-locales     --env skill-hub.env --target {locale}
-shopify-translator-admin.mjs enable-locale     --env skill-hub.env --locale {locale}
-shopify-translator-admin.mjs check-markets     --env skill-hub.env --locale {locale}
+shopify-translator-admin.mjs init-env             --method admin_custom_app|dev_dashboard_app --env skill-hub.env
+shopify-translator-admin.mjs connection-check     --env skill-hub.env
+shopify-translator-admin.mjs check-locales        --env skill-hub.env --target {locale}
+shopify-translator-admin.mjs enable-locale        --env skill-hub.env --locale {locale}
+shopify-translator-admin.mjs check-markets        --env skill-hub.env --locale {locale}
 shopify-translator-admin.mjs add-locale-to-market --env skill-hub.env --market-web-presence-id {id} --locale {locale}
-shopify-translator-admin.mjs fetch             --env skill-hub.env --resource-type {TYPE} --locale {locale} --output {file}
-shopify-translator-admin.mjs write             --env skill-hub.env --input {csv} --locale {locale}
+shopify-translator-admin.mjs fetch                --env skill-hub.env --resource-type {TYPE} --locale {locale} --output {file}
+shopify-translator-admin.mjs write                --env skill-hub.env --input {csv} --locale {locale}
+shopify-translator-admin.mjs translate-csv        --input {shopify-export.csv} --output {translated.csv} --locale {locale}
 ```
+
+## CSV Import/Export Translation Workflow
+
+Shopify Admin allows merchants to export all translatable content as a CSV and re-import after editing. This skill supports this path as an alternative to the API-based workflow.
+
+### When to use CSV import/export
+
+- The merchant already has a Shopify-exported CSV file
+- Bulk translation of all resource types at once (the export includes everything)
+- Offline review and editing before import
+- Faster for stores with many resource types
+
+### How to export from Shopify
+
+Shopify Admin → Settings → Languages → select target language → **Export** → download CSV
+
+### CSV format (Shopify standard)
+
+```
+Type,Identification,Field,Locale,Market,Status,Default content,Translated content
+PRODUCT,'123456,title,de,,,My Product,
+COLLECTION,'789,title,de,,,My Collection,
+```
+
+Column meanings:
+- `Type`: Resource type (PRODUCT, COLLECTION, ARTICLE, MEDIA_IMAGE, etc.)
+- `Identification`: Resource ID (prefixed with `'` to prevent Excel from treating as number)
+- `Field`: Field key (title, body_html, handle, alt, etc.)
+- `Locale`: Target language code (de, fr, it, es, etc.)
+- `Market`: Optional market ID for market-specific translations. Empty = global.
+- `Status`: Translation status from Shopify. Empty = not yet translated.
+- `Default content`: Source text in the store's primary language
+- `Translated content`: Target translation. **Fill this column.**
+
+### Translation rules for CSV mode
+
+**Always skip (do not fill Translated content):**
+- `handle` fields — URL slugs, must not be translated
+- `ONLINE_STORE_THEME` rows — theme code, CSS, Liquid templates
+- `PACKING_SLIP_TEMPLATE` rows — system template code
+- Rows where `Default content` starts with `{%` or `{{` — Liquid code
+- `METAOBJECT` rows where `Field` is `data` — structured JSON
+- `PRODUCT_OPTION_VALUE` rows where value is a price (`$10`, `$25`, `$50`, `$100`) or pure number
+
+**Always preserve in HTML fields (body_html, summary_html, body):**
+- All HTML tags: `<p>`, `<h1>`, `<ul>`, `<li>`, `<strong>`, `<a>`, etc.
+- HTML attributes: `class`, `href`, `src`, `style`, `id`
+- URLs inside `href` and `src`
+- Liquid variables: `{{ shop.name }}`, `{{ order.name }}`
+- Liquid tags: `{% if %}`, `{% for %}`, `{% endif %}`
+- CSS inside `<style>` blocks
+- Translate only the visible text content between tags
+
+**Special field handling:**
+- `METAFIELD value`: Translate if plain text. Skip if JSON or structured data.
+- `METAOBJECT label/title`: Translate normally.
+- `COOKIE_BANNER`: Translate all user-facing text fields.
+- `ARTICLE body_html`: Translate text nodes only, preserve all HTML structure and image URLs.
+- `MEDIA_IMAGE alt` / `ARTICLE_IMAGE alt` / `COLLECTION_IMAGE alt`: Translate the alt text description. Do not translate filenames or URLs.
+- `SELLING_PLAN name/option`: Translate plan names and delivery interval labels.
+- `SHOP meta_title/meta_description`: Translate SEO fields. Keep meta_title ≤ 70 chars, meta_description ≤ 160 chars.
+
+**Do not translate:**
+- Brand names and product model numbers (e.g. Selofy, PetSafe, Shopify, Hydrogen, Oxygen)
+- URLs, domain names, email addresses
+- Numeric values, prices, measurements
+- Carrier codes (usps, dhl_express)
+- Rows where `Translated content` is already filled — preserve existing translations
+
+### Using the script for CSV translation
+
+```
+node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs translate-csv \
+  --input /path/to/shopify-export.csv \
+  --output /path/to/translated.csv \
+  --locale de
+```
+
+The script reads the Shopify-exported CSV, applies all skip rules, translates matching rows using the AI agent, and writes the output CSV ready for import.
+
+For rows the script cannot translate automatically (long HTML articles, complex metafields), the agent should translate them inline and fill the `Translated content` column directly.
+
+### How to import back to Shopify
+
+Shopify Admin → Settings → Languages → select target language → **Import** → upload the translated CSV
+
+Shopify will validate the file and apply all filled `Translated content` values. Rows with empty `Translated content` are ignored.
+
+### Common import errors
+
+| Error | Cause | Fix |
+|---|---|---|
+| "Invalid file format" | CSV encoding not UTF-8 | Save as UTF-8 with BOM |
+| "Digest mismatch" | Source content changed after export | Re-export and re-translate |
+| "Unknown resource" | Deleted resource ID in CSV | Remove that row |
+| Translated content not showing | Locale not published | Publish locale in Settings → Languages |

@@ -86,6 +86,19 @@
           },
           "badge": { "en": "Flexible setup", "zh": "灵活配置" },
           "icon": "KeyRound"
+        },
+        {
+          "id": "csv-import-export",
+          "title": {
+            "en": "CSV import/export translation",
+            "zh": "CSV 导入导出翻译"
+          },
+          "description": {
+            "en": "Supports Shopify's native CSV export/import flow. Read a Shopify-exported translation CSV, apply AI translations with strict skip rules for handles, prices, Liquid code, and HTML structure, then import the filled CSV back to Shopify.",
+            "zh": "支持 Shopify 原生 CSV 导出/导入流程。读取 Shopify 导出的翻译 CSV，按严格规则跳过 handle、价格、Liquid 代码和 HTML 结构，AI 翻译后直接导入回 Shopify。"
+          },
+          "badge": { "en": "Bulk translate", "zh": "批量翻译" },
+          "icon": "FileSpreadsheet"
         }
       ],
       "prerequisites": []
