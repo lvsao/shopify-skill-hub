@@ -296,7 +296,7 @@ async function fetchHomepageMeta(url) {
 }
 
 const OVERVIEW_QUERY = `#graphql
-query BrandVoiceOverview($blogFirst: Int!, $articleFirst: Int!, $articleId: ID!, $includeArticle: Boolean!) {
+query BrandVoiceOverview($blogFirst: Int!, $articleFirst: Int!, $articleId: ID!, $includeArticle: Boolean!, $productFirst: Int!, $productAfter: String) {
   shop {
     name
     description
@@ -327,6 +327,37 @@ query BrandVoiceOverview($blogFirst: Int!, $articleFirst: Int!, $articleId: ID!,
     author { name }
     image { altText url }
     blog { id title handle }
+  }
+  products(first: $productFirst, after: $productAfter, sortKey: UPDATED_AT, reverse: true) {
+    nodes {
+      id
+      title
+      handle
+      description
+      productType
+      vendor
+      status
+      tags
+      seo { title description }
+      collections(first: 5) { nodes { id title handle } }
+      onlineStoreUrl
+      featuredMedia {
+        preview { image { url altText width height } }
+      }
+      media(first: 5) {
+        nodes {
+          alt
+          mediaContentType
+          preview { image { url altText width height } }
+          ... on MediaImage { image { url altText width height } }
+        }
+      }
+      priceRangeV2 {
+        minVariantPrice { amount currencyCode }
+        maxVariantPrice { amount currencyCode }
+      }
+    }
+    pageInfo { hasNextPage endCursor }
   }
 }`;
 
@@ -374,15 +405,16 @@ async function main() {
     articleFirst: 10,
     articleId: args.articleId || "gid://shopify/Article/0",
     includeArticle: Boolean(args.articleId),
+    productFirst: args.productPageSize,
+    productAfter: null,
   });
 
-  const products = [];
-  let after = null;
-  while (true) {
+  const products = [...(overview.products?.nodes || [])];
+  let after = overview.products?.pageInfo?.endCursor || null;
+  while (after) {
     const page = await graphql(env, PRODUCTS_QUERY, { first: args.productPageSize, after });
     products.push(...page.products.nodes);
-    if (!page.products.pageInfo.hasNextPage) break;
-    after = page.products.pageInfo.endCursor;
+    after = page.products.pageInfo?.hasNextPage ? page.products.pageInfo.endCursor : null;
   }
 
   const homepageUrl =

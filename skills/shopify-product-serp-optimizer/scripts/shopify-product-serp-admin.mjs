@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 
 const DEFAULT_ENV = "skill-hub.env";
 const DEFAULT_VERSION_CANDIDATES = ["2026-04", "2026-01", "2025-10", "2025-07"];
-const REQUIRED_SCOPES = "read_products,write_products,read_files,write_files";
+const DEFAULT_SCOPES = "read_products,write_products,read_files,write_files";
 const DEFAULT_BATCH_SIZE = 5;
 const MAX_SCAN_PRODUCTS = 250;
 const execFileAsync = promisify(execFile);
@@ -68,9 +68,20 @@ function parseEnv(text) {
 }
 
 async function loadEnv(file) {
-  const text = await fs.readFile(file, "utf8").catch(() => null);
+  let text = await fs.readFile(file, "utf8").catch(() => null);
   if (!text) {
-    fail(`Missing env file: ${file}. Current working directory: ${process.cwd()}. The env must be in the user's working directory, not the installed skill directory. Run from the folder that contains skill-hub.env, or pass an absolute path such as --env "<USER_WORKDIR>\\skill-hub.env".`);
+    const fallback = ".env";
+    text = await fs.readFile(fallback, "utf8").catch(() => null);
+    if (text) {
+      const parsed = parseEnv(text);
+      const mapped = {};
+      if (parsed.SHOPIFY_TEST_STORE_DOMAIN) mapped.SKILL_HUB_SHOPIFY_STORE_DOMAIN = parsed.SHOPIFY_TEST_STORE_DOMAIN;
+      if (parsed.SHOPIFY_ADMIN_API_ACCESS_TOKEN) mapped.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN = parsed.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+      if (parsed.SHOPIFY_DEV_APP_CLIENT_ID) mapped.SKILL_HUB_SHOPIFY_CLIENT_ID = parsed.SHOPIFY_DEV_APP_CLIENT_ID;
+      Object.assign(parsed, mapped);
+      return parsed;
+    }
+    fail(`Missing env file: ${file}. Also checked fallback .env. Current working directory: ${process.cwd()}. Run init-env first, or pass --env "<PATH>\\skill-hub.env".`);
   }
   return parseEnv(text);
 }
@@ -98,6 +109,7 @@ async function initEnv(args) {
   if (!["admin_custom_app", "dev_dashboard_app"].includes(method)) {
     fail("--method must be admin_custom_app or dev_dashboard_app");
   }
+  const scopes = args.scopes || DEFAULT_SCOPES;
   const template =
     method === "admin_custom_app"
       ? `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com\nSKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx\n`
@@ -106,7 +118,7 @@ async function initEnv(args) {
   const exists = await fs.readFile(envFile, "utf8").then(() => true).catch(() => false);
   if (!exists) await fs.writeFile(envFile, template, "utf8");
   const gitignoreUpdated = await ensureGitignoreLine(envFile);
-  console.log(JSON.stringify({ ok: true, envFile, created: !exists, gitignoreUpdated, requiredScopes: REQUIRED_SCOPES }, null, 2));
+  console.log(JSON.stringify({ ok: true, envFile, created: !exists, gitignoreUpdated, requiredScopes: scopes }, null, 2));
 }
 
 async function shopifyCliFetch({ env = {}, shop, query, variables, allowMutations = false }) {
@@ -388,8 +400,15 @@ async function productCommand(args) {
     ? { id: args.id }
     : { handle: handleFromUrl(args.handle || args.url || args._[0]) };
   if (!identifier.id && !identifier.handle) fail("Provide --id, --handle, --url, or a product URL/handle argument.");
-  const data = await gql(client, PRODUCT_QUERY, { identifier });
-  if (!data.product) fail("Product not found.");
+  const data = await gql(client, PRODUCT_QUERY, { identifier }).catch((error) => {
+    fail(`Shopify API error when reading product: ${error.message}. Check that the product exists and your token has read_products scope. Provided identifier: ${JSON.stringify(identifier)}`);
+  });
+  if (!data.product) {
+    const hint = identifier.handle
+      ? `Product handle "${identifier.handle}" was not found. Verify the handle from the product URL (e.g. /products/<handle>).`
+      : `Product ID "${identifier.id}" was not found. Verify the GID format (e.g. gid://shopify/Product/...).`;
+    fail(hint);
+  }
   console.log(JSON.stringify({ ok: true, product: data.product }, null, 2));
 }
 
@@ -510,21 +529,22 @@ function textLength(value) {
 function isWeakText(value) {
   const text = String(value || "").trim().toLowerCase();
   if (!text) return true;
-  if (text.length < 35) return true;
+  if (text.length < 20) return true;
   const weakPatterns = [
-    /^shop\s+/,
-    /^buy\s+/,
-    /high[- ]quality/,
-    /premium/,
-    /best seller/,
-    /new arrival/,
-    /perfect for/,
-    /must[- ]have/,
-    /discover/,
-    /browse/,
-    /free shipping/,
+    /^shop\s+$/i,
+    /^buy\s+$/i,
+    /^high[- ]quality$/i,
+    /^premium$/i,
+    /^best seller$/i,
+    /^new arrival$/i,
+    /^perfect for$/i,
+    /^must[- ]have$/i,
+    /^discover$/i,
+    /^browse$/i,
+    /^free shipping$/i,
   ];
-  return weakPatterns.some((pattern) => pattern.test(text));
+  const words = text.split(/\s+/);
+  return words.every((word) => weakPatterns.some((pattern) => pattern.test(word)));
 }
 
 function mediaStats(product) {
@@ -667,11 +687,18 @@ async function scanProducts(args) {
   const candidates = products.map(scoreProduct).sort((a, b) => b.opportunityScore - a.opportunityScore);
   const eligible = candidates.filter((item) => item.eligible);
   const excluded = candidates.filter((item) => !item.eligible);
+  const noUrlCount = excluded.filter((item) => item.exclusions.some((e) => e.includes("onlineStoreUrl"))).length;
+  const noDescCount = excluded.filter((item) => item.exclusions.some((e) => e.includes("description"))).length;
+  const summaryParts = [];
+  if (eligible.length === 0) summaryParts.push("No products are eligible for SERP optimization yet.");
+  if (noUrlCount > 0) summaryParts.push(`${noUrlCount} product(s) need to be published to the online store (missing onlineStoreUrl) before they can be optimized.`);
+  if (noDescCount > 0) summaryParts.push(`${noDescCount} product(s) have thin or missing product descriptions, which limits SERP improvement options.`);
   console.log(JSON.stringify({
     ok: true,
     scannedProductCount: products.length,
     eligibleProductCount: eligible.length,
     excludedProductCount: excluded.length,
+    summary: summaryParts.length ? summaryParts.join(" ") : `${eligible.length} product(s) eligible for optimization.`,
     candidates,
   }, null, 2));
 }
@@ -812,7 +839,7 @@ function validatePlan(plan) {
       if (!change.productId) errors.push(`changes[${index}].productId is required`);
       if (!change.namespace) errors.push(`changes[${index}].namespace is required`);
       if (!change.key) errors.push(`changes[${index}].key is required`);
-      if (!change.type) errors.push(`changes[${index}].type is required`);
+      if (!change.metafieldType) errors.push(`changes[${index}].metafieldType is required`);
       if (change.value === undefined || change.value === null || String(change.value).trim() === "") {
         errors.push(`changes[${index}].value is required`);
       }
@@ -837,7 +864,7 @@ function bundleMetafieldUpdates(change) {
       ownerId: change.productId,
       namespace: item.namespace,
       key: item.key,
-      type: item.type,
+      type: item.type || item.metafieldType,
       value: String(item.value),
     }))
     : [];
@@ -1597,7 +1624,7 @@ async function applyCommand(args) {
       ownerId: item.productId,
       namespace: item.namespace,
       key: item.key,
-      type: item.type,
+      type: item.metafieldType || item.type,
       value: String(item.value),
     }))
     .concat(changes.filter((item) => item.type === "product_full_bundle").flatMap(bundleMetafieldUpdates));
