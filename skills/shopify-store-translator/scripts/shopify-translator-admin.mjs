@@ -320,13 +320,25 @@ async function cmdFetch() {
   let cursor = null;
   let hasNextPage = true;
 
+  // LocalizableContentType → translate decision
+  // SKIP: URI, URL, LINK, LIST_URL, LIST_LINK, FILE_REFERENCE, LIST_FILE_REFERENCE, JSON, JSON_STRING
+  // TRANSLATE (plain): SINGLE_LINE_TEXT_FIELD, MULTI_LINE_TEXT_FIELD, STRING, INLINE_RICH_TEXT, RICH_TEXT_FIELD, LIST_SINGLE_LINE_TEXT_FIELD, LIST_MULTI_LINE_TEXT_FIELD
+  // TRANSLATE (html): HTML
+  const SKIP_TYPES = new Set(['URI','URL','LINK','LIST_URL','LIST_LINK','FILE_REFERENCE','LIST_FILE_REFERENCE','JSON','JSON_STRING']);
+
   while (hasNextPage) {
     const afterClause = cursor ? `, after: "${cursor}"` : '';
     const data = await gqlWithThrottle(host, token, `query {
       translatableResources(first: 50, resourceType: ${resourceType}${afterClause}) {
         nodes {
           resourceId
-          translatableContent { key value digest locale }
+          translatableContent {
+            key
+            value
+            digest
+            locale
+            type
+          }
           translations(locale: "${locale}") { key value outdated }
         }
         pageInfo { hasNextPage endCursor }
@@ -342,12 +354,13 @@ async function cmdFetch() {
       for (const t of node.translations) translationMap[t.key] = t;
 
       const fields = node.translatableContent
-        .filter(c => c.key !== 'handle') // never include handle by default
+        .filter(c => c.key !== 'handle') // NEVER translate handles
+        .filter(c => !SKIP_TYPES.has(c.type)) // skip non-translatable types per Shopify API
         .map(c => {
           const existing = translationMap[c.key];
           let status = 'NEW';
           if (existing) status = existing.outdated ? 'OUTDATED' : 'CURRENT';
-          return { key: c.key, value: c.value, digest: c.digest, status, existingTranslation: existing?.value ?? null };
+          return { key: c.key, value: c.value, digest: c.digest, type: c.type, status, existingTranslation: existing?.value ?? null };
         });
 
       results.push({ resourceId: node.resourceId, resourceType, fields });
