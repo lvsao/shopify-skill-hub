@@ -469,14 +469,13 @@ Never translate handle fields by default — they are URL slugs.
 
 | Column | Description |
 |---|---|
-| product_id | Full GID |
+| resource_id | Full GID, e.g. `gid://shopify/Product/123` |
 | resource_type | PRODUCT, COLLECTION, etc. |
-| product_title_en | Human-readable name in source language |
+| resource_name | Human-readable name in source language |
 | field_key | title, body_html, meta_title, etc. |
-| original_en | Source content |
+| original | Source content in primary language |
 | translation_{locale} | AI translation. One column per target locale. |
 | status | NEW / UPDATE / OUTDATED / CURRENT |
-| outdated | Boolean from API |
 | digest | SHA-256 from API — required for write step |
 
 ### 8.2 HTML Field Rules
