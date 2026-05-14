@@ -279,6 +279,7 @@ query($cursor: String) {
         value   # Source content in primary language
         digest  # SHA-256 hash — REQUIRED for translationsRegister
         locale  # Source locale, e.g. "en"
+        type    # LocalizableContentType — use this to decide translate vs skip
       }
       translations(locale: "de") {
         key
@@ -295,10 +296,29 @@ query($cursor: String) {
 }
 ```
 
-Field notes:
-- digest: Must be passed exactly as translatableContentDigest in translationsRegister. If source changes, digest changes and existing translation becomes outdated.
-- outdated: true means translation still displays but may be inaccurate. Flag for re-translation.
-- Paginate until hasNextPage: false.
+**`type` field — `LocalizableContentType` enum (official ref: https://shopify.dev/docs/api/admin-graphql/2026-04/enums/LocalizableContentType):**
+
+| Type value | Translate? | Notes |
+|---|---|---|
+| `SINGLE_LINE_TEXT_FIELD` | ✅ Yes | Plain text |
+| `MULTI_LINE_TEXT_FIELD` | ✅ Yes | Plain text, may contain newlines |
+| `STRING` | ✅ Yes | Generic string |
+| `HTML` | ✅ Yes | Preserve all HTML tags, translate text nodes only |
+| `RICH_TEXT_FIELD` | ✅ Yes | Rich text |
+| `INLINE_RICH_TEXT` | ✅ Yes | Inline rich text |
+| `LIST_SINGLE_LINE_TEXT_FIELD` | ✅ Yes | List of plain text |
+| `LIST_MULTI_LINE_TEXT_FIELD` | ✅ Yes | List of multi-line text |
+| `URI` | ⛔ Skip | URL/URI — do not translate |
+| `URL` | ⛔ Skip | URL — do not translate |
+| `LINK` | ⛔ Skip | Link — do not translate |
+| `LIST_URL` | ⛔ Skip | List of URLs |
+| `LIST_LINK` | ⛔ Skip | List of links |
+| `JSON` | ⛔ Skip | Structured JSON data |
+| `JSON_STRING` | ⛔ Skip | JSON as string |
+| `FILE_REFERENCE` | ⛔ Skip | File reference |
+| `LIST_FILE_REFERENCE` | ⛔ Skip | List of file references |
+
+**Always also skip `handle` fields regardless of type** — handles are URL slugs and must never be translated.
 
 Agent status classification:
 - translations empty → NEW

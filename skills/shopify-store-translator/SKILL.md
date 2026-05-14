@@ -322,38 +322,93 @@ Column meanings:
 
 ### Translation rules for CSV mode
 
-**Always skip (do not fill Translated content):**
-- `handle` fields — **NEVER translate handles under any circumstance.** Handles are Shopify URL slugs (e.g. `my-product`, `automated-collection`). Translating them causes 404 errors and breaks SEO. Applies to PRODUCT, COLLECTION, ARTICLE, BLOG, PAGE, and all other resource types. Always leave empty.
-- `ONLINE_STORE_THEME` rows — theme code, CSS, Liquid templates
-- `PACKING_SLIP_TEMPLATE` rows — system template code
-- Rows where `Default content` starts with `{%` or `{{` — Liquid code
-- `METAOBJECT` rows where `Field` is `data` — structured JSON
-- `PRODUCT_OPTION_VALUE` rows where value is a price (`$10`, `$25`, `$50`, `$100`) or pure number
+The Shopify CSV has 8 columns: `Type, Identification, Field, Locale, Market, Status, Default content, Translated content`
 
-**Always preserve in HTML fields (body_html, summary_html, body):**
-- All HTML tags: `<p>`, `<h1>`, `<ul>`, `<li>`, `<strong>`, `<a>`, etc.
-- HTML attributes: `class`, `href`, `src`, `style`, `id`
-- URLs inside `href` and `src`
-- Liquid variables: `{{ shop.name }}`, `{{ order.name }}`
-- Liquid tags: `{% if %}`, `{% for %}`, `{% endif %}`
-- CSS inside `<style>` blocks
-- Translate only the visible text content between tags
+**The only column to fill is `Translated content`.** Never modify any other column.
 
-**Special field handling:**
-- `METAFIELD value`: Translate if plain text. Skip if JSON or structured data.
-- `METAOBJECT label/title`: Translate normally.
-- `COOKIE_BANNER`: Translate all user-facing text fields.
-- `ARTICLE body_html`: Translate text nodes only, preserve all HTML structure and image URLs.
-- `MEDIA_IMAGE alt` / `ARTICLE_IMAGE alt` / `COLLECTION_IMAGE alt`: Translate the alt text description. Do not translate filenames or URLs.
-- `SELLING_PLAN name/option`: Translate plan names and delivery interval labels.
-- `SHOP meta_title/meta_description`: Translate SEO fields. Keep meta_title ≤ 70 chars, meta_description ≤ 160 chars.
+#### Decision framework: translate or skip?
 
-**Do not translate:**
-- Brand names and product model numbers (e.g. Selofy, PetSafe, Shopify, Hydrogen, Oxygen)
-- URLs, domain names, email addresses
-- Numeric values, prices, measurements
-- Carrier codes (usps, dhl_express)
-- Rows where `Translated content` is already filled — preserve existing translations
+**Rule 1 — Always skip regardless of content:**
+
+| Condition | Reason |
+|---|---|
+| `Field` = `handle` | URL slug — causes 404 if translated |
+| `Default content` starts with `{{` or `{%` | Liquid code — not user-visible text |
+| `Default content` starts with `shopify://` | Internal Shopify URL |
+| `Default content` is a bare URL (`https://...`) | External URL — do not translate |
+| `Type` = `PACKING_SLIP_TEMPLATE` | Mixed HTML+Liquid system template |
+| `Type` = `METAOBJECT`, `Field` = `data` | JSON structured data |
+| `Type` = `DELIVERY_METHOD_DEFINITION`, `Field` = `description`, value is a carrier code (e.g. `usps`, `dhl_express`) | System identifier |
+| `Translated content` already filled | Preserve existing translation |
+
+**Rule 2 — Translate by content type (API `LocalizableContentType`):**
+
+When using the API path, fetch `translatableContent.type` and apply:
+
+| `type` value | Action |
+|---|---|
+| `SINGLE_LINE_TEXT_FIELD`, `MULTI_LINE_TEXT_FIELD`, `STRING`, `RICH_TEXT_FIELD`, `INLINE_RICH_TEXT`, `LIST_SINGLE_LINE_TEXT_FIELD`, `LIST_MULTI_LINE_TEXT_FIELD` | ✅ Translate as plain text |
+| `HTML` | ✅ Translate — preserve all HTML tags, translate text nodes only |
+| `URI`, `URL`, `LINK`, `LIST_URL`, `LIST_LINK` | ⛔ Skip — URL/link fields |
+| `JSON`, `JSON_STRING` | ⛔ Skip — structured data |
+| `FILE_REFERENCE`, `LIST_FILE_REFERENCE` | ⛔ Skip — file references |
+
+**Rule 3 — For CSV path (no `type` field available), use content pattern detection:**
+
+| Pattern | Action |
+|---|---|
+| Contains `{{` or `{%` anywhere | ⛔ Skip (Liquid) |
+| Starts with `shopify://` or `https://` or `http://` | ⛔ Skip (URL) |
+| Is valid HTML (contains `<` and `>`) but also contains `{{` | ⛔ Skip (HTML+Liquid mixed) |
+| Is valid HTML (contains `<` and `>`) with no Liquid | ✅ Translate — preserve tags |
+| Plain text (no `<`, no `{`) | ✅ Translate |
+| Looks like a slug (`only-lowercase-hyphens-and-numbers`) | ⛔ Skip |
+| Looks like a price (`$10`, `$25`) | ⛔ Skip |
+
+#### Per-Type field rules (from CSV analysis)
+
+**ONLINE_STORE_THEME** — translate row-by-row using Rule 3:
+- ✅ Translate: `*.text`, `*.label`, `*.title` fields containing plain text or pure HTML
+- ⛔ Skip: `*.link` fields (contain `shopify://` or `https://` URLs)
+- ⛔ Skip: any field where value contains `{{` or `{%`
+- Examples to translate: "Join our email list", "Cart", "View all", "Continue shopping", "Shop all", "Welcome to our store"
+- Examples to skip: `{{ article.title }}`, `shopify://collections/all`, `https://www.facebook.com/`
+
+**COOKIE_BANNER** — all `preferences_*` fields are plain text, translate all:
+- ✅ Translate: `title`, `text`, `button_*_text`, `preferences_*` (all user-visible text)
+- ⛔ Skip: `policy_link_url` (URL field)
+
+**METAFIELD** — value field only, apply Rule 3:
+- ✅ Translate if plain text or pure HTML
+- ⛔ Skip if JSON, URL, or contains Liquid
+
+**METAOBJECT**:
+- ✅ Translate: `label`, `title` (plain text)
+- ⛔ Skip: `data` (JSON string)
+
+**ARTICLE**:
+- ✅ Translate: `title`, `meta_title`, `meta_description`, `summary_html` (preserve HTML tags)
+- ✅ Translate: `body_html` — preserve all HTML tags and attributes, translate text nodes only
+- ⛔ Skip: `handle`
+
+**MEDIA_IMAGE / ARTICLE_IMAGE / COLLECTION_IMAGE**:
+- ✅ Translate: `alt` — translate the description text
+- ⛔ Skip if `alt` is empty or looks like a filename
+
+**PRODUCT_OPTION_VALUE**:
+- ⛔ Skip if value is a price (`$10`, `$25`, `$50`, `$100`)
+- ✅ Translate all other option values (colors, sizes, materials)
+
+**DELIVERY_METHOD_DEFINITION**:
+- ✅ Translate: `name` (human-readable shipping method name)
+- ⛔ Skip: `description` if value is a carrier code (`usps`, `dhl_express`, `fedex`)
+
+**SHOP_POLICY / PAGE body_html**:
+- ✅ Translate text nodes, preserve HTML structure
+- ⛔ Skip Liquid variables (`{{ last_updated }}`, `{{ shop_name }}`) — leave them as-is in the translated output
+
+**PACKING_SLIP_TEMPLATE**:
+- ⛔ Skip entirely — complex HTML+Liquid system template
 
 ### Using the script for CSV translation
 
