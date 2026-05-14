@@ -154,7 +154,7 @@ shopify store auth --store <store>.myshopify.com --scopes read_products,write_co
 After browser authorization, verify with the bundled helper:
 
 ```text
-node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env --product-page-size 1
+node skills/wechat-to-shopify-blog/scripts/shopify-context.mjs --env skill-hub.env
 ```
 
 If verification still returns `CLI_AUTH_REQUIRED` or access denied, rerun `shopify store auth` with the same scopes and verify again. Do not invent a Dev Dashboard approval step.

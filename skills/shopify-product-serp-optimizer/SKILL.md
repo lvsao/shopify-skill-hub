@@ -299,6 +299,7 @@ Use the bundled native Node.js helper. It uses only Node.js built-ins.
 
 ```text
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs connection-check --env skill-hub.env
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
