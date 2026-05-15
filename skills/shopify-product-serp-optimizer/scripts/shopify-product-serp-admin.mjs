@@ -113,7 +113,7 @@ async function initEnv(args) {
   const template =
     method === "admin_custom_app"
       ? `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com\nSKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx\n`
-      : `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com\nSKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id\n`;
+      : `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store\nSKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id\n`;
 
   const exists = await fs.readFile(envFile, "utf8").then(() => true).catch(() => false);
   if (!exists) await fs.writeFile(envFile, template, "utf8");

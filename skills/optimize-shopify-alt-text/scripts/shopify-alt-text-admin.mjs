@@ -91,7 +91,7 @@ SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 # Keep this file private. Do not commit it or paste tokens into chat.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
 `;
   } else {
