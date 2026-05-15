@@ -229,23 +229,28 @@ async function resolveAdmin(env) {
   const uniqueVersions = [...new Set(versions)];
 
   let shop = inputDomain;
+
+  // Resolve admin URL or custom domain to .myshopify.com
   if (!shop.endsWith(".myshopify.com")) {
-    const probeVersion = uniqueVersions[0];
-    const probe = await fetch(`https://${shop}/admin/api/${probeVersion}/graphql.json`, {
-      method: "POST",
-      redirect: "manual",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ query: "{ shop { name } }" }),
-    }).catch((error) => ({ error }));
-    const location = probe?.headers?.get?.("location");
-    if (location) {
-      const host = new URL(location).host.toLowerCase();
-      if (host.endsWith(".myshopify.com")) shop = host;
+    const rawInput = (env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || "").trim();
+    const adminMatch = rawInput.match(/admin\.shopify\.com\/store\/([^\/\s?&]+)/i);
+    if (adminMatch) {
+      shop = `${adminMatch[1].toLowerCase()}.myshopify.com`;
+    } else if (shop.includes(".")) {
+      try {
+        const response = await fetch(`https://${shop}`, { signal: AbortSignal.timeout(10000) });
+        const html = await response.text();
+        const shopMatch = html.match(/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i);
+        if (shopMatch) shop = shopMatch[1].toLowerCase();
+      } catch {}
     }
   }
 
   if (method === "dev_dashboard_app") {
-    if (!shop.endsWith(".myshopify.com")) fail("Dev Dashboard app setup requires a .myshopify.com store domain.");
+    if (!shop.endsWith(".myshopify.com")) fail(
+      `Could not find store domain from "${env.SKILL_HUB_SHOPIFY_STORE_DOMAIN}". ` +
+      `Provide your admin URL (https://admin.shopify.com/store/your-store) or website address.`
+    );
     const cliJs = await resolveShopifyCliJs(env);
     const cliProbe = await shopifyCliFetch({
       cliJs,

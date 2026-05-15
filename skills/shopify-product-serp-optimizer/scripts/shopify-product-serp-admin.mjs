@@ -210,22 +210,66 @@ async function adminFetch({ shop, version, token, query, variables }) {
   return { json, version: response.headers.get("x-shopify-api-version") || version };
 }
 
+async function resolveShopifyDomain(rawInput) {
+  const input = String(rawInput || "").trim();
+  if (!input) return null;
+
+  // If already ends with .myshopify.com, use directly
+  if (input.toLowerCase().endsWith(".myshopify.com")) {
+    return input.replace(/^https?:\/\//i, "").toLowerCase();
+  }
+
+  // If it's an admin URL like admin.shopify.com/store/<name>, extract the domain
+  const adminMatch = input.match(/admin\.shopify\.com\/store\/([^\/\s?&]+)/i);
+  if (adminMatch) {
+    return `${adminMatch[1].toLowerCase()}.myshopify.com`;
+  }
+
+  // If it looks like a custom domain (no path, may have www), try fetching HTML
+  const domain = input
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .toLowerCase();
+  if (domain.includes(".") && !domain.includes(" ")) {
+    try {
+      const response = await fetch(`https://${domain}`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      const html = await response.text();
+      const shopMatch = html.match(/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i);
+      if (shopMatch) {
+        return shopMatch[1].toLowerCase();
+      }
+    } catch {
+      // fetch failed, fall through to error
+    }
+  }
+
+  return null;
+}
+
 async function resolveAdmin(env) {
   const method = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || "admin_custom_app";
-  const inputDomain = normalizeDomain(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  if (!inputDomain) fail("Missing SKILL_HUB_SHOPIFY_STORE_DOMAIN.");
+  const rawInput = (env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || "").trim();
+  if (!rawInput) fail("Missing SKILL_HUB_SHOPIFY_STORE_DOMAIN.");
 
   if (method === "dev_dashboard_app") {
-    if (!inputDomain.endsWith(".myshopify.com")) {
-      fail("Dev Dashboard app mode requires the exact .myshopify.com store domain.");
+    const shop = await resolveShopifyDomain(rawInput);
+    if (!shop) {
+      fail(
+        `Could not find your store's .myshopify.com domain from "${rawInput}".\n` +
+        `Please provide your store address in one of these ways:\n` +
+        `  1. Your Shopify admin URL: https://admin.shopify.com/store/your-store\n` +
+        `  2. Your website address: www.your-store.com`
+      );
     }
     await shopifyCliFetch({
       env,
-      shop: inputDomain,
+      shop,
       query: "query SkillHubSerpConnectionCheck { shop { name myshopifyDomain } }",
       variables: {},
     });
-    return { mode: "cli", shop: inputDomain, env };
+    return { mode: "cli", shop, env };
   }
 
   const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
