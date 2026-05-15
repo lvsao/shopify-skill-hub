@@ -41,130 +41,26 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 Read `references/serp-methodology.md` before scoring, batching, reporting, or proposing SERP metadata.
 When metafields are in scope, also read `references/metafield-audit.md`.
 When image alt text is in scope, also read `references/alt-text-rules.md`.
+Before any Shopify connection work, read `references/onboarding-guide.md`.
 
 ## Beginner Onboarding First
 
-Before asking any setup question, inspect the local environment first:
+**Read `references/onboarding-guide.md` before executing any onboarding steps.** This guide is the single source of truth for all Selofy skills. Do not duplicate its instructions here.
 
-1. Identify the current working directory from the active terminal or host environment. This is the folder the user is working in, not the installed skill folder.
-2. Look for the exact filename `skill-hub.env` in that current directory. Use whatever direct file check, directory listing, or direct file-read tool is reliable in the current host.
-3. Do not rely on a broad search or glob result as the only evidence that the file is missing. If a search says "not found" but the user, file explorer, terminal, or direct path suggests the file exists, re-check by listing the current directory or reading the exact `skill-hub.env` path.
-4. If it exists, read only the variable names and whether required values are present. Do not print secrets.
-5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run `connection-check`.
-6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the store domain plus Client ID are present, run `connection-check`.
-7. If `connection-check` returns `CLI_AUTH_REQUIRED`, run the Dev Dashboard CLI auth runbook below silently, then rerun `connection-check`.
-8. If `connection-check` succeeds, continue directly to product scan or the requested product. Do not ask where the app was created.
-9. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
+Follow this condensed flow:
 
-Ask the setup question only when `skill-hub.env` is missing, incomplete, placeholder-only, or the access method cannot be determined:
+1. **Preflight**: Check for `skill-hub.env` in the current working directory. If it exists with complete values for the chosen access method, run `connection-check` and proceed. Do not ask setup questions.
+2. **Ask once**: If env is missing or incomplete, ask the A/B question exactly as written in the onboarding guide.
+3. **Create env**: Use the skill's `init-env` script to create `skill-hub.env` with placeholders. Ensure `.gitignore` contains `skill-hub.env`.
+4. **Guide the user**: Tell the user exactly which fields to fill and where to find each value, as described in the onboarding guide.
+5. **Execute CLI runbook**: For Path B, follow the silent, non-interactive runbook in the onboarding guide. Set `SHOPIFY_APP_AUTOMATION_TOKEN` from the env before running any `shopify app` commands.
+6. **Verify**: Run `connection-check`. If it succeeds, proceed to the skill's main workflow.
 
-```text
-Where did you create your Shopify app?
-
-A - Shopify store Settings custom app (Legacy Custom App)
-B - Dev Dashboard app
-```
-
-Then create or update one private shared file in the current working directory:
-
-```text
-skill-hub.env
-```
-
-Immediately ensure `.gitignore` contains `skill-hub.env`. Do not ask the user to create the env file or update `.gitignore` manually.
-
-### Path A: Shopify Store Settings Custom App (Legacy Custom App)
-
-Create the env file with:
-
-```text
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-```
-
-Ask the user to fill only. Show these exact options — never ask for a `.myshopify.com` domain:
-
-**Your store address**
-- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
-- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
-
-**Your Admin API token** — created in your Shopify admin: Settings → Apps and sales channels → Develop apps → choose your app → Admin API access token.
-
-Recommended scopes for the complete workflow:
-
-```text
-read_products,write_products,read_files,write_files
-```
-
-If the merchant wants SEO title and meta description only, `read_products,write_products` is enough. Add file scopes only when alt text updates are in scope.
-
-### Path B: Dev Dashboard App
-
-Create the env file with:
-
-```text
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
-```
-
-Ask the user to fill only two things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
-
-**Your store address**
-- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
-- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
-
-**Your app Client ID** — found in your Dev Dashboard (partners.shopify.com) under your app's settings.
-
-Then run this sequence silently, explaining each step in beginner-friendly language:
-
-**Step 1 — Check your tools:**
-```text
-node -v
-npm -v
-shopify version
-shopify store --help
-```
-If Shopify CLI is missing or too old, install it: `npm install -g @shopify/cli@latest`.
-
-**Step 2 — Connect your app to Shopify CLI:**
-Create a temporary folder and link your Dev Dashboard app. A browser page will open asking you to log into your Shopify Partners account — enter the verification code shown on the page.
-```text
-shopify app config link --client-id <client-id> --path <temp-dir> --no-color
-```
-Then write the required permissions (scopes) into the config file:
-```toml
-[access_scopes]
-scopes = "read_products,write_products,read_files,write_files"
-```
-
-**Step 3 — Deploy the permissions:**
-```text
-shopify app config validate --path <temp-dir> --no-color
-shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color
-```
-
-**Step 4 — Authorize on your store:**
-Tell the user: "Next, a Shopify page will open in your browser asking you to approve permissions. Please review and click Authorize."
-```text
-shopify store auth --store <your-resolved-domain>.myshopify.com --scopes read_products,write_products,read_files,write_files --json --no-color
-```
-Note: `<your-resolved-domain>.myshopify.com` is the domain the agent resolved in the Domain resolution step below (admin URL extraction, website HTML scan, or direct `.myshopify.com` input).
-
-**Step 5 — Verify:**
-```text
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs connection-check --env skill-hub.env
-```
-If it reports `CLI_AUTH_REQUIRED`, rerun `shopify store auth` and make sure you click Authorize in the browser.
-
-**Step 6 — Clean up:**
-Delete the temporary folder.
-
-**Domain resolution for agents (how to get `<your-resolved-domain>.myshopify.com`):**
-After the user provides their store address (admin URL or website), resolve it to a `.myshopify.com` domain before running CLI commands:
-1. If `https://admin.shopify.com/store/<name>` → extract `<name>` → `<name>.myshopify.com`
-2. If already ends with `.myshopify.com` → use directly
-3. If a website address like `www.example.com` → fetch the page HTML and search for `Shopify.shop = "<name>.myshopify.com"` (regex: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`)
-4. If none of the above work → tell the user: "I couldn't find your store's address. Could you copy your Shopify admin URL instead? It looks like `https://admin.shopify.com/store/your-store-name`"
-
-After resolving, update `skill-hub.env` with the resolved `SKILL_HUB_SHOPIFY_STORE_DOMAIN=<name>.myshopify.com` before running `connection-check` or other commands.
+**Path B critical notes** (Dev Dashboard app):
+- Use `SHOPIFY_APP_AUTOMATION_TOKEN` for all `shopify app` commands — this makes them non-interactive.
+- **Do NOT use `shopify app config link`** — it triggers interactive Partners auth. Manually create the TOML file instead.
+- **Domain resolution**: Resolve the user's store address to a `.myshopify.com` domain using the priority order in the onboarding guide (admin URL extraction → direct input → HTML parsing with `Shopify.shop` regex → fallback request).
+- Only `shopify store auth` requires user interaction (browser authorization). All other CLI steps return immediately.
 
 ## What This Skill Produces
 
@@ -266,34 +162,33 @@ Batch meaning:
 
 ## Required Order
 
-1. Create or verify `skill-hub.env`.
-2. Run Shopify connection check.
-3. Read `references/serp-methodology.md`.
-4. If metafields are in scope, read `references/metafield-audit.md`.
-5. If alt text is in scope, read `references/alt-text-rules.md`.
-6. Read the explicit product context or run product scan and batch planning.
-7. Commit to generating the `.html` report in this same turn unless a hard blocker prevents file creation.
-8. Gather live Google intent evidence during the current run. Use real Google search surfaces such as autocomplete, related searches, People Also Ask, product/product-review/comparison results, or current SERP wording. Do not reuse stale memory as a substitute for live evidence.
-9. Gather live Amazon ecommerce user-intent evidence during the current run. Use real Amazon surfaces such as autocomplete, category/product result wording, titles, bullets, Compare With Similar Items, Q&A themes, and review themes. Do not reuse stale memory as a substitute for live evidence.
-10. If Shopify access is available, run `metafield-audit` for the product or current batch and separate:
+1. Read `references/onboarding-guide.md`. Create or verify `skill-hub.env`. Run Shopify connection check.
+2. Read `references/serp-methodology.md`.
+3. If metafields are in scope, read `references/metafield-audit.md`.
+4. If alt text is in scope, read `references/alt-text-rules.md`.
+5. Read the explicit product context or run product scan and batch planning.
+6. Commit to generating the `.html` report in this same turn unless a hard blocker prevents file creation.
+7. Gather live Google intent evidence during the current run. Use real Google search surfaces such as autocomplete, related searches, People Also Ask, product/product-review/comparison results, or current SERP wording. Do not reuse stale memory as a substitute for live evidence.
+8. Gather live Amazon ecommerce user-intent evidence during the current run. Use real Amazon surfaces such as autocomplete, category/product result wording, titles, bullets, Compare With Similar Items, Q&A themes, and review themes. Do not reuse stale memory as a substitute for live evidence.
+9. If Shopify access is available, run `metafield-audit` for the product or current batch and separate:
   - definitions with populated values
   - definitions missing values on the product
   - value-only metafields without surfaced definitions
-11. Tell the user the scope, current batch, opportunity reasons, and what can or cannot be executed.
-12. Build a product evidence ledger. Separate supported facts from missing or risky claims.
-13. Classify search intent and create a micro-intent ladder. If no target query is provided, infer conservative hypotheses from product evidence and mark them as hypotheses.
-14. Resolve the current product title, product description, effective SEO title, and effective meta description with Shopify fallback rules, then score those values.
-15. Produce 1-3 candidate product titles, 1-3 product description rewrite directions or final descriptions, 1-3 SEO titles, and 1-3 meta descriptions with evidence, why, risk flags, and score.
-16. Generate metafield optimization suggestions only when the value meaning can be grounded in definition metadata plus product evidence. For missing metafield values, offer fill recommendations instead of guessing.
-17. Generate direct product-image alt text recommendations inside this skill. Download only the current product-image batch to an operating-system temp folder, inspect images through the host's native image input when available, validate against `references/alt-text-rules.md`, and include approved candidates in the same product bundle.
-18. Build the Enhanced snippets module from merchant evidence plus the live Google and live Amazon evidence. If an item cannot meet that evidence standard, mark it blocked instead of guessing.
-19. Generate the HTML report with the bundled helper.
-20. Tell the user the most important findings directly in the chat and explain how to open the HTML report.
-21. Ask for one explicit approval to apply the exact selected field bundle. The bundle must include every recommended `title`, `descriptionHtml`, `seo.title`, `seo.description`, approved metafield updates, and approved alt text update that should be written now.
-22. Preview the approved write plan with `apply --input -`.
-23. Apply the approved bundle in one execution with `apply --input - --execute`. Do not pause for additional per-field confirmation unless a hard validation or permissions failure blocks execution.
-24. Verify by reading changed products.
-25. Clean up operating-system temp files and confirm no process JSON or generated helper files were left in the working folder.
+10. Tell the user the scope, current batch, opportunity reasons, and what can or cannot be executed.
+11. Build a product evidence ledger. Separate supported facts from missing or risky claims.
+12. Classify search intent and create a micro-intent ladder. If no target query is provided, infer conservative hypotheses from product evidence and mark them as hypotheses.
+13. Resolve the current product title, product description, effective SEO title, and effective meta description with Shopify fallback rules, then score those values.
+14. Produce 1-3 candidate product titles, 1-3 product description rewrite directions or final descriptions, 1-3 SEO titles, and 1-3 meta descriptions with evidence, why, risk flags, and score.
+15. Generate metafield optimization suggestions only when the value meaning can be grounded in definition metadata plus product evidence. For missing metafield values, offer fill recommendations instead of guessing.
+16. Generate direct product-image alt text recommendations inside this skill. Download only the current product-image batch to an operating-system temp folder, inspect images through the host's native image input when available, validate against `references/alt-text-rules.md`, and include approved candidates in the same product bundle.
+17. Build the Enhanced snippets module from merchant evidence plus the live Google and live Amazon evidence. If an item cannot meet that evidence standard, mark it blocked instead of guessing.
+18. Generate the HTML report with the bundled helper.
+19. Tell the user the most important findings directly in the chat and explain how to open the HTML report.
+20. Ask for one explicit approval to apply the exact selected field bundle. The bundle must include every recommended `title`, `descriptionHtml`, `seo.title`, `seo.description`, approved metafield updates, and approved alt text update that should be written now.
+21. Preview the approved write plan with `apply --input -`.
+22. Apply the approved bundle in one execution with `apply --input - --execute`. Do not pause for additional per-field confirmation unless a hard validation or permissions failure blocks execution.
+23. Verify by reading changed products.
+24. Clean up operating-system temp files and confirm no process JSON or generated helper files were left in the working folder.
 
 ## Bundled Script
 
