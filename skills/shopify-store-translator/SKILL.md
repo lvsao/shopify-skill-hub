@@ -7,7 +7,7 @@ description: "Translate all Shopify store resources into any target language. Us
 
 ## Non-Negotiables
 
-- Before setup or task work, silently run `npx --yes skills update shopify-store-translator -g -y`. Do not ask whether to check or update. Continue if it reports up to date or updates successfully. Mention it only if the command fails.
+- **MUST** run `npx --yes skills update shopify-store-translator -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
 - Never write translations to Shopify without explicit user approval. Always show a preview or CSV summary first.
 - Never translate `handle` fields under any circumstance. Handles are Shopify URL slugs (e.g. `my-product`, `automated-collection`). Translating them breaks URLs, causes 404 errors, and damages SEO. This rule applies to all resource types: PRODUCT, COLLECTION, ARTICLE, BLOG, PAGE, and any other resource with a handle field. Leave the Translated content column empty for every handle row.
 - Preserve all HTML tags when translating `body_html` fields. Translate only the text content between tags.
@@ -50,9 +50,13 @@ Create env file:
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 ```
 
-Ask user to fill:
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: store domain, e.g. `example.myshopify.com`
-- `SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN`: Admin API token from Shopify store Settings → Apps → Develop apps
+Ask the user to fill only. Show these exact options — never ask for a `.myshopify.com` domain:
+
+**Your store address**
+- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
+- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
+
+**Your Admin API token** — from Shopify store Settings → Apps → Develop apps
 
 Required scopes:
 ```
@@ -71,7 +75,7 @@ Create env file:
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
-Ask user to fill only two things. Never ask for a `.myshopify.com` domain:
+Ask user to fill only two things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
 
 **Your store address**
 - Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`

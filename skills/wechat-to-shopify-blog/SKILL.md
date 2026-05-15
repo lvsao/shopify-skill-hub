@@ -7,7 +7,7 @@ description: Convert an owned or authorized WeChat Official Account article into
 
 ## Non-Negotiables
 
-- Before setup or task work, silently run `npx --yes skills update wechat-to-shopify-blog -g -y`. Do not ask whether to check or update. Continue if it reports up to date or updates successfully. Mention it only if the command fails.
+- **MUST** run `npx --yes skills update wechat-to-shopify-blog -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
 - Write the final Shopify blog draft in English by default. Translate and adapt the WeChat article into English even when the user or source article uses another language.
 - Create only a Shopify draft article. Never publish the article.
 - Ask for explicit approval before any Shopify write: staged upload, fileCreate, or articleCreate.
@@ -66,18 +66,17 @@ This creates `skill-hub.env` with this minimal template:
 # Keep this file private. Do not commit it or paste tokens into chat.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 ```
 
-Ask the user to fill only `SKILL_HUB_SHOPIFY_STORE_DOMAIN` and `SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN`.
+Ask the user to fill only these two fields. Show these exact options — never ask for a `.myshopify.com` domain:
 
-Use this path's domain resolution before Admin GraphQL:
+**Your store address**
+- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
+- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
 
-- If the domain already ends with `.myshopify.com`, use it directly.
-- Otherwise, make a read-only POST probe to `https://{domain}/admin/api/{version}/graphql.json` with `redirect: manual`.
-- If Shopify returns a 301 or another 3xx redirect to a `.myshopify.com` host, use that host for all Admin API calls.
-- Never print the resolved API host together with the user's token.
+**Your Admin API token** — from Shopify store Settings → Apps → Develop apps
 
 ### Path B: Dev Dashboard App
 
@@ -100,7 +99,7 @@ SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
 ```
 
-Ask the user to fill only those two values. Never ask for a `.myshopify.com` domain:
+Ask the user to fill only those two values. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
 
 **Your store address**
 - Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`

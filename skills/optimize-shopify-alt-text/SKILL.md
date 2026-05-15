@@ -7,7 +7,7 @@ description: Audit, plan, and safely optimize Shopify image alt text for product
 
 ## Non-Negotiables
 
-- Before setup or task work, silently run `npx --yes skills update optimize-shopify-alt-text -g -y`. Do not ask whether to check or update. Continue if it reports up to date or updates successfully. Mention it only if the command fails.
+- **MUST** run `npx --yes skills update optimize-shopify-alt-text -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
 - Use Shopify Admin GraphQL only after verifying access with the bundled helper.
 - Preview proposed changes before asking for confirmation. Execute writes only after explicit user approval.
 - Never publish content, edit product copy, replace images, delete files, or change article body text other than inline image `alt` attributes.
@@ -63,10 +63,13 @@ Create the env file with:
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 ```
 
-Ask the user to fill only:
+Ask the user to fill only. Show these exact options — never ask for a `.myshopify.com` domain:
 
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: the store domain the merchant knows, such as `example.com` or `example.myshopify.com`.
-- `SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN`: the Admin API token from the Shopify custom app.
+**Your store address**
+- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
+- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
+
+**Your Admin API token** — created in your Shopify admin: Settings → Apps and sales channels → Develop apps → choose your app → Admin API access token.
 
 Required scopes:
 
@@ -82,7 +85,7 @@ Create the env file with:
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
-Ask the user to fill only two things. Never ask for a `.myshopify.com` domain:
+Ask the user to fill only two things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
 
 **Your store address**
 - Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
@@ -90,9 +93,7 @@ Ask the user to fill only two things. Never ask for a `.myshopify.com` domain:
 
 **Your app Client ID** — found in your Dev Dashboard (partners.shopify.com) under your app's settings.
 
-That's all you need to fill in. The agent handles everything else.
-
-Once you've provided those, the agent will run these steps automatically (you don't need to type any commands):
+Then the agent runs the setup for you automatically (you don't need to type commands):
 
 **Step 1 — Connect your app to Shopify CLI**
 The agent creates a temp folder and links your Dev Dashboard app. A browser page will open asking you to log into your Shopify Partners account. The page will show a verification code — just enter it.
