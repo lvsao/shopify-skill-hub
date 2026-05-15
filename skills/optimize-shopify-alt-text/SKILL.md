@@ -8,6 +8,7 @@ description: Audit, plan, and safely optimize Shopify image alt text for product
 ## Non-Negotiables
 
 - **MUST** run `npx --yes skills update optimize-shopify-alt-text -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
+- **After running the update command, immediately re-read the skill's onboarding guide and all references before proceeding.** Do not use cached or stale instructions.
 - Use Shopify Admin GraphQL only after verifying access with the bundled helper.
 - Preview proposed changes before asking for confirmation. Execute writes only after explicit user approval.
 - Never publish content, edit product copy, replace images, delete files, or change article body text other than inline image `alt` attributes.
@@ -33,7 +34,7 @@ Before asking any setup question, inspect the local environment first:
 3. Do not rely on a broad search or glob result as the only evidence that the file is missing. If a search says "not found" but the user, file explorer, terminal, or direct path suggests the file exists, re-check by listing the current directory or reading the exact `skill-hub.env` path.
 4. If it exists, read only the variable names and whether required values are present. Do not print secrets.
 5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run `connection-check`.
-6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the store domain plus Client ID are present, run `connection-check`.
+6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the store domain plus Client ID plus App Automation Token are present, run `connection-check`.
 7. If `connection-check` returns `CLI_AUTH_REQUIRED`, run the Dev Dashboard CLI auth runbook below silently, then rerun `connection-check`.
 8. If `connection-check` succeeds, continue directly to scan and vision probe. Do not ask where the app was created.
 9. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
@@ -60,7 +61,7 @@ Immediately ensure `.gitignore` contains `skill-hub.env`. Do not ask the user to
 Create the env file with:
 
 ```text
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 ```
 
 Ask the user to fill only. Show these exact options — never ask for a `.myshopify.com` domain:
@@ -82,51 +83,60 @@ read_products,write_products,read_content,write_content,read_files,write_files
 Create the env file with:
 
 ```text
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
-Ask the user to fill only two things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
+Ask the user to fill only three things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
 
-**Your store address**
+**1. Your store address**
 - Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
 - Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
 
-**Your app Client ID** — found in your Dev Dashboard (partners.shopify.com) under your app's settings.
+**2. Your app Client ID** — found in your Dev Dashboard:
+- Go to [dev.shopify.com/dashboard](https://dev.shopify.com/dashboard)
+- Click **Apps** and select your app → **Settings** → copy the **Client ID**
+
+**3. Your App Automation Token** — generated in your Dev Dashboard:
+- In the same app **Settings** page, scroll to **App Automation Token**
+- Click **Generate token** → copy the token
+- **Must start with `atkn_`** (e.g., `atkn_abc123...`)
+- If you see `shpss_`, that's the API Secret Key — NOT the automation token
 
 Then the agent runs the setup for you automatically (you don't need to type commands):
 
-**Step 1 — Connect your app to Shopify CLI**
-The agent creates a temp folder and links your Dev Dashboard app. A browser page will open asking you to log into your Shopify Partners account. The page will show a verification code — just enter it.
+**Step 1 — Check your tools**
+`node -v`, `npm -v`, `shopify version`. If CLI is missing, the agent installs it.
 
-**Step 2 — Set permissions (scopes)**
-The agent writes the required permissions into the app config and deploys them.
+**Step 2 — Create app config**
+The agent creates a temp folder and writes a TOML config file with your Client ID, the unified app name "Selofy Skill Hub", and the required scopes.
 
-**Step 3 — Authorize the app on your store**
-A Shopify page will open in your browser asking you to approve permissions. Review what it's asking for and click "Authorize."
+**Step 3 — Validate and deploy**
+The agent validates the config and deploys the scopes to your Dev Dashboard app using the App Automation Token.
 
-**Step 4 — Verify**
+**Step 4 — Authorize on your store**
+A Shopify page opens in your browser asking you to approve permissions. Review what it's asking for and click "Authorize."
+
+**Step 5 — Verify**
 The agent runs a quick check to make sure everything is connected properly. If it didn't work, you'll be asked to try the authorization step again.
 
 After that, you're all set! The agent cleans up the temporary files and you're ready to go.
 
 **Agent technical runbook** (execute silently, do not show to the user):
 
-1. Resolve store domain: if input contains `admin.shopify.com/store/<name>`, extract `<name>.myshopify.com`; if already `.myshopify.com`, use directly; if custom domain, fetch page HTML and extract `Shopify.shop` value via regex `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`; if all fail, ask user for admin URL.
-2. Precheck: `node -v`, `npm -v`, `shopify version`, `shopify store --help`. If CLI missing, `npm install -g @shopify/cli@latest`.
-3. Create temp dir under OS temp location.
-4. `shopify app config link --client-id <client-id> --path <temp-dir> --no-color` — auto-open browser for Partners login if prompted.
-5. Write to `<temp-dir>/shopify.app.toml`:
-   ```toml
-   [access_scopes]
-   scopes = "read_products,write_products,read_content,write_content,read_files,write_files"
-   ```
-6. `shopify app config validate --path <temp-dir> --no-color`
-7. `shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color`
-8. Tell user: "A Shopify page will open asking you to approve permissions. Review and click Authorize."
-9. `shopify store auth --store <resolved-domain>.myshopify.com --scopes read_products,write_products,read_content,write_content,read_files,write_files --json --no-color`
-10. `node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env`
+1. **Resolve store domain**: if input contains `admin.shopify.com/store/<name>`, extract `<name>.myshopify.com`; if already `.myshopify.com`, use directly; if custom domain, use `curl -s https://<domain> | findstr "Shopify.shop"` (Windows) or `curl -s https://<domain> | grep "Shopify.shop"` (Linux/Mac) to extract domain from HTML; if curl fails, try product page; if all fail, ask user for admin URL. Do NOT retry more than 2 times.
+2. **Precheck**: `node -v`, `npm -v`, `shopify version`. If CLI missing, `npm install -g @shopify/cli@latest`.
+3. **Create temp dir** under OS temp location.
+4. **Create TOML manually** (do NOT use `shopify app config link`):
+   - Write `shopify.app.toml` with: `client_id = "<CLIENT_ID>"`, `name = "Selofy Skill Hub"`, `scopes = "read_products,write_products,read_content,write_content,read_files,write_files"`
+   - **PowerShell**: Use proper escaping to avoid `""value""` double-quoting. Verify TOML has single `"` quotes.
+5. **Set automation token**: `$env:SHOPIFY_APP_AUTOMATION_TOKEN = "<token>"` (PowerShell) or `export SHOPIFY_APP_AUTOMATION_TOKEN="<token>"` (bash). Token must start with `atkn_`.
+6. **Validate**: `shopify app config validate --path <temp-dir> --no-color`
+7. **Deploy**: `shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color`
+8. **Tell user**: "A Shopify page will open asking you to approve permissions. Review and click Authorize."
+9. **Authorize**: `shopify store auth --store <resolved-domain>.myshopify.com --scopes read_products,write_products,read_content,write_content,read_files,write_files --json --no-color`
+10. **Verify**: `node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs connection-check --env skill-hub.env`
 11. If `CLI_AUTH_REQUIRED`, rerun step 9.
-12. Remove temp dir.
+12. **Remove temp dir**.
 
 ## Shopify Surfaces
 
@@ -144,18 +154,18 @@ When the user names a specific product, collection, article, image, URL, or ID, 
 Use the helper's `target` command for targeted requests:
 
 ```text
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product"
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-handle-or-product-url>
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-handle-or-url>
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-article-url-or-title>
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product"
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-handle-or-product-url>
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-handle-or-url>
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-article-url-or-title>
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
 ```
 
 Add `--download --limit 3` when you need local files for visual inspection:
 
 ```text
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product" --download --limit 3
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product" --download --limit 3
 ```
 
 The command returns matching resources and an `items` array with directly applicable IDs, current alt text, issue status, image URL, and context. If `--download` is used, it also returns temp local image paths that must be opened through the host's native image input before claiming visual evidence.
@@ -249,19 +259,19 @@ Context-only candidates are review-only by default. Do not mark context-only can
 Use the bundled native Node.js helper. It uses only Node.js built-ins.
 
 ```text
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url>
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url> --download --limit 3
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-title-or-handle-or-url>
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-url-or-title>
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs vision-sample --env skill-hub.env --limit 3
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input -
-node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input - --execute
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs connection-check --env skill-hub.env
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url>
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url> --download --limit 3
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-title-or-handle-or-url>
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-url-or-title>
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs vision-sample --env skill-hub.env --limit 3
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs apply --env skill-hub.env --input -
+node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs apply --env skill-hub.env --input - --execute
 ```
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.
