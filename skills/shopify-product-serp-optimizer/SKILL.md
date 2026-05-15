@@ -81,10 +81,13 @@ Create the env file with:
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 ```
 
-Ask the user to fill only:
+Ask the user to fill only. Show these exact options — never ask for a `.myshopify.com` domain:
 
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: the store domain the merchant knows, such as `example.com` or `example.myshopify.com`.
-- `SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN`: the Admin API token from the Shopify store Settings custom app.
+**Your store address**
+- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
+- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
+
+**Your Admin API token** — created in your Shopify admin: Settings → Apps and sales channels → Develop apps → choose your app → Admin API access token.
 
 Recommended scopes for the complete workflow:
 
@@ -102,7 +105,7 @@ Create the env file with:
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
-Ask the user to fill only two things. Never ask for a `.myshopify.com` domain:
+Ask the user to fill only two things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
 
 **Your store address**
 - Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
@@ -141,8 +144,9 @@ shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --n
 **Step 4 — Authorize on your store:**
 Tell the user: "Next, a Shopify page will open in your browser asking you to approve permissions. Please review and click Authorize."
 ```text
-shopify store auth --store <store>.myshopify.com --scopes read_products,write_products,read_files,write_files --json --no-color
+shopify store auth --store <your-resolved-domain>.myshopify.com --scopes read_products,write_products,read_files,write_files --json --no-color
 ```
+Note: `<your-resolved-domain>.myshopify.com` is the domain the agent resolved in the Domain resolution step below (admin URL extraction, website HTML scan, or direct `.myshopify.com` input).
 
 **Step 5 — Verify:**
 ```text
@@ -153,10 +157,14 @@ If it reports `CLI_AUTH_REQUIRED`, rerun `shopify store auth` and make sure you 
 **Step 6 — Clean up:**
 Delete the temporary folder.
 
-**Domain resolution for agents:** Before CLI commands, resolve the store domain:
-- `admin.shopify.com/store/<name>` → extract `<name>` → `<name>.myshopify.com`
-- Already ends with `.myshopify.com` → use directly
-- Custom domain → fetch `https://<domain>` and search HTML for `Shopify.shop = "<name>.myshopify.com"` (regex: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`); if not found, ask user for their admin URL
+**Domain resolution for agents (how to get `<your-resolved-domain>.myshopify.com`):**
+After the user provides their store address (admin URL or website), resolve it to a `.myshopify.com` domain before running CLI commands:
+1. If `https://admin.shopify.com/store/<name>` → extract `<name>` → `<name>.myshopify.com`
+2. If already ends with `.myshopify.com` → use directly
+3. If a website address like `www.example.com` → fetch the page HTML and search for `Shopify.shop = "<name>.myshopify.com"` (regex: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`)
+4. If none of the above work → tell the user: "I couldn't find your store's address. Could you copy your Shopify admin URL instead? It looks like `https://admin.shopify.com/store/your-store-name`"
+
+After resolving, update `skill-hub.env` with the resolved `SKILL_HUB_SHOPIFY_STORE_DOMAIN=<name>.myshopify.com` before running `connection-check` or other commands.
 
 ## What This Skill Produces
 
