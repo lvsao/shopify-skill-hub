@@ -59,7 +59,9 @@ Follow this condensed flow:
 **Path B critical notes** (Dev Dashboard app):
 - Use `SHOPIFY_APP_AUTOMATION_TOKEN` for all `shopify app` commands — this makes them non-interactive.
 - **Do NOT use `shopify app config link`** — it triggers interactive Partners auth. Manually create the TOML file instead.
-- **Domain resolution**: Resolve the user's store address to a `.myshopify.com` domain using the priority order in the onboarding guide (admin URL extraction → direct input → HTML parsing with `Shopify.shop` regex → fallback request).
+- **Domain resolution is MANDATORY**: If the user provides a website address (e.g., `your-store.com`), you MUST fetch the HTML and extract the `.myshopify.com` domain using the `Shopify.shop` regex before running any CLI commands. Never guess the domain.
+- **Token format validation**: App Automation Tokens must start with `atkn_`. Reject tokens starting with `shpss_`, `shpat_`, or other prefixes.
+- **Environment variable syntax**: Use `$env:VAR="value"` in PowerShell or `export VAR="value"` in bash. Do NOT use `set VAR=value && command`.
 - Only `shopify store auth` requires user interaction (browser authorization). All other CLI steps return immediately.
 
 ## What This Skill Produces
