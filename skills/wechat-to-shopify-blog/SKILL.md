@@ -120,7 +120,7 @@ Then the agent runs the setup for you automatically (no commands needed on your 
 **Step 6 — Clean up** — temporary files are deleted.
 
 **Agent technical runbook** (execute silently, do not show user):
-1. Resolve domain: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`; already `.myshopify.com` → use directly; custom domain → probe DNS/HTTP or ask user for admin URL.
+1. Resolve domain: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`; already `.myshopify.com` → use directly; custom domain → fetch HTML and extract `Shopify.shop` via regex `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`; if all fail, ask user for admin URL.
 2. Precheck: `node -v`, `npm -v`, `shopify version`, `shopify store --help`. Install `npm install -g @shopify/cli@latest` if missing.
 3. Create temp dir under OS temp location.
 4. `shopify app config link --client-id <client-id> --path <temp-dir> --no-color` — auto-open browser for Partners login.
