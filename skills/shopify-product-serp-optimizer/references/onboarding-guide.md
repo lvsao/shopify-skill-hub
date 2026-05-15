@@ -115,34 +115,37 @@ Ask the user to fill only three things:
 - Go to [dev.shopify.com/dashboard](https://dev.shopify.com/dashboard)
 - Click **Apps** and select your app
 - Click **Settings**
-- Copy the **Client ID** (a 32-character hex string)
+- Copy the **Client ID** (a 32-character hex string, e.g., `b4a538afe3b4c1933a124ad6608feb1c`)
 
 **3. Your App Automation Token** — generated in your Dev Dashboard:
 - In the same app **Settings** page, scroll to the **App Automation Token** section
 - Click **Generate token**
-- Copy the token (starts with `atkn_`)
+- Copy the token — it **must start with `atkn_`** (e.g., `atkn_EXAMPLEtokenDO_NOTuseTHIS`)
 - This token replaces the old CLI authentication token and enables non-interactive CLI commands
 
-> **Note:** The App Automation Token is app-scoped (tied to one specific app) and is the recommended method as of May 2026. It replaces the older Partner Dashboard CLI token.
+> **Important:** If the token starts with `shpss_`, `shpat_`, or any other prefix, it is NOT an App Automation Token. The user must generate the correct token from the App Automation Token section in Dev Dashboard Settings.
 
-### Domain Resolution for Agents
+### Domain Resolution (MANDATORY — Do Not Skip)
 
-After the user provides their store address, the agent must resolve it to a `.myshopify.com` domain before running any CLI commands. Use this priority order:
+**Before running any CLI commands, the agent MUST resolve the user's store address to a `.myshopify.com` domain.** Never guess or assume the domain.
+
+Use this priority order:
 
 **Method 1: Admin URL extraction (fastest, most reliable)**
 - If the user provides `https://admin.shopify.com/store/<name>` → extract `<name>` → `<name>.myshopify.com`
-- Also handle `https://admin.shopify.com/store/<name>/products` etc. — just extract the store name segment
+- Also handle `https://admin.shopify.com/store/<name>/products` etc. — just extract the store name segment after `/store/`
 
 **Method 2: Direct `.myshopify.com` input**
 - If the user already provides something ending in `.myshopify.com` → use directly
 
-**Method 3: Website HTML parsing (fallback)**
-- If the user provides a website address like `www.example.com` or `https://example.com`:
-  1. Fetch the page HTML (use `webfetch` or equivalent tool with `format: "html"`)
-  2. Search for the Shopify shop identifier using this regex: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`
-  3. Extract the captured group — this is the `.myshopify.com` domain
+**Method 3: Website HTML parsing (REQUIRED for website addresses)**
+- If the user provides a website address like `your-store.com`, `www.your-store.com`, or `https://your-store.com`:
+  1. **Fetch the page HTML** using `webfetch` with `format: "html"` (or equivalent tool)
+  2. **Search for the Shopify shop identifier** using this exact regex: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`
+  3. **Extract the captured group** — this is the `.myshopify.com` domain (e.g., `your-store.myshopify.com`)
   4. This pattern is present in every Shopify storefront's `<script>` tags and is the most reliable HTML-based detection method
-  5. If the first fetch fails (e.g., Cloudflare challenge), try fetching a product page URL like `https://example.com/products` which often has less aggressive protection
+  5. If the first fetch fails (e.g., Cloudflare challenge), try fetching a product page URL like `https://your-store.com/products` which often has less aggressive protection
+  6. **Do not proceed to CLI commands until this step succeeds.** If HTML parsing fails, fall back to Method 4.
 
 **Method 4: Fallback request**
 - If none of the above work, tell the user: "I couldn't find your store's address. Could you copy your Shopify admin URL instead? It looks like `https://admin.shopify.com/store/your-store-name`"
@@ -189,16 +192,29 @@ redirect_urls = [
 Replace `<CLIENT_ID>` with the user's Client ID, `<SKILL_NAME>` with the skill's name (must not contain "Shopify"), and `<SCOPES>` with the required scopes (e.g., `read_products,write_products,read_files,write_files`).
 
 **Step 2 — Validate config (non-interactive, uses automation token):**
-```text
+Set the automation token as an environment variable, then run validate.
+
+**PowerShell syntax:**
+```powershell
+$env:SHOPIFY_APP_AUTOMATION_TOKEN = "<token>"
 shopify app config validate --path <temp-dir> --no-color
 ```
-This command uses `SHOPIFY_APP_AUTOMATION_TOKEN` from the environment and returns immediately without any interactive prompt.
+
+**Bash/zsh syntax:**
+```bash
+export SHOPIFY_APP_AUTOMATION_TOKEN="<token>"
+shopify app config validate --path <temp-dir> --no-color
+```
+
+**Important:** Do NOT use `set VAR=value && command` syntax — this does not reliably pass the environment variable to child processes in PowerShell. Use `$env:VAR="value"` (PowerShell) or `export VAR="value"` (bash) instead.
+
+This command uses `SHOPIFY_APP_AUTOMATION_TOKEN` and returns immediately without any interactive prompt.
 
 **Step 3 — Deploy scopes to Dev Dashboard (non-interactive, uses automation token):**
 ```text
 shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color
 ```
-This command also uses `SHOPIFY_APP_AUTOMATION_TOKEN` and returns immediately. It updates the app's access scopes in the Dev Dashboard.
+The automation token is already set in the environment from Step 2. This command returns immediately and updates the app's access scopes in the Dev Dashboard.
 
 **Step 4 — Store authorization (the ONLY interactive step):**
 Before running this command, tell the user:
@@ -230,7 +246,9 @@ Delete the temporary folder using the current terminal's native recursive delete
 
 ### Critical CLI Notes
 
+- **Token format validation**: App Automation Tokens **must start with `atkn_`**. If the token starts with `shpss_`, `shpat_`, `shpca_`, or any other prefix, it is NOT an App Automation Token. Reject invalid tokens and ask the user to generate the correct one from Dev Dashboard → App → Settings → App Automation Token.
 - **`SHOPIFY_APP_AUTOMATION_TOKEN`** must be set as an environment variable before running any `shopify app` commands. The agent should set it from `skill-hub.env` before executing CLI commands.
+- **Environment variable syntax**: Use `$env:VAR="value"` in PowerShell or `export VAR="value"` in bash. Do NOT use `set VAR=value && command` — this does not reliably pass the variable to child processes in PowerShell.
 - **`--no-color`** disables color output but does NOT disable interactive prompts. The automation token is what makes commands non-interactive.
 - **`shopify app config link`** should be **avoided** in this workflow. It triggers interactive Partners auth even with `--no-color`. Manually creating the TOML file is faster and more reliable.
 - **`shopify store list`** and **`shopify auth status`** are NOT valid diagnostics for this no-connector store-auth workflow. Do not use them.
