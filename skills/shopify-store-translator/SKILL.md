@@ -8,6 +8,7 @@ description: "Translate all Shopify store resources into any target language. Us
 ## Non-Negotiables
 
 - **MUST** run `npx --yes skills update shopify-store-translator -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
+- **After running the update command, immediately re-read the skill's references before proceeding.** Do not use cached or stale instructions.
 - Never write translations to Shopify without explicit user approval. Always show a preview or CSV summary first.
 - Never translate `handle` fields under any circumstance. Handles are Shopify URL slugs (e.g. `my-product`, `automated-collection`). Translating them breaks URLs, causes 404 errors, and damages SEO. This rule applies to all resource types: PRODUCT, COLLECTION, ARTICLE, BLOG, PAGE, and any other resource with a handle field. Leave the Translated content column empty for every handle row.
 - Preserve all HTML tags when translating `body_html` fields. Translate only the text content between tags.
@@ -29,7 +30,7 @@ Before asking any setup question, inspect the local environment:
 2. Look for `skill-hub.env` in that directory.
 3. If it exists, read variable names and check whether required values are present. Do not print secrets.
 4. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app` and token is present → run connection check.
-5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app` and the store domain plus client ID are present → run connection check. If it returns `CLI_AUTH_REQUIRED`, run the Path B setup silently.
+5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app` and the store domain plus Client ID plus App Automation Token are present → run connection check. If it returns `CLI_AUTH_REQUIRED`, run the Path B setup silently.
 6. If connection check succeeds → proceed directly to the requested task.
 
 Ask the setup question only when `skill-hub.env` is missing, incomplete, or access method is unknown:
@@ -47,7 +48,7 @@ Immediately add `skill-hub.env` to `.gitignore` if the project has one.
 
 Create env file:
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 ```
 
 Ask the user to fill only. Show these exact options — never ask for a `.myshopify.com` domain:
@@ -65,34 +66,36 @@ read_locales, write_locales, read_markets, write_markets, read_translations, wri
 
 Connection check:
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs connection-check --env skill-hub.env
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs connection-check --env skill-hub.env
 ```
 
 ### Path B: Dev Dashboard App
 
 Create env file:
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
-Ask user to fill only two things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
+Ask user to fill only three things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
 
-**Your store address**
+**1. Your store address**
 - Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
 - Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
 
-**Your app Client ID** — from Dev Dashboard app settings.
+**2. Your app Client ID** — from Dev Dashboard app settings.
+
+**3. Your App Automation Token** — from Dev Dashboard → App → Settings → App Automation Token (must start with `atkn_`).
 
 Then the agent runs this setup for you automatically (you don't need to type commands):
 
 **Step 1 — Check your tools**
-`node -v`, `npm -v`, `shopify version`, `shopify store --help`. If CLI is missing, the agent installs it.
+`node -v`, `npm -v`, `shopify version`. If CLI is missing, the agent installs it.
 
-**Step 2 — Connect your app**
-A browser page opens asking you to log into Shopify Partners. Enter the verification code shown on the page. The agent links your app and sets up the required permissions.
+**Step 2 — Create app config**
+The agent creates a temp folder and writes a TOML config file with your Client ID, the unified app name "Selofy Skill Hub", and the required scopes.
 
-**Step 3 — Deploy permissions**
-The agent deploys the permission settings to your app.
+**Step 3 — Validate and deploy**
+The agent validates the config and deploys the scopes to your Dev Dashboard app using the App Automation Token.
 
 **Step 4 — Authorize on your store**
 A Shopify page opens in your browser. Review the permissions and click "Authorize."
@@ -104,14 +107,15 @@ The agent runs a quick check. If authorization didn't stick, you'll be asked to 
 Temporary files are deleted.
 
 **Agent technical runbook** (execute silently, do not show user):
-1. Resolve domain: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`; already `.myshopify.com` → use directly; custom domain → fetch HTML and extract `Shopify.shop` via regex `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`; if all fail, ask user for admin URL.
-2. Precheck CLI tools, install `@shopify/cli@latest` if needed.
-3. Create temp dir, run `shopify app config link --client-id <client-id> --path <temp-dir> --no-color`.
-4. Write scopes: `scopes = "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content"`
-5. `shopify app config validate`, then `shopify app deploy`.
-6. Tell user browser auth is coming, then `shopify store auth --store <domain>.myshopify.com --scopes "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content" --json --no-color`.
-7. Verify via connection check. Rerun auth if `CLI_AUTH_REQUIRED`.
-8. Delete temp dir.
+1. **Resolve domain**: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`; already `.myshopify.com` → use directly; custom domain → use `curl -s https://<domain> | findstr "Shopify.shop"` (Windows) or `curl -s https://<domain> | grep "Shopify.shop"` (Linux/Mac) to extract domain from HTML; if all fail, ask user for admin URL. Do NOT retry more than 2 times.
+2. **Precheck CLI tools**, install `@shopify/cli@latest` if needed.
+3. **Create temp dir**, create TOML manually (do NOT use `shopify app config link`): write `client_id`, `name = "Selofy Skill Hub"`, and merged scopes.
+4. **Set automation token**: `$env:SHOPIFY_APP_AUTOMATION_TOKEN = "<token>"` (PowerShell) or `export SHOPIFY_APP_AUTOMATION_TOKEN="<token>"` (bash).
+5. **Validate**: `shopify app config validate --path <temp-dir> --no-color`
+6. **Deploy**: `shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color`
+7. **Tell user browser auth is coming**, then `shopify store auth --store <domain>.myshopify.com --scopes "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content" --json --no-color`.
+8. **Verify** via connection check. Rerun auth if `CLI_AUTH_REQUIRED`.
+9. **Delete temp dir**.
 
 ## Translation Workflow
 
@@ -122,7 +126,7 @@ Temporary files are deleted.
 
 **Path A:**
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs check-locales --env skill-hub.env --target {locale}
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs check-locales --env skill-hub.env --target {locale}
 ```
 
 **Path B:** Write query to `{TEMP_DIR}/check-locales.graphql`:
@@ -139,7 +143,7 @@ If locale needs to be added or published, confirm with user, then:
 
 **Path A:**
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs enable-locale --env skill-hub.env --locale {locale}
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs enable-locale --env skill-hub.env --locale {locale}
 ```
 
 **Path B:** Write to `{TEMP_DIR}/enable-locale.graphql`:
@@ -161,7 +165,7 @@ shopify store execute --store {store}.myshopify.com --allow-mutations --query-fi
 
 **Path A:**
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs check-markets --env skill-hub.env --locale {locale}
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs check-markets --env skill-hub.env --locale {locale}
 ```
 
 **Path B:** Write to `{TEMP_DIR}/check-markets.graphql`:
@@ -176,7 +180,7 @@ Confirm with user which markets should serve the new language, then:
 
 **Path A:**
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs add-locale-to-market --env skill-hub.env --market-web-presence-id {id} --locale {locale}
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs add-locale-to-market --env skill-hub.env --market-web-presence-id {id} --locale {locale}
 ```
 
 **Path B:** Read current `alternateLocales` from markets-out.json, then write to `{TEMP_DIR}/add-locale.graphql` (include ALL existing locales + new one):
@@ -191,7 +195,7 @@ shopify store execute --store {store}.myshopify.com --allow-mutations --query-fi
 
 **Path A:**
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type PRODUCT --locale {locale} --output {TEMP_DIR}/fetch-output.json
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type PRODUCT --locale {locale} --output {TEMP_DIR}/fetch-output.json
 ```
 
 **Path B:** Write to `{TEMP_DIR}/fetch.graphql`:
@@ -245,7 +249,7 @@ Do not proceed until the user explicitly approves.
 
 **Path A:**
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs write --env skill-hub.env --input translation-audit.csv --locale {locale}
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs write --env skill-hub.env --input translation-audit.csv --locale {locale}
 ```
 
 **Path B:** For each resource in the CSV, write a mutation file to `{TEMP_DIR}/write-batch-{n}.graphql` and execute:
@@ -367,7 +371,7 @@ When using the API path, fetch `translatableContent.type` and apply:
 | `SINGLE_LINE_TEXT_FIELD`, `MULTI_LINE_TEXT_FIELD`, `STRING`, `RICH_TEXT_FIELD`, `INLINE_RICH_TEXT`, `LIST_SINGLE_LINE_TEXT_FIELD`, `LIST_MULTI_LINE_TEXT_FIELD` | ✅ Translate as plain text |
 | `HTML` | ✅ Translate — preserve all HTML tags, translate text nodes only |
 | `URI`, `URL`, `LINK`, `LIST_URL`, `LIST_LINK` | ⛔ Skip — URL/link fields |
-| `JSON`, `JSON_STRING` | ⛔ Skip — structured data |
+| `JSON`, `JSON_STRING` |  Skip — structured data |
 | `FILE_REFERENCE`, `LIST_FILE_REFERENCE` | ⛔ Skip — file references |
 
 **Rule 3 — For CSV path (no `type` field available), use content pattern detection:**
@@ -376,10 +380,10 @@ When using the API path, fetch `translatableContent.type` and apply:
 |---|---|
 | Contains `{{` or `{%` anywhere | ⛔ Skip (Liquid) |
 | Starts with `shopify://` or `https://` or `http://` | ⛔ Skip (URL) |
-| Is valid HTML (contains `<` and `>`) but also contains `{{` | ⛔ Skip (HTML+Liquid mixed) |
+| Is valid HTML (contains `<` and `>`) but also contains `{{` |  Skip (HTML+Liquid mixed) |
 | Is valid HTML (contains `<` and `>`) with no Liquid | ✅ Translate — preserve tags |
 | Plain text (no `<`, no `{`) | ✅ Translate |
-| Looks like a slug (`only-lowercase-hyphens-and-numbers`) | ⛔ Skip |
+| Looks like a slug (`only-lowercase-hyphens-and-numbers`) |  Skip |
 | Looks like a price (`$10`, `$25`) | ⛔ Skip |
 
 #### Per-Type field rules (from CSV analysis)
@@ -397,11 +401,11 @@ When using the API path, fetch `translatableContent.type` and apply:
 
 **METAFIELD** — value field only, apply Rule 3:
 - ✅ Translate if plain text or pure HTML
-- ⛔ Skip if JSON, URL, or contains Liquid
+-  Skip if JSON, URL, or contains Liquid
 
 **METAOBJECT**:
 - ✅ Translate: `label`, `title` (plain text)
-- ⛔ Skip: `data` (JSON string)
+-  Skip: `data` (JSON string)
 
 **ARTICLE**:
 - ✅ Translate: `title`, `meta_title`, `meta_description`, `summary_html` (preserve HTML tags)
@@ -430,7 +434,7 @@ When using the API path, fetch `translatableContent.type` and apply:
 ### Using the script for CSV translation
 
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs translate-csv \
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs translate-csv \
   --input /path/to/shopify-export.csv \
   --output /path/to/translated.csv \
   --locale de

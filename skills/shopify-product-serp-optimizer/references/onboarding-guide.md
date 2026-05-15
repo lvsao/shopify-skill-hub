@@ -4,6 +4,60 @@ This document is the single source of truth for connecting any Selofy skill to a
 
 ---
 
+## Critical Global Constraints (Apply to ALL Skills)
+
+### 1. Unified App Name
+- **ALL skills must use the exact same app name**: `Selofy Skill Hub`
+- Never use skill-specific names like `serp-optimizer`, `alt-text-tool`, etc.
+- When creating or updating the TOML config, always set `name = "Selofy Skill Hub"`
+- This ensures all skills share one Dev Dashboard app instead of creating multiple apps.
+
+### 2. Scopes Are Additive Only — Never Remove
+- **Scopes can only be added, never removed.**
+- Before setting scopes in the TOML or deploying, check what scopes are already configured:
+  - **Local check**: Read existing `skill-hub.env` or any cached TOML to see previously used scopes.
+  - **Remote check**: If possible, query the Dev Dashboard app's current scopes via CLI or API.
+- **Merge strategy**: Take the union of existing scopes + new skill's required scopes.
+- Example: If existing app has `read_products` and new skill needs `read_products,write_products,read_files`, the final scopes should be `read_products,write_products,read_files` (not just the new skill's scopes).
+- When in doubt, use the broadest safe set: `read_products,write_products,read_files,write_files,read_themes,write_themes`
+
+### 3. Script Path Resolution — Use Absolute Paths
+- **Always use the absolute path to skill scripts.** Never use relative paths like `skills/<skill-name>/scripts/...`.
+- **Correct pattern**: `node <absolute-path-to-skill>/scripts/<script-name>.mjs <command> --env skill-hub.env`
+- **How to find the absolute path**:
+  - On Windows: `C:\Users\<username>\.agents\skills\<skill-name>\scripts\<script-name>.mjs`
+  - On macOS/Linux: `~/.agents/skills/<skill-name>/scripts/<script-name>.mjs`
+  - Use the agent's skill installation directory, NOT the current working directory.
+- **One-line rule**: Replace `skills/<skill-name>/scripts/` with the full absolute path from the agent's skill registry.
+
+### 4. TOML File Creation — Avoid Double-Quoting in PowerShell
+- **When creating TOML files in PowerShell, do NOT use here-strings (`@" ... "@`) with double quotes inside.** PowerShell here-strings will escape inner quotes as `""value""`, which breaks TOML parsing.
+- **Correct approach for PowerShell**: Use `Set-Content` with single-quoted strings or escape quotes properly:
+  ```powershell
+  $tomlContent = @"
+client_id = "`"$clientId`""
+name = "Selofy Skill Hub"
+application_url = "https://localhost"
+embedded = true
+
+[access_scopes]
+scopes = "`"$scopes`""
+
+[webhooks]
+api_version = "2026-04"
+
+[auth]
+redirect_urls = [
+  "https://localhost"
+]
+"@
+  Set-Content -Path "$env:TEMP\shopify-skill-config\shopify.app.toml" -Value $tomlContent
+  ```
+- **Better approach**: Use a template file or write the TOML using a script that handles escaping correctly.
+- **Quick fix**: If you see `""value""` in the TOML, replace all `""` with `"` before running `shopify app config validate`.
+
+---
+
 ## How This Guide Works
 
 1. **Agent reads this guide** when `skill-hub.env` is missing, incomplete, or the user requests setup.
@@ -12,6 +66,9 @@ This document is the single source of truth for connecting any Selofy skill to a
 4. **Agent guides the user** to fill only the required fields.
 5. **Agent runs the connection check** and executes the CLI runbook silently.
 6. **Agent proceeds** to the skill's main workflow once connected.
+
+### After Skill Updates — Force Reload
+When the user runs a skill update command (e.g., `skills update` or similar), the agent **MUST** immediately re-read this onboarding guide and all skill `SKILL.md` files before proceeding. Do not use cached or stale skill instructions. Always fetch the latest version from the skill registry.
 
 ---
 
@@ -199,12 +256,12 @@ Create a temporary folder under the operating-system temp directory. Create `sho
 ```toml
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 client_id = "<CLIENT_ID>"
-name = "<SKILL_NAME>"
+name = "Selofy Skill Hub"
 application_url = "https://localhost"
 embedded = true
 
 [access_scopes]
-scopes = "<SCOPES>"
+scopes = "<MERGED_SCOPES>"
 
 [webhooks]
 api_version = "2026-04"
@@ -215,7 +272,42 @@ redirect_urls = [
 ]
 ```
 
-Replace `<CLIENT_ID>` with the user's Client ID, `<SKILL_NAME>` with the skill's name (must not contain "Shopify"), and `<SCOPES>` with the required scopes (e.g., `read_products,write_products,read_files,write_files`).
+**Important scope merging rules:**
+- Replace `<CLIENT_ID>` with the user's Client ID.
+- Replace `<MERGED_SCOPES>` with the **union** of existing app scopes + this skill's required scopes.
+- **Never remove existing scopes.** Only add new ones.
+- If you cannot determine existing scopes, use the broadest safe set: `read_products,write_products,read_files,write_files`
+- App name must always be `Selofy Skill Hub` — never use skill-specific names.
+
+**PowerShell TOML creation (avoid double-quoting):**
+```powershell
+$clientId = "<CLIENT_ID>"
+$scopes = "<MERGED_SCOPES>"
+$tomlContent = @"
+client_id = "`"$clientId`""
+name = "Selofy Skill Hub"
+application_url = "https://localhost"
+embedded = true
+
+[access_scopes]
+scopes = "`"$scopes`""
+
+[webhooks]
+api_version = "2026-04"
+
+[auth]
+redirect_urls = [
+  "https://localhost"
+]
+"@
+New-Item -ItemType Directory -Force -Path "$env:TEMP\shopify-skill-config" | Out-Null
+Set-Content -Path "$env:TEMP\shopify-skill-config\shopify.app.toml" -Value $tomlContent
+```
+
+**Verify TOML has single quotes, not double-double quotes:**
+- ✅ Correct: `client_id = "b4a538afe3b4c1933a124ad6608feb1c"`
+-  Wrong: `client_id = ""b4a538afe3b4c1933a124ad6608feb1c""`
+- If you see `""`, fix before running validate.
 
 **Step 2 — Validate config (non-interactive, uses automation token):**
 Set the automation token as an environment variable, then run validate.
@@ -241,6 +333,11 @@ This command uses `SHOPIFY_APP_AUTOMATION_TOKEN` and returns immediately without
 shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color
 ```
 The automation token is already set in the environment from Step 2. This command returns immediately and updates the app's access scopes in the Dev Dashboard.
+
+**Scope deployment rules:**
+- This command will **add** scopes to the app. It will NOT remove existing scopes.
+- If the app already has scopes from previous skill setups, they remain intact.
+- The TOML `<MERGED_SCOPES>` should include all scopes needed across all installed skills.
 
 **Step 4 — Store authorization (the ONLY interactive step):**
 Before running this command, tell the user:
@@ -272,6 +369,10 @@ Delete the temporary folder using the current terminal's native recursive delete
 
 ### Critical CLI Notes
 
+- **Unified app name**: All skills share one app named `Selofy Skill Hub`. Never create skill-specific apps.
+- **Scopes are additive**: Never remove scopes. Merge existing + new scopes. Check `skill-hub.env` or query app for current scopes before deploying.
+- **Script paths**: Always use absolute paths to skill scripts (e.g., `C:\Users\<user>\.agents\skills\<skill>\scripts\...`), never relative `skills/...` paths.
+- **TOML quoting**: In PowerShell, avoid `""value""` double-double-quoting. Use proper escaping or verify TOML has single `"` quotes before validate.
 - **Token format validation**: App Automation Tokens **must start with `atkn_`**. If the token starts with `shpss_`, `shpat_`, `shpca_`, or any other prefix, it is NOT an App Automation Token. Reject invalid tokens and ask the user to generate the correct one from Dev Dashboard → App → Settings → App Automation Token.
 - **`SHOPIFY_APP_AUTOMATION_TOKEN`** must be set as an environment variable before running any `shopify app` commands. The agent should set it from `skill-hub.env` before executing CLI commands.
 - **Environment variable syntax**: Use `$env:VAR="value"` in PowerShell or `export VAR="value"` in bash. Do NOT use `set VAR=value && command` — this does not reliably pass the variable to child processes in PowerShell.
