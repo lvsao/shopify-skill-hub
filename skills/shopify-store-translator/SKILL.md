@@ -71,9 +71,13 @@ Create env file:
 node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
-Ask user to fill:
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: your store address. Paste your Shopify admin URL (`admin.shopify.com/store/your-store`), your custom domain, or your `.myshopify.com` domain.
-- `SKILL_HUB_SHOPIFY_CLIENT_ID`: Client ID from Dev Dashboard app settings
+Ask user to fill only two things. Never ask for a `.myshopify.com` domain:
+
+**Your store address**
+- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
+- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
+
+**Your app Client ID** — from Dev Dashboard app settings.
 
 Then the agent runs this setup for you automatically (you don't need to type commands):
 

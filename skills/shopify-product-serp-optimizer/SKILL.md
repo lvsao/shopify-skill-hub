@@ -102,12 +102,15 @@ Create the env file with:
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
-Ask the user to fill only:
+Ask the user to fill only two things. Never ask for a `.myshopify.com` domain:
 
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: your store address. Paste your Shopify admin URL (`admin.shopify.com/store/your-store`), your custom domain, or your `.myshopify.com` domain — the agent will figure out the correct address.
-- `SKILL_HUB_SHOPIFY_CLIENT_ID`: the app Client ID from Dev Dashboard settings.
+**Your store address**
+- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
+- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
 
-Do not ask the user to run CLI commands manually. Run this sequence silently, explaining each step in beginner-friendly language:
+**Your app Client ID** — found in your Dev Dashboard (partners.shopify.com) under your app's settings.
+
+Then run this sequence silently, explaining each step in beginner-friendly language:
 
 **Step 1 — Check your tools:**
 ```text

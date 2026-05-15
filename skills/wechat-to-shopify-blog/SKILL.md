@@ -96,14 +96,17 @@ This creates `skill-hub.env` with this minimal template:
 # Keep this file private. Do not commit it or paste tokens into chat.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
 ```
 
-Ask the user to fill only those two values. Tell the user:
+Ask the user to fill only those two values. Never ask for a `.myshopify.com` domain:
 
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: your store address. Paste your Shopify admin URL (`admin.shopify.com/store/your-store`) — that's the easiest. Or your custom domain, or your `.myshopify.com` domain. The agent will figure out the right address.
-- `SKILL_HUB_SHOPIFY_CLIENT_ID`: your app's Client ID from Dev Dashboard settings.
+**Your store address**
+- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
+- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
+
+**Your app Client ID** — from Dev Dashboard settings.
 
 Then the agent runs the setup for you automatically (no commands needed on your end):
 

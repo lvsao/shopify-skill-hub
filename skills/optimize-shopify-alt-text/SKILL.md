@@ -82,12 +82,11 @@ Create the env file with:
 node skills/optimize-shopify-alt-text/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
-Ask the user to fill only two things:
+Ask the user to fill only two things. Never ask for a `.myshopify.com` domain:
 
-**Your store address** — however it's easiest for you:
-  - 👍 **Recommended: copy your Shopify admin URL** — open your Shopify admin and copy the address from your browser. It looks like `admin.shopify.com/store/your-store-name`. The agent can figure out the rest.
-  - Or your store's custom domain, like `www.your-store.com`.
-  - Or your `.myshopify.com` domain, like `your-store.myshopify.com`.
+**Your store address**
+- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
+- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
 
 **Your app Client ID** — found in your Dev Dashboard (partners.shopify.com) under your app's settings.
 
