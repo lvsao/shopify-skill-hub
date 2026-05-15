@@ -118,12 +118,20 @@ Ask the user to fill only three things:
 - Copy the **Client ID** (a 32-character hex string, e.g., `b4a538afe3b4c1933a124ad6608feb1c`)
 
 **3. Your App Automation Token** — generated in your Dev Dashboard:
-- In the same app **Settings** page, scroll to the **App Automation Token** section
+- Go to [dev.shopify.com/dashboard](https://dev.shopify.com/dashboard)
+- Click **Apps** and select your app
+- Click **Settings**
+- Scroll down to the **App Automation Token** section
 - Click **Generate token**
-- Copy the token — it **must start with `atkn_`** (e.g., `atkn_EXAMPLEtokenDO_NOTuseTHIS`)
-- This token replaces the old CLI authentication token and enables non-interactive CLI commands
+- Copy the token — it **must start with `atkn_`** (e.g., `atkn_abc123...`)
 
-> **Important:** If the token starts with `shpss_`, `shpat_`, or any other prefix, it is NOT an App Automation Token. The user must generate the correct token from the App Automation Token section in Dev Dashboard Settings.
+> **Token Type Warning — Read Carefully:**
+> - ✅ **App Automation Token** = starts with `atkn_` — this is what you need for this workflow
+> - ❌ **API Secret Key** = starts with `shpss_` — this is NOT an automation token
+> - ❌ **Admin API Access Token** = starts with `shpat_` — this is for Path A only
+> - ❌ **Storefront Access Token** = starts with `shpat_` — this is for storefront access only
+>
+> If you see a token starting with `shpss_`, you are looking at the API Secret Key, NOT the App Automation Token. Go back to Dev Dashboard → App → Settings and find the **App Automation Token** section specifically.
 
 ### Domain Resolution (MANDATORY — Do Not Skip)
 
@@ -138,17 +146,35 @@ Use this priority order:
 **Method 2: Direct `.myshopify.com` input**
 - If the user already provides something ending in `.myshopify.com` → use directly
 
-**Method 3: Website HTML parsing (REQUIRED for website addresses)**
+**Method 3: Shell-based HTML parsing (most reliable for website addresses)**
 - If the user provides a website address like `julibees.com`, `www.julibees.com`, or `https://julibees.com`:
-  1. **Fetch the page HTML** using `webfetch` with `format: "html"` (or equivalent tool)
-  2. **Search for the Shopify shop identifier** using this exact regex: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`
-  3. **Extract the captured group** — this is the `.myshopify.com` domain (e.g., `32edf5-2.myshopify.com`)
-  4. This pattern is present in every Shopify storefront's `<script>` tags and is the most reliable HTML-based detection method
-  5. If the first fetch fails (e.g., Cloudflare challenge), try fetching a product page URL like `https://julibees.com/products` which often has less aggressive protection
-  6. **Do not proceed to CLI commands until this step succeeds.** If HTML parsing fails, fall back to Method 4.
+  1. **Use curl + findstr/grep to extract the Shopify shop directly from HTML:**
+     - **Windows (PowerShell/CMD):**
+       ```powershell
+       curl -s https://<domain> | findstr "Shopify.shop"
+       ```
+     - **Linux/Mac (bash/zsh):**
+       ```bash
+       curl -s https://<domain> | grep "Shopify.shop"
+       ```
+  2. **Parse the output** — it will look like:
+       ```text
+       Shopify.shop = "32edf5-2.myshopify.com";
+       ```
+  3. **Extract the domain** between the quotes — this is the `.myshopify.com` domain
+  4. **If the first curl fails (Cloudflare challenge or timeout):**
+     - Try fetching a product page: `curl -s https://<domain>/products | findstr "Shopify.shop"`
+     - Try fetching a collection page: `curl -s https://<domain>/collections | findstr "Shopify.shop"`
+     - **If ALL curl attempts fail, skip to Method 4 immediately. Do NOT retry more than 2 times total.**
+  5. **Fallback to webfetch only if curl is not available:**
+       ```text
+       webfetch url: "https://<domain>" format: "html"
+       ```
+       Then search for: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`
 
-**Method 4: Fallback request**
-- If none of the above work, tell the user: "I couldn't find your store's address. Could you copy your Shopify admin URL instead? It looks like `https://admin.shopify.com/store/your-store-name`"
+**Method 4: Fallback request (fastest when automated methods fail)**
+- If Methods 1-3 don't work, tell the user: "I couldn't resolve your store domain automatically. Please copy your Shopify admin URL instead — it looks like `https://admin.shopify.com/store/your-store-name`"
+- **Do NOT loop back to webfetch.** Accept the admin URL and proceed with Method 1 extraction.
 
 After resolving, update `skill-hub.env` with the resolved `SKILL_HUB_SHOPIFY_STORE_DOMAIN=<name>.myshopify.com` before running any CLI commands.
 
