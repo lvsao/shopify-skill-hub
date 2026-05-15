@@ -8,6 +8,7 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 ## Non-Negotiables
 
 - **MUST** run `npx --yes skills update shopify-product-serp-optimizer -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
+- **After running the update command, immediately re-read `references/onboarding-guide.md` and all references before proceeding.** Do not use cached or stale instructions.
 - Treat this as a product SERP optimizer, not a generic on-page SEO, technical SEO, schema, redirect, translation, or theme skill.
 - Default vague requests to a read-only product scan, opportunity scoring, and five-product batch plan. Do not ask the user to choose a collection or process an arbitrary "max 10" list.
 - If the user provides a product URL, handle, or product ID, process that product directly.
@@ -118,8 +119,8 @@ Use this decision tree:
 For vague requests, run:
 
 ```text
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs scan-products --env skill-hub.env
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs scan-products --env skill-hub.env
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
 ```
 
 In conversation, summarize:
@@ -197,18 +198,18 @@ Batch meaning:
 Use the bundled native Node.js helper. It uses only Node.js built-ins.
 
 ```text
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs connection-check --env skill-hub.env
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --id gid://shopify/Product/...
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs metafield-audit --env skill-hub.env --handle <product-handle>
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs scan-products --env skill-hub.env
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs report --input - --output shopify-serp-report-YYYYMMDD-HHMM.html
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs apply --env skill-hub.env --input -
-node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs apply --env skill-hub.env --input - --execute
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs connection-check --env skill-hub.env
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs product --env skill-hub.env --id gid://shopify/Product/...
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs metafield-audit --env skill-hub.env --handle <product-handle>
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs scan-products --env skill-hub.env
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs report --input - --output shopify-serp-report-YYYYMMDD-HHMM.html
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs apply --env skill-hub.env --input -
+node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs apply --env skill-hub.env --input - --execute
 ```
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.
