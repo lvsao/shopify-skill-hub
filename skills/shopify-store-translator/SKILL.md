@@ -13,8 +13,11 @@ description: "Translate all Shopify store resources into any target language. Us
 - Preserve all HTML tags when translating `body_html` fields. Translate only the text content between tags.
 - Always check `userErrors` on every `translationsRegister` response. Stop and report on any error.
 - Never print or store access tokens, client secrets, or real merchant data in public files.
-- Do not create process notes, summary documents, or persistent JSON files in the user's working folder. Use the OS temp directory for transient files and delete them immediately after use.
-- The only default local config artifact is `skill-hub.env`.
+- Keep the user's working folder clean. Delete every temporary query file, JSON output, downloaded file, and ad hoc script after the workflow completes or fails.
+- The audit CSV (`translation-audit.csv`) is the only user-facing artifact. Write it to the **current working directory** so the user can find and open it. Never write the audit CSV to the OS temp directory or system drive.
+- Use `{TEMP_DIR}` (OS temp directory) only for intermediate files: fetch JSON output, CLI query files, CLI output files. Delete all files under `{TEMP_DIR}` immediately after the write step completes or fails.
+- After the task finishes, verify the working directory contains only: `skill-hub.env`, `translation-audit.csv`, and the skill source files. Remove any generated JSON, CSV fragments, or helper scripts.
+- The only artifacts that remain in the working directory after a task completes are: `skill-hub.env` (config) and `translation-audit.csv` (audit output). Everything else is temporary and must be deleted.
 
 Read `references/translation-api.md` before executing any translation workflow.
 
@@ -26,7 +29,7 @@ Before asking any setup question, inspect the local environment:
 2. Look for `skill-hub.env` in that directory.
 3. If it exists, read variable names and check whether required values are present. Do not print secrets.
 4. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app` and token is present → run connection check.
-5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app` and client ID is present → run connection check. If it returns `CLI_AUTH_REQUIRED`, run the Path B CLI runbook silently.
+5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app` and the store domain plus client ID are present → run connection check. If it returns `CLI_AUTH_REQUIRED`, run the Path B setup silently.
 6. If connection check succeeds → proceed directly to the requested task.
 
 Ask the setup question only when `skill-hub.env` is missing, incomplete, or access method is unknown:
@@ -69,37 +72,38 @@ node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs init-e
 ```
 
 Ask user to fill:
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: exact `.myshopify.com` domain
+- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: your store address. Paste your Shopify admin URL (`admin.shopify.com/store/your-store`), your custom domain, or your `.myshopify.com` domain.
 - `SKILL_HUB_SHOPIFY_CLIENT_ID`: Client ID from Dev Dashboard app settings
 
-Then run this runbook silently (do not ask user to run commands):
+Then the agent runs this setup for you automatically (you don't need to type commands):
 
-1. Check CLI: `node -v`, `npm -v`, `shopify --version 2>/dev/null || shopify version`, `shopify store --help`
-2. If CLI missing or < 3.93.0: run `npm install -g @shopify/cli@latest` — **on Windows, run terminal as Administrator first**
-3. Create temp dir under OS temp location
-4. Link app: `shopify app config link --client-id {CLIENT_ID} --path {TEMP_DIR} --no-color`
-5. Write scopes into `{TEMP_DIR}/shopify.app.toml`:
-   ```
-   scopes = "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content"
-   ```
-6. Deploy: `shopify app deploy --client-id {CLIENT_ID} --path {TEMP_DIR} --allow-updates --no-color`
-7. Notify user: "A Shopify authorization page will open in your browser. Please review the scopes and click Authorize."
-8. Auth: `shopify store auth --store {store}.myshopify.com --scopes "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content" --no-color`
-9. Verify — write query to file then execute:
-   ```
-   # Write query to temp file first (required on Windows)
-   echo 'query { shop { name id } }' > {TEMP_DIR}/verify.graphql
-   shopify store execute --store {store}.myshopify.com --query-file {TEMP_DIR}/verify.graphql --output-file {TEMP_DIR}/verify-out.json --no-color
-   # Check verify-out.json contains shop.name
-   ```
-10. If verify returns `CLI_AUTH_REQUIRED`: rerun step 8
-11. Delete temp dir
+**Step 1 — Check your tools**
+`node -v`, `npm -v`, `shopify version`, `shopify store --help`. If CLI is missing, the agent installs it.
 
-**Critical CLI rules for Path B (especially on Windows):**
-- Always use `--query-file` instead of inline `--query "..."` — Windows PowerShell parses quotes and breaks the command
-- Always use `--output-file` to get clean JSON — CLI stdout contains ANSI color codes that break JSON parsing
-- Always include `--allow-mutations` for write operations
-- Always run `shopify app deploy` before `shopify store auth`
+**Step 2 — Connect your app**
+A browser page opens asking you to log into Shopify Partners. Enter the verification code shown on the page. The agent links your app and sets up the required permissions.
+
+**Step 3 — Deploy permissions**
+The agent deploys the permission settings to your app.
+
+**Step 4 — Authorize on your store**
+A Shopify page opens in your browser. Review the permissions and click "Authorize."
+
+**Step 5 — Verify**
+The agent runs a quick check. If authorization didn't stick, you'll be asked to try Step 4 again.
+
+**Step 6 — Clean up**
+Temporary files are deleted.
+
+**Agent technical runbook** (execute silently, do not show user):
+1. Resolve domain: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`; already `.myshopify.com` → use directly; custom domain → probe DNS/HTTP or ask user for admin URL.
+2. Precheck CLI tools, install `@shopify/cli@latest` if needed.
+3. Create temp dir, run `shopify app config link --client-id <client-id> --path <temp-dir> --no-color`.
+4. Write scopes: `scopes = "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content"`
+5. `shopify app config validate`, then `shopify app deploy`.
+6. Tell user browser auth is coming, then `shopify store auth --store <domain>.myshopify.com --scopes "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content" --json --no-color`.
+7. Verify via connection check. Rerun auth if `CLI_AUTH_REQUIRED`.
+8. Delete temp dir.
 
 ## Translation Workflow
 
@@ -211,7 +215,7 @@ Read the fetch output. For each field with status `NEW` or `OUTDATED`:
 - Do not translate: `handle` fields, brand names, product model numbers, URLs
 - Keep SEO fields (`meta_title`, `meta_description`) within character limits: title ≤ 70 chars, description ≤ 160 chars
 
-Generate a CSV audit table at `{TEMP_DIR}/translation-audit.csv` with columns:
+Generate a CSV audit table at `translation-audit.csv` (in the current working directory) with columns:
 `resource_id, resource_type, resource_name, field_key, original, translation_{locale}, status, digest`
 
 Present a summary to the user:
@@ -233,7 +237,7 @@ Do not proceed until the user explicitly approves.
 
 **Path A:**
 ```
-node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs write --env skill-hub.env --input {TEMP_DIR}/translation-audit.csv --locale {locale}
+node skills/shopify-store-translator/scripts/shopify-translator-admin.mjs write --env skill-hub.env --input translation-audit.csv --locale {locale}
 ```
 
 **Path B:** For each resource in the CSV, write a mutation file to `{TEMP_DIR}/write-batch-{n}.graphql` and execute:
@@ -244,7 +248,12 @@ Check each output file for `userErrors`. Stop and report on any error.
 
 ### Step 7: Cleanup
 
-Delete all files under `{TEMP_DIR}` immediately after write completes or fails.
+1. Delete all files under `{TEMP_DIR}` (fetch JSON, CLI query/out files) immediately after write completes or fails.
+2. **Do not delete `translation-audit.csv`** — this is the user-facing artifact.
+3. Re-scan the working directory for leftovers before finishing:
+   - Keep: `skill-hub.env`, `translation-audit.csv`, committed skill source files
+   - Delete: any stray JSON files, query.graphql, variables.json, or one-off helper scripts the agent created
+4. If cleanup fails, tell the user the exact path that still needs removal.
 
 ## Resource Priority
 

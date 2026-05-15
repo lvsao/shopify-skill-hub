@@ -51,7 +51,7 @@ Before asking any setup question, inspect the local environment first:
 3. Do not rely on a broad search or glob result as the only evidence that the file is missing. If a search says "not found" but the user, file explorer, terminal, or direct path suggests the file exists, re-check by listing the current directory or reading the exact `skill-hub.env` path.
 4. If it exists, read only the variable names and whether required values are present. Do not print secrets.
 5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run `connection-check`.
-6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the `.myshopify.com` store domain plus Client ID are present, run `connection-check`.
+6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the store domain plus Client ID are present, run `connection-check`.
 7. If `connection-check` returns `CLI_AUTH_REQUIRED`, run the Dev Dashboard CLI auth runbook below silently, then rerun `connection-check`.
 8. If `connection-check` succeeds, continue directly to product scan or the requested product. Do not ask where the app was created.
 9. If the user says "already configured", "B is configured", or similar, treat that as a request to inspect `skill-hub.env`, not as an A/B answer.
@@ -104,65 +104,56 @@ node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mj
 
 Ask the user to fill only:
 
-- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: the store's exact `.myshopify.com` domain.
+- `SKILL_HUB_SHOPIFY_STORE_DOMAIN`: your store address. Paste your Shopify admin URL (`admin.shopify.com/store/your-store`), your custom domain, or your `.myshopify.com` domain — the agent will figure out the correct address.
 - `SKILL_HUB_SHOPIFY_CLIENT_ID`: the app Client ID from Dev Dashboard settings.
 
-Do not ask the user to run CLI commands manually. Run this sequence silently:
+Do not ask the user to run CLI commands manually. Run this sequence silently, explaining each step in beginner-friendly language:
 
+**Step 1 — Check your tools:**
 ```text
 node -v
 npm -v
 shopify version
 shopify store --help
 ```
+If Shopify CLI is missing or too old, install it: `npm install -g @shopify/cli@latest`.
 
-If Shopify CLI is missing or too old for `shopify store`, run:
-
-```text
-npm install -g @shopify/cli@latest
-```
-
-Then configure scopes through Shopify CLI. Do not ask the user to manually enter scopes in Dev Dashboard.
-
-Do not run `shopify store list` or `shopify auth status`; these are not valid diagnostics for this workflow in current Shopify CLI.
-
-Create a temporary directory under the operating-system temp location and refer to it as `<temp-dir>`. Use the current terminal's native command set to create this directory, then run:
-
+**Step 2 — Connect your app to Shopify CLI:**
+Create a temporary folder and link your Dev Dashboard app. A browser page will open asking you to log into your Shopify Partners account — enter the verification code shown on the page.
 ```text
 shopify app config link --client-id <client-id> --path <temp-dir> --no-color
 ```
-
-Edit only `<temp-dir>/shopify.app.toml`:
-
+Then write the required permissions (scopes) into the config file:
 ```toml
 [access_scopes]
 scopes = "read_products,write_products,read_files,write_files"
 ```
 
-Then run:
-
+**Step 3 — Deploy the permissions:**
 ```text
 shopify app config validate --path <temp-dir> --no-color
 shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color
 ```
 
-After deployment, do not send the user to Dev Dashboard to look for a manual approval button. Tell the user: "A Shopify permission authorization page may open next. Please review the scopes and click authorize."
-
+**Step 4 — Authorize on your store:**
+Tell the user: "Next, a Shopify page will open in your browser asking you to approve permissions. Please review and click Authorize."
 ```text
 shopify store auth --store <store>.myshopify.com --scopes read_products,write_products,read_files,write_files --json --no-color
 ```
 
-Verify after browser authorization:
-
+**Step 5 — Verify:**
 ```text
 node skills/shopify-product-serp-optimizer/scripts/shopify-product-serp-admin.mjs connection-check --env skill-hub.env
 ```
+If it reports `CLI_AUTH_REQUIRED`, rerun `shopify store auth` and make sure you click Authorize in the browser.
 
-If verification still returns `CLI_AUTH_REQUIRED`, rerun `shopify store auth` with the same scopes and verify again.
+**Step 6 — Clean up:**
+Delete the temporary folder.
 
-The bundled helper runs Shopify CLI through its JavaScript entrypoint and uses query/output files internally. Do not replace it with shell-generated GraphQL commands unless you are doing narrow troubleshooting.
-
-Always remove `<temp-dir>` after setup succeeds or fails. Use the current terminal's native recursive delete command.
+**Domain resolution for agents:** Before CLI commands, resolve the store domain:
+- `admin.shopify.com/store/<name>` → extract `<name>` → `<name>.myshopify.com`
+- Already ends with `.myshopify.com` → use directly
+- Custom domain → try DNS/HTTP probe, or ask user for their admin URL
 
 ## What This Skill Produces
 
