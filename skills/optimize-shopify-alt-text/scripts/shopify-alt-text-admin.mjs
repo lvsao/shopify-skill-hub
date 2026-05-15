@@ -83,7 +83,7 @@ async function initEnv(args) {
 # Keep this file private. Do not commit it or paste tokens into chat.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 `;
   } else if (method === "dev_dashboard_app") {

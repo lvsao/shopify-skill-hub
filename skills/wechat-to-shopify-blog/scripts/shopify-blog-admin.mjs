@@ -86,7 +86,7 @@ async function initEnv(args) {
 # Keep this file private. Do not commit it or paste tokens into chat.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 `;
   } else if (method === "dev_dashboard_app") {
@@ -94,7 +94,7 @@ SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 # Keep this file private. Do not commit it or paste tokens into chat.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
 `;
   } else {
@@ -136,10 +136,29 @@ async function loadEnv(envPath) {
   const accessMethod = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || (env.SHOPIFY_CLIENT_ID ? "dev_dashboard_app" : "admin_custom_app");
 
   if (accessMethod === "dev_dashboard_app") {
-    if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
-      throw new Error("Dev Dashboard app setup requires SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
+    // Resolve admin URL or website to .myshopify.com domain
+    const rawDomain = env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || env.SHOPIFY_STORE_DOMAIN || "";
+    let resolved = normalizeDomain(rawDomain);
+    if (!resolved.endsWith(".myshopify.com")) {
+      const adminMatch = rawDomain.match(/admin\.shopify\.com\/store\/([^\/\s?&]+)/i);
+      if (adminMatch) {
+        resolved = `${adminMatch[1].toLowerCase()}.myshopify.com`;
+      } else {
+        try {
+          const response = await fetch(`https://${resolved}`, { signal: AbortSignal.timeout(10000) });
+          const html = await response.text();
+          const shopMatch = html.match(/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i);
+          if (shopMatch) resolved = shopMatch[1].toLowerCase();
+        } catch {}
+      }
     }
-    env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
+    if (!resolved.endsWith(".myshopify.com")) {
+      throw new Error(
+        `Could not find store domain from "${rawDomain}". Provide your admin URL (https://admin.shopify.com/store/your-store) or website address.`
+      );
+    }
+    env.SHOPIFY_STORE_DOMAIN = resolved;
+    env.SHOPIFY_API_DOMAIN = resolved;
     env.SHOPIFY_API_VERSION = "shopify-cli";
     env.SHOPIFY_TRANSPORT = "shopify_cli";
     return env;
