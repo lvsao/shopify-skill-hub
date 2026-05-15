@@ -153,7 +153,7 @@ Delete the temporary folder.
 **Domain resolution for agents:** Before CLI commands, resolve the store domain:
 - `admin.shopify.com/store/<name>` → extract `<name>` → `<name>.myshopify.com`
 - Already ends with `.myshopify.com` → use directly
-- Custom domain → try DNS/HTTP probe, or ask user for their admin URL
+- Custom domain → fetch `https://<domain>` and search HTML for `Shopify.shop = "<name>.myshopify.com"` (regex: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`); if not found, ask user for their admin URL
 
 ## What This Skill Produces
 

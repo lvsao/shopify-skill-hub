@@ -111,7 +111,7 @@ After that, you're all set! The agent cleans up the temporary files and you're r
 
 **Agent technical runbook** (execute silently, do not show to the user):
 
-1. Resolve store domain: if input contains `admin.shopify.com/store/<name>`, extract `<name>.myshopify.com`; if already `.myshopify.com`, use directly; if custom domain, try DNS/HTTP probe or ask user for admin URL.
+1. Resolve store domain: if input contains `admin.shopify.com/store/<name>`, extract `<name>.myshopify.com`; if already `.myshopify.com`, use directly; if custom domain, fetch page HTML and extract `Shopify.shop` value via regex `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`; if all fail, ask user for admin URL.
 2. Precheck: `node -v`, `npm -v`, `shopify version`, `shopify store --help`. If CLI missing, `npm install -g @shopify/cli@latest`.
 3. Create temp dir under OS temp location.
 4. `shopify app config link --client-id <client-id> --path <temp-dir> --no-color` — auto-open browser for Partners login if prompted.

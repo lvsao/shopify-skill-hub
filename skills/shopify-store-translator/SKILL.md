@@ -96,7 +96,7 @@ The agent runs a quick check. If authorization didn't stick, you'll be asked to 
 Temporary files are deleted.
 
 **Agent technical runbook** (execute silently, do not show user):
-1. Resolve domain: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`; already `.myshopify.com` → use directly; custom domain → probe DNS/HTTP or ask user for admin URL.
+1. Resolve domain: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`; already `.myshopify.com` → use directly; custom domain → fetch HTML and extract `Shopify.shop` via regex `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`; if all fail, ask user for admin URL.
 2. Precheck CLI tools, install `@shopify/cli@latest` if needed.
 3. Create temp dir, run `shopify app config link --client-id <client-id> --path <temp-dir> --no-color`.
 4. Write scopes: `scopes = "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content"`
