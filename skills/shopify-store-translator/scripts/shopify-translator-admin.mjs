@@ -316,15 +316,11 @@ async function cmdFetch() {
   const outputFile = flags.output;
   if (!locale) { console.error('--locale is required'); process.exit(1); }
 
+  const SKIP_TYPES = new Set(['URI','URL','LINK','LIST_URL','LIST_LINK','FILE_REFERENCE','LIST_FILE_REFERENCE','JSON','JSON_STRING']);
+
   const results = [];
   let cursor = null;
   let hasNextPage = true;
-
-  // LocalizableContentType → translate decision
-  // SKIP: URI, URL, LINK, LIST_URL, LIST_LINK, FILE_REFERENCE, LIST_FILE_REFERENCE, JSON, JSON_STRING
-  // TRANSLATE (plain): SINGLE_LINE_TEXT_FIELD, MULTI_LINE_TEXT_FIELD, STRING, INLINE_RICH_TEXT, RICH_TEXT_FIELD, LIST_SINGLE_LINE_TEXT_FIELD, LIST_MULTI_LINE_TEXT_FIELD
-  // TRANSLATE (html): HTML
-  const SKIP_TYPES = new Set(['URI','URL','LINK','LIST_URL','LIST_LINK','FILE_REFERENCE','LIST_FILE_REFERENCE','JSON','JSON_STRING']);
 
   while (hasNextPage) {
     const afterClause = cursor ? `, after: "${cursor}"` : '';
@@ -332,13 +328,7 @@ async function cmdFetch() {
       translatableResources(first: 50, resourceType: ${resourceType}${afterClause}) {
         nodes {
           resourceId
-          translatableContent {
-            key
-            value
-            digest
-            locale
-            type
-          }
+          translatableContent { key value digest locale type }
           translations(locale: "${locale}") { key value outdated }
         }
         pageInfo { hasNextPage endCursor }
@@ -351,18 +341,16 @@ async function cmdFetch() {
 
     for (const node of nodes) {
       const translationMap = {};
-      for (const t of node.translations) translationMap[t.key] = t;
-
-      const fields = node.translatableContent
-        .filter(c => c.key !== 'handle') // NEVER translate handles
-        .filter(c => !SKIP_TYPES.has(c.type)) // skip non-translatable types per Shopify API
+      for (const t of (node.translations || [])) translationMap[t.key] = t;
+      const fields = (node.translatableContent || [])
+        .filter(c => c.key !== 'handle')
+        .filter(c => !SKIP_TYPES.has(c.type))
         .map(c => {
           const existing = translationMap[c.key];
           let status = 'NEW';
           if (existing) status = existing.outdated ? 'OUTDATED' : 'CURRENT';
           return { key: c.key, value: c.value, digest: c.digest, type: c.type, status, existingTranslation: existing?.value ?? null };
         });
-
       results.push({ resourceId: node.resourceId, resourceType, fields });
     }
   }
@@ -524,6 +512,108 @@ async function cmdWriteCSVTranslations() {
   console.log(JSON.stringify({ status: 'OK', outputFile, patchedRows: patches.length }));
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMMAND: generate-audit
+// Reads annotated fetch JSON → generates translation-audit.csv (NO Shopify write)
+// User must review CSV and approve before the `write` command is called.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function cmdGenerateAudit() {
+  const inputFile = flags.input;
+  const locale = flags.locale;
+  const csvOutput = flags.output || resolve('translation-audit.csv');
+  if (!inputFile || !locale) {
+    console.error('--input <annotated-json> and --locale are required');
+    process.exit(1);
+  }
+
+  const raw = readFileSync(resolve(inputFile), 'utf8');
+  const data = JSON.parse(raw);
+  const resources = data.resources || [];
+  const resourceType = data.resourceType || 'UNKNOWN';
+
+  let totalNew = 0, totalOutdated = 0, totalSkipped = 0, totalCurrent = 0;
+  const csvRows = [];
+
+  for (const res of resources) {
+    const rid = res.resourceId;
+    if (!rid) continue;
+    const rname = res.resourceName || rid;
+
+    for (const field of res.fields || []) {
+      const translation = field.translation;
+      if (!translation || !translation.trim()) continue;
+
+      // Skip: handle fields, non-translatable types
+      if (field.key === 'handle') continue;
+      const SKIP_TYPES = new Set(['URI','URL','LINK','LIST_URL','LIST_LINK','FILE_REFERENCE','LIST_FILE_REFERENCE','JSON','JSON_STRING']);
+      if (SKIP_TYPES.has(field.type)) { totalSkipped++; continue; }
+
+      // Count statuses
+      if (field.status === 'CURRENT') { totalCurrent++; continue; }
+      if (field.status === 'OUTDATED') totalOutdated++;
+      else totalNew++;
+
+      csvRows.push({
+        resource_id: rid,
+        resource_type: resourceType,
+        resource_name: rname,
+        field_key: field.key,
+        original: field.value,
+        original_length: String(field.value?.length ?? 0),
+        [`translation_${locale}`]: translation,
+        translation_length: String(translation.length),
+        status: field.status || 'NEW',
+        digest: field.digest,
+      });
+    }
+  }
+
+  if (csvRows.length === 0) {
+    console.error('No translatable entries found in JSON (check that fields have "translation" property)');
+    process.exit(1);
+  }
+
+  // ── Generate CSV audit file (NO Shopify write) ──
+  const csvHeaders = [
+    'resource_id', 'resource_type', 'resource_name', 'field_key',
+    'original', 'original_length', `translation_${locale}`, 'translation_length',
+    'status', 'digest',
+  ];
+  const csvLines = [
+    csvHeaders.map(escapeCSV).join(','),
+    ...csvRows.map(row => csvHeaders.map(h => escapeCSV(row[h] ?? '')).join(',')),
+  ];
+  writeFileSync(csvOutput, '\uFEFF' + csvLines.join('\n'), 'utf8');
+
+  // ── Summary for user review ──
+  let warnings = [];
+  for (const row of csvRows) {
+    const origLen = parseInt(row.original_length, 10);
+    const transLen = parseInt(row.translation_length, 10);
+    if (origLen > 0 && transLen > 0) {
+      const ratio = transLen / origLen;
+      // Non-CJK threshold: 70%, CJK threshold: 50%
+      if (ratio < 0.5) {
+        warnings.push({ field: row.field_key, resource: row.resource_name, ratio: Math.round(ratio * 100) + '%', original: origLen, translation: transLen });
+      }
+    }
+  }
+
+  console.log(JSON.stringify({
+    status: 'AUDIT_READY',
+    locale,
+    fields: csvRows.length,
+    new: totalNew,
+    outdated: totalOutdated,
+    skipped: totalSkipped,
+    current: totalCurrent,
+    csvOutput,
+    lengthWarnings: warnings.length > 0 ? warnings : undefined,
+    instruction: 'Review the CSV above. Type APPROVE to write translations to Shopify, or tell me which items to change.',
+  }, null, 2));
+}
+
 const commands = {
   'init-env': cmdInitEnv,
   'connection-check': cmdConnectionCheck,
@@ -533,9 +623,9 @@ const commands = {
   'add-locale-to-market': cmdAddLocaleToMarket,
   'fetch': cmdFetch,
   'write': cmdWrite,
+  'generate-audit': cmdGenerateAudit,
   'translate-csv': cmdTranslateCSV,
   'write-csv-translations': cmdWriteCSVTranslations,
-  // New encoding verification commands
   'verify-translations': cmdVerifyTranslations,
   'check-encoding': cmdCheckEncoding,
 };
@@ -643,6 +733,7 @@ Commands:
   add-locale-to-market  --env skill-hub.env --market-web-presence-id <id> --locale <locale>
   fetch                 --env skill-hub.env --resource-type <TYPE> --locale <locale> [--output <file>]
   write                 --env skill-hub.env --input <csv> --locale <locale>
+  generate-audit        --input <annotated.json> --locale <locale> [--output <audit.csv>]
   verify-translations   --env skill-hub.env --locale <locale> [--input <csv>]
   check-encoding        --file <path>
   translate-csv         --input <shopify-export.csv> --output <translated.csv> --locale <locale>
