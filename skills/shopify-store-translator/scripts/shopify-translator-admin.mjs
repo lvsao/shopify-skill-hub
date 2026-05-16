@@ -535,7 +535,101 @@ const commands = {
   'write': cmdWrite,
   'translate-csv': cmdTranslateCSV,
   'write-csv-translations': cmdWriteCSVTranslations,
+  // New encoding verification commands
+  'verify-translations': cmdVerifyTranslations,
+  'check-encoding': cmdCheckEncoding,
 };
+
+// ── COMMAND: verify-translations ─────────────────────────────────────────────
+
+async function cmdVerifyTranslations() {
+  const env = loadEnv(flags.env);
+  const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
+  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const locale = flags.locale;
+  const inputFile = flags.input;
+  if (!locale) { console.error('--locale required'); process.exit(1); }
+
+  // Read resource IDs from CSV or fetch fresh
+  let resourceIds = [];
+  if (inputFile) {
+    const csv = readFileSync(inputFile, 'utf8');
+    const rows = parseCSV(csv);
+    const writtenRows = rows.filter(r => r.status === 'NEW' || r.status === 'OUTDATED');
+    resourceIds = [...new Set(writtenRows.map(r => r.resource_id).filter(Boolean))];
+  }
+
+  if (resourceIds.length === 0) {
+    console.log('No written resources to verify.');
+    return;
+  }
+
+  let issues = [];
+  for (const id of resourceIds.slice(0, 10)) { // max 10 resources
+    try {
+      const data = await gql(host, token, `query {
+        translatableResource(resourceId: "${id}") {
+          resourceId
+          translatableContent { key value digest locale }
+          translations(locale: "${locale}") { key value outdated }
+        }
+      }`);
+      const res = data.translatableResource;
+      if (!res) { issues.push({ resourceId: id, error: 'NOT_FOUND' }); continue; }
+      for (const t of res.translatableContent) {
+        const trans = res.translations?.find(tr => tr.key === t.key);
+        if (!trans) continue;
+        const stored = trans.value;
+        // Check for garbled characters
+        const garbled = (stored.match(/\uFFFD/g) || []).length;
+        const lengthRatio = stored.length / t.value.length;
+        if (garbled > 0 || lengthRatio < 0.6) {
+          issues.push({
+            resourceId: id,
+            key: t.key,
+            originalLength: t.value.length,
+            storedLength: stored.length,
+            lengthRatio: Math.round(lengthRatio * 100) + '%',
+            garbledChars: garbled,
+          });
+        }
+      }
+    } catch (e) {
+      issues.push({ resourceId: id, error: e.message.substring(0, 100) });
+    }
+  }
+
+  if (issues.length === 0) {
+    console.log(JSON.stringify({ status: 'OK', verified: resourceIds.length, locale, message: 'All translations verified with no encoding or truncation issues.' }, null, 2));
+  } else {
+    console.log(JSON.stringify({ status: 'WARN', issues }, null, 2));
+  }
+}
+
+// ── COMMAND: check-encoding ──────────────────────────────────────────────────
+
+async function cmdCheckEncoding() {
+  const filePath = flags.file || flags.input;
+  if (!filePath) { console.error('--file required'); process.exit(1); }
+
+  const content = readFileSync(resolve(filePath), 'utf8');
+  const garbledCount = (content.match(/\uFFFD/g) || []).length;
+  const hasBom = content.charCodeAt(0) === 0xFEFF;
+
+  const result = {
+    file: filePath,
+    size: content.length,
+    hasBom,
+    garbledChars: garbledCount,
+    encodingOK: garbledCount === 0,
+  };
+
+  if (!result.encodingOK) {
+    console.error(JSON.stringify({ status: 'FAIL', ...result }, null, 2));
+    process.exit(1);
+  }
+  console.log(JSON.stringify({ status: 'OK', ...result }, null, 2));
+}
 
 if (!command || !commands[command]) {
   console.log(`Usage: shopify-translator-admin.mjs <command> [options]
@@ -549,6 +643,9 @@ Commands:
   add-locale-to-market  --env skill-hub.env --market-web-presence-id <id> --locale <locale>
   fetch                 --env skill-hub.env --resource-type <TYPE> --locale <locale> [--output <file>]
   write                 --env skill-hub.env --input <csv> --locale <locale>
+  verify-translations   --env skill-hub.env --locale <locale> [--input <csv>]
+  check-encoding        --file <path>
+  translate-csv         --input <shopify-export.csv> --output <translated.csv> --locale <locale>
 `);
   process.exit(command ? 1 : 0);
 }

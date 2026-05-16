@@ -69,7 +69,7 @@ This local command is for maintainers only. Regular users should install from Gi
 | `wechat-to-shopify-blog` | `content-creation` | Convert an owned or authorized WeChat Official Account article into a Shopify blog draft, including Shopify Files image hosting, brand voice adaptation, blog selection, and related product insertion. |
 | `optimize-shopify-alt-text` | `seo-growth` | Audit Shopify product media, collection featured images, article featured images, and article inline images, then prepare a preview-first alt text optimization plan with real image understanding when available and safe context-only fallback when it is not. |
 | `shopify-product-serp-optimizer` | `seo-growth` | Scan Shopify products, plan five-product SERP optimization batches, generate polished HTML audit reports, and apply only approved product SEO metadata or reviewed media alt updates. |
-| `shopify-store-translator` | `operations` | Translate all Shopify store resources (products, collections, pages, blogs, policies, and more) into any target language. Checks language and market configuration, generates a CSV audit table for review, and writes approved translations to Shopify. |
+| `shopify-store-translator` | `operations` | Translate all Shopify store resources (products, collections, pages, blogs, policies, and more) into any target language. Checks language and market configuration, auto-translates in full without truncation, generates a CSV audit table for review, verifies encoding, and guides you through market setup with subfolder URLs. |
 
 ## Shopify API Access And Env
 

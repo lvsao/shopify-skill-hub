@@ -41,7 +41,7 @@ read_translations, write_translations, read_products, read_content
 ```
 
 > For Path A vs Path B comparison (token types, CLI requirements, OAuth flow, AI Agent friendliness),
-> refer to shopify-skill-creator onboarding references.
+> refer to the skill's `references/onboarding-guide.md`.
 
 ---
 
@@ -506,49 +506,93 @@ Never translate handle fields by default — they are URL slugs.
 
 ---
 
+## 5. Encoding & Cross-platform Safety
+
+### 5.1 File Encoding Rules
+- **Always explicit**: Use `readFileSync(path, 'utf8')` and `writeFileSync(path, content, 'utf8')` in Node.js. Never rely on default encoding.
+- **Windows UTF-8 BOM**: For Shopify CSV imports, prefix with `\uFEFF` (BOM) so Excel correctly interprets UTF-8: `writeFileSync(path, '\uFEFF' + content, 'utf8')`.
+- **macOS/Linux**: UTF-8 is the default terminal encoding. Still explicitly specify `'utf8'` for defensiveness.
+- **PowerShell**: Never use `Out-File`, `>`, or `|` for files with non-ASCII content unless `-Encoding utf8` is explicitly specified. Prefer Node.js file operations.
+
+### 5.2 Shopify CLI on Windows
+- **Inline queries break**: PowerShell corrupts `--query "..."` with non-ASCII characters. Always use `--query-file` with a saved `.graphql` file.
+- **Output parsing**: CLI stdout contains ANSI color codes. Always use `--output-file` for machine-readable JSON.
+- **Temp files**: Create temp files under OS temp dir using Node.js `mkdtempSync` or `writeFileSync` — not PowerShell `New-Item` which may have encoding issues.
+
+### 5.3 Encoding Verification
+After every write operation (file or Shopify API):
+1. Re-read the written content from the target
+2. Scan for `\uFFFD` (Unicode replacement character), `�`, or garbled multi-byte sequences
+3. For translations: compare original length vs stored length
+4. If corrupted, debug the encoding chain: file write encoding → API request encoding → Shopify storage
+
+---
+
 ## 9. Agent Workflow
 
 ```
-Step 1: LANGUAGE CHECK
-  Query shopLocales → identify primary locale
-  For each target locale:
-    Missing → shopLocaleEnable + shopLocaleUpdate(published:true)
-    Exists + unpublished → shopLocaleUpdate(published:true)
-    Exists + published → proceed
+Step 1: FULL LANGUAGE & MARKET CHECK
+  Run shopify-market-lang-check.mjs check --target {locale}
+  Check: locale enabled + published? market presence?
+  Present findings to user before proceeding
 
-Step 2: MARKET CHECK
-  Query markets(first:10)
-  For each target market:
-    Read webPresence.alternateLocales
-    If target locale missing → marketWebPresenceUpdate
-    (Include ALL existing alternateLocales + new one)
-    Confirm with user before updating
+Step 2: CONFIGURE LOCALE (if needed)
+  Missing → shopLocaleEnable + shopLocaleUpdate(published:true)
+  Exists + unpublished → shopLocaleUpdate(published:true)
 
-Step 3: FETCH CONTENT
+Step 3: CONFIGURE MARKETS (with user approval)
+  Query markets for web presence details
+  Add locale to existing market alternateLocales
+  OR create new market with conditions + web presence
+  Refer to market-lang-setup.md
+
+Step 4: FETCH CONTENT
   For each resource type, query translatableResources with pagination
   Include translations(locale:"{target}") to check existing state
   Classify: NEW / OUTDATED / CURRENT
   Skip CURRENT unless user forces re-translate
+  IMPORTANT: Record original `value` length for each field
 
-Step 4: AI TRANSLATE
-  Translate NEW and OUTDATED fields
+Step 5: AI TRANSLATE — NO TRUNCATION
+  Translate NEW and OUTDATED fields in FULL
+  Every sentence, paragraph, and word must be translated
+  No summarization, no abbreviation
+  Compare translated length to original:
+    Non-CJK: translation >= 80% of original
+    CJK: translation >= 60% of original (CJK chars are more compact)
+  If below threshold → redo translation
   Preserve HTML for body_html
-  Do not translate: handles, brand names (unless instructed)
-  Generate CSV audit table
+  Do not translate: handles, brand names, URLs, Liquid
+  Generate CSV audit table with original_length and translation_length columns
 
-Step 5: USER REVIEW
+Step 6: USER REVIEW
   Present CSV summary (X new, Y updates, Z skipped)
+  Highlight any length-ratio warnings
   Wait for explicit approval
 
-Step 6: WRITE
+Step 7: WRITE
   translationsRegister per resource
   Batch fields per resource in one call
   Use GraphQL aliases for multiple resources (max 5 per request)
   Check userErrors on every response
 
-Step 7: CLEANUP
-  Delete CSV from temp directory
-  Report completion
+Step 8: POST-WRITE VERIFICATION
+  Re-fetch each written resource's translations
+  For each translation:
+    a. Check for garbled characters (mojibake, \uFFFD)
+    b. Compare stored value length vs original length
+    c. Confirm userErrors is empty
+  Flag any issues for user review
+
+Step 9: MARKET CONFIGURATION REMINDER
+  Run shopify-market-lang-check.mjs check --target {locale}
+  Present human-readable summary
+  Guide user to configure markets if needed
+  Offer reference tutorial: https://www.selofy.com/tutorials/shopify/shopify-international-market-translation
+
+Step 10: CLEANUP
+  Delete temp files
+  Report completion with market setup summary
 ```
 
 ---
