@@ -9,8 +9,15 @@ description: "Translate all Shopify store resources into any target language. Us
 
 - **MUST** run `npx --yes skills update shopify-store-translator -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
 - **After running the update command, immediately re-read the skill's references before proceeding.** Do not use cached or stale instructions.
-- **Encoding/decoding safety (CRITICAL):** Every file written or processed must explicitly use UTF-8 encoding (`'utf8'` in Node.js, `-Encoding utf8` in PowerShell commands). Never rely on system default encoding. When writing CSV files for Shopify import, use UTF-8 with BOM (`\uFEFF` prefix) for Windows Excel compatibility. Test that Chinese, Japanese, Korean, Arabic, and emoji characters survive round-trip encoding — re-read the file after writing to verify no garbled characters (`\uFFFD`, `�`, or mojibake). On Windows, always use `--query-file` with `--output-file` in Shopify CLI, never inline `--query` (PowerShell corrupts quotes and non-ASCII characters). After every Shopify write, verify the stored content has no encoding corruption by re-fetching the translation.
+- **Read `references/business-field-map.md` before translating.** Map the user's business request (e.g., "translate products") to ALL related resource types. Never translate a resource type in isolation without considering nested resources (options, images, SEO fields).
+- **Encoding/decoding safety (CRITICAL):** Every file written or processed must explicitly use UTF-8 encoding (`'utf8'` in Node.js). Never rely on system default encoding. When writing CSV files for Shopify import, use UTF-8 with BOM (`\uFEFF` prefix) for Windows Excel compatibility. Test that Chinese, Japanese, Korean, Arabic, and emoji characters survive round-trip encoding — re-read the file after writing to verify no garbled characters (`\uFFFD`, `�`, or mojibake). On Windows, always use `--query-file` with `--output-file` in Shopify CLI, never inline `--query` (PowerShell corrupts quotes and non-ASCII characters). After every Shopify write, verify the stored content has no encoding corruption by re-fetching the translation.
+- **ALWAYS use Node.js for file I/O with non-ASCII text (CRITICAL):** For ANY file containing translations, HTML, accented characters, CJK, Arabic, or emoji — read and write exclusively through the `shopify-translator-admin.mjs` script or direct `require('fs')` calls with explicit `'utf8'` encoding. Never use PowerShell's `Set-Content`, `Out-File`, `Add-Content`, `>`, `>>`, `ConvertTo-Json`, or `ConvertFrom-Json` for files that contain non-ASCII characters — these cmdlets corrupt multi-byte characters on Windows. If you must use PowerShell, only use it to call `node script.mjs` (Node.js handles encoding correctly). This rule is cross-platform: on macOS/Linux, terminal encoding is typically UTF-8, but always use Node.js to be safe.
 - **NO TRUNCATION (CRITICAL):** Every translation must be COMPLETE. Never summarize, abbreviate, truncate, or shorten the original content. The translated text must contain every sentence, every paragraph, every word of the source. SEO fields (`meta_title`, `meta_description`) must also be complete translations, not shortened summaries — if the translation exceeds the character limit, note it in the preview and discuss with the user rather than silently truncating. Product descriptions, article body_html, blog content, policy pages — every field must be translated in full without exception.
+- **Read tool truncation workaround (CRITICAL):** The AI's Read tool truncates lines at 2000 characters. When you read a fetch JSON file, long fields like `body_html` will show `(line truncated to 2000 chars)` and you will NOT see the complete original text. This means you CANNOT translate the field correctly from the truncated view. After reading the fetch JSON, check each field's length via the `value.length` in the file (use `node -e` to compute it). For any field with `length > 1500`, extract the **complete** value using the `get-field` command before translating:
+  ```
+  node <script> get-field --input <fetch.json> --resource-id <gid> --field <key>
+  ```
+  Read the full output from this command — that is your source text to translate. Do NOT attempt to translate from the Read tool's truncated display.
 - **Post-write verification:** After `translationsRegister` completes, immediately re-fetch `translatableResource(resourceId, translations(locale:"{locale}"))` for each written resource. Compare the stored translation `value` length with the original `value` length. If the translation is significantly shorter (< 60% of original length), flag it for review — this indicates truncation happened. Also verify no garbled/mojibake characters appear in the stored value.
 - Never write translations to Shopify without explicit user approval. Always show a preview or CSV summary first.
 - Never translate `handle` fields under any circumstance. Handles are Shopify URL slugs (e.g. `my-product`, `automated-collection`). Translating them breaks URLs, causes 404 errors, and damages SEO. This rule applies to all resource types: PRODUCT, COLLECTION, ARTICLE, BLOG, PAGE, and any other resource with a handle field. Leave the Translated content column empty for every handle row.
@@ -18,13 +25,14 @@ description: "Translate all Shopify store resources into any target language. Us
 - Always check `userErrors` on every `translationsRegister` response. Stop and report on any error.
 - Never print or store access tokens, client secrets, or real merchant data in public files.
 - Keep the user's working folder clean. Delete every temporary query file, JSON output, downloaded file, and ad hoc script after the workflow completes or fails.
-- The audit CSV (`translation-audit.csv`) is the only user-facing artifact. Write it to the **current working directory** so the user can find and open it. Never write the audit CSV to the OS temp directory or system drive.
-- Use `{TEMP_DIR}` (OS temp directory) only for intermediate files: fetch JSON output, CLI query files, CLI output files. Delete all files under `{TEMP_DIR}` immediately after the write step completes or fails.
-- After the task finishes, verify the working directory contains only: `skill-hub.env`, `translation-audit.csv`, and the skill source files. Remove any generated JSON, CSV fragments, or helper scripts.
-- The only artifacts that remain in the working directory after a task are: `skill-hub.env` (config) and `translation-audit.csv` (audit output). Everything else is temporary and must be deleted.
+- The audit CSV (`translation-audit.csv`) is the primary user-facing artifact. Write it to the **current working directory** so the user can find and open it. Never write the audit CSV to the OS temp directory or system drive.
+- The annotated JSON (`translation-audit.json`) is the AI's working artifact that contains both source text and translations. Keep it alongside the CSV so the CSV can be re-generated without re-translating.
+- Use `{TEMP_DIR}` (OS temp directory) only for intermediate files: raw fetch JSON output, CLI query files, CLI output files. Delete all files under `{TEMP_DIR}` immediately after the write step completes or fails.
+- After the task finishes, verify the working directory contains the expected artifacts: `skill-hub.env`, `translation-audit.csv`, `translation-audit.json`, and committed skill source files. Remove any stray query files, raw fetch JSON copies, or one-off helper scripts.
 
 Read `references/translation-api.md` before executing any translation workflow.
 Read `references/market-lang-setup.md` for market and language configuration workflow.
+Read `references/business-field-map.md` to understand which resource types and fields are needed for each business request.
 
 ## Beginner Onboarding First
 
@@ -120,6 +128,8 @@ If user chooses B, use `references/market-lang-setup.md` for the exact API mutat
 
 ### Step 3: Fetch Translatable Content
 
+**IMPORTANT — Business Completeness:** Before fetching, use `references/business-field-map.md` to determine the full scope of resources needed. For example, "translate products" means PRODUCT + PRODUCT_OPTION + PRODUCT_OPTION_VALUE + MEDIA_IMAGE. The `fetch` command automatically queries nested resources (images, options) when `--include-nested` is enabled (default: true).
+
 **Path A:**
 ```
 node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type PRODUCT --locale {locale} --output {TEMP_DIR}/fetch-output.json
@@ -146,43 +156,86 @@ Paginate by updating the `$cursor` variable until `pageInfo.hasNextPage` is fals
 Supported `--resource-type` values (all 30 Shopify types):
 `PRODUCT`, `PRODUCT_OPTION`, `PRODUCT_OPTION_VALUE`, `COLLECTION`, `PAGE`, `ARTICLE`, `BLOG`, `SHOP`, `SHOP_POLICY`, `LINK`, `FILTER`, `METAFIELD`, `METAOBJECT`, `MEDIA_IMAGE`, `ARTICLE_IMAGE`, `COLLECTION_IMAGE`, `EMAIL_TEMPLATE`, `DELIVERY_METHOD_DEFINITION`, `MENU`, `PAYMENT_GATEWAY`, `SELLING_PLAN`, `SELLING_PLAN_GROUP`, `PACKING_SLIP_TEMPLATE`, `ONLINE_STORE_THEME`, `ONLINE_STORE_THEME_APP_EMBED`, `ONLINE_STORE_THEME_JSON_TEMPLATE`, `ONLINE_STORE_THEME_LOCALE_CONTENT`, `ONLINE_STORE_THEME_SECTION_GROUP`, `ONLINE_STORE_THEME_SETTINGS_CATEGORY`, `ONLINE_STORE_THEME_SETTINGS_DATA_SECTIONS`
 
-### Step 4: AI Translation — NO TRUNCATION ENFORCED
+### Step 4: AI Translation — JSON Workflow (NO TRUNCATION)
 
-Read the fetch output. For each field with status `NEW` or `OUTDATED`:
+**IMPORTANT: Do not generate CSV directly. Follow the JSON workflow below.**
+
+#### 4a. Read the full original content
+
+Read the fetch JSON output file. For every translatable field:
+- If `field.value.length` (in the file, compute with `node -e`) is > 1500 characters, the Read tool truncated the display. Extract the **complete** value:
+  ```
+  node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs get-field --input <fetch.json> --resource-id <gid> --field <key>
+  ```
+  Read the full output of this command as your source text.
+
+#### 4b. Add translations to the JSON
+
+For each field with status `NEW` or `OUTDATED`, add two properties to the JSON:
+- `translation`: the complete translated text
+- Use `resourceName` for human-readable resource names
 
 **CRITICAL: NO TRUNCATION RULES**
 
-1. **Every word must be translated.** Do not summarize, abbreviate, or shorten the source content. The translation must contain every sentence, paragraph, and word.
-2. **Compare lengths:** After translating, compare the translated text character count to the original. If translation length < 80% of original length (for non-Asian languages) or < 60% (for CJK languages where characters are more compact), the translation is likely truncated — redo it in full.
-3. **SEO fields:** Translate `meta_title` and `meta_description` completely. If the full translation exceeds 70 chars (title) or 160 chars (description), include the full translation in the CSV and note the character limit issue in the preview. Do NOT silently truncate them.
-4. **HTML preservation:** For `body_html` fields: preserve all HTML tags (including all attributes), translate only the text content between tags.
-5. **Non-translatable:** Do not translate: `handle` fields, brand names, product model numbers, URLs, Liquid variables (`{{ ... }}`, `{% ... %}`).
-6. **Encoding safety:** Ensure all non-ASCII characters (Chinese, Japanese, Korean, Arabic, emoji, accents) survive encoding. Write CSV with UTF-8 encoding. Verify by re-reading the CSV and checking for garbled characters.
+1. **Every word must be translated.** The translated text must contain every sentence, paragraph, and word of the source. Never use `...` or abbreviate.
+2. **Compare lengths:** After adding each translation, compute `translation.length / original.length`. If < 70% (non-CJK) or < 50% (CJK), the translation is truncated — redo it in full. French text is typically 15-30% longer than English, so a French translation shorter than the English original is a red flag.
+3. **SEO fields:** Translate `meta_title` and `meta_description` completely. If the full translation exceeds 70 chars (title) or 160 chars (description), include the full translation and note the limit issue in the preview. Do NOT silently truncate.
+4. **HTML preservation:** For `body_html` fields: preserve all HTML tags (including all attributes), translate only text content between tags. Verify that every `<` tag from the original appears in the translation.
+5. **Non-translatable:** Do not translate: `handle` fields, brand names, product model numbers, URLs, Liquid variables.
+6. **Encoding safety:** All translations must be valid UTF-8. Use Node.js `fs.writeFileSync(path, JSON.stringify(data), 'utf8')` to save the annotated JSON. **Never use PowerShell** `Set-Content` or `ConvertTo-Json` for files with accented/CJK characters — these corrupt non-ASCII data on Windows.
 
-Generate a CSV audit table at `translation-audit.csv` (in the current working directory) with columns:
-`resource_id, resource_type, resource_name, field_key, original, original_length, translation_{locale}, translation_length, status, digest`
+#### 4c. Write the annotated JSON
 
-Add `original_length` and `translation_length` columns so the user can verify no truncation occurred.
+Save the annotated JSON to a file (e.g. `translation-audit.json`). Use only Node.js for the file write:
+```javascript
+const fs = require('fs');
+fs.writeFileSync('translation-audit.json', JSON.stringify(data, null, 2), 'utf8');
+```
+Verify the written file is valid JSON and contains no garbled characters:
+```
+node -e "const d=JSON.parse(require('fs').readFileSync('translation-audit.json','utf8')); console.log('OK, resources:', d.resources.length)"
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs check-encoding --file translation-audit.json
+```
 
-Present a summary to the user:
+#### 4d. Generate the audit CSV (for user review)
+
+Run the `generate-audit` command to produce `translation-audit.csv` from the annotated JSON:
+```
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs generate-audit --input translation-audit.json --locale {locale}
+```
+
+This command:
+- Reads the annotated JSON
+- Generates `translation-audit.csv` with all fields
+- Reports a summary: X NEW, Y OUTDATED, Z CURRENT, any length warnings
+- Does NOT write to Shopify
+
+#### 4e. Verify the CSV encoding
+
+Run encoding check on the generated CSV:
+```
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs check-encoding --file translation-audit.csv
+```
+
+Present the summary to the user:
 - X fields to translate (NEW)
 - Y fields to update (OUTDATED)
-- Z fields skipped (CURRENT)
-- Any length-ratio warnings (translation < 80% of original)
+- Z fields skipped (CURRENT/SKIPPED)
+- Any length-ratio warnings (translation < 70% of original for non-CJK, < 50% for CJK)
 
 ### Step 5: User Review and Approval
 
-Show the CSV summary. Ask:
+Show the CSV summary from Step 4d. Tell the user:
 ```
-Please review the translations above (or open the CSV file for full details).
+translation-audit.csv has been generated. Please review the translations.
 Type APPROVE to write all translations to Shopify, or tell me which items to change.
 ```
 
-Do not proceed until the user explicitly approves.
+Do not proceed until the user explicitly approves. Do NOT write anything to Shopify before approval.
 
-### Step 6: Write Translations
+### Step 6: Write Translations (after user approval)
 
-**Path A:**
+Only proceed after receiving explicit user approval. Use the `write` command with the audit CSV:
 ```
 node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs write --env skill-hub.env --input translation-audit.csv --locale {locale}
 ```
@@ -237,11 +290,12 @@ node skills/shopify-store-translator/scripts/shopify-market-lang-check.mjs check
 ### Step 9: Cleanup
 
 1. Delete all files under `{TEMP_DIR}` (fetch JSON, CLI query/out files) immediately after write completes or fails.
-2. **Do not delete `translation-audit.csv`** — this is the user-facing artifact.
-3. Re-scan the working directory for leftovers before finishing:
-   - Keep: `skill-hub.env`, `translation-audit.csv`, committed skill source files
-   - Delete: any stray JSON files, query.graphql, variables.json, or one-off helper scripts the agent created
-4. If cleanup fails, tell the user the exact path that still needs removal.
+2. **Do not delete `translation-audit.csv`** — this is the primary user-facing artifact for review and record.
+3. **Keep `translation-audit.json`** — this is the annotated JSON with all source content and translations. It can be used to re-generate the CSV without re-translating.
+4. Re-scan the working directory for leftovers before finishing:
+   - Keep: `skill-hub.env`, `translation-audit.csv`, `translation-audit.json`, committed skill source files
+   - Delete: any stray query.graphql, variables.json, or one-off helper scripts the agent created
+5. If cleanup fails, tell the user the exact path that still needs removal.
 
 ## Resource Priority
 
@@ -281,7 +335,10 @@ shopify-translator-admin.mjs check-markets        --env skill-hub.env --locale {
 shopify-translator-admin.mjs add-locale-to-market --env skill-hub.env --market-web-presence-id {id} --locale {locale}
 shopify-translator-admin.mjs fetch                --env skill-hub.env --resource-type {TYPE} --locale {locale} --output {file}
 shopify-translator-admin.mjs write                --env skill-hub.env --input {csv} --locale {locale}
-shopify-translator-admin.mjs translate-csv        --input {shopify-export.csv} --output {translated.csv} --locale {locale}
+shopify-translator-admin.mjs generate-audit       --input {annotated.json} --locale {locale} [--output {audit.csv}]
+shopify-translator-admin.mjs get-field            --input {fetch.json} --resource-id {gid} --field {key}
+shopify-translator-admin.mjs verify-translations  --env skill-hub.env --locale {locale} [--input {csv}]
+shopify-translator-admin.mjs check-encoding       --file {path}
 shopify-market-lang-check.mjs check               --target {locale} --env skill-hub.env
 shopify-market-lang-check.mjs validate-setup      --target {locale} --env skill-hub.env
 ```
