@@ -14,8 +14,8 @@
         "zh": "用先预览再执行的流程，将 Shopify 店铺所有资源翻译成目标语言"
       },
       "longDescription": {
-        "en": "Translate your entire Shopify store — products, collections, pages, blogs, shop policies, menus, and more — into any target language. The skill checks your current language and market configuration, fetches all translatable content with its digest values, uses AI to translate, generates a CSV audit table for review, and writes approved translations to Shopify only after explicit confirmation. Supports both Store Settings custom app (direct token) and Dev Dashboard app (Shopify CLI) authentication paths.",
-        "zh": "将整个 Shopify 店铺——商品、集合、页面、博客、店铺政策、导航菜单等——翻译成任意目标语言。该技能会检查当前语言和市场配置，获取所有可翻译内容及其 digest 值，使用 AI 进行翻译，生成 CSV 审计表供审核，并在明确确认后才将翻译写入 Shopify。支持 Store Settings 自定义应用（直接 token）和 Dev Dashboard 应用（Shopify CLI）两种认证方式。"
+        "en": "Translate your entire Shopify store — products, collections, pages, blogs, shop policies, menus, and more — into any target language. The skill checks your current language and market configuration, fetches all translatable content with its digest values, uses AI to translate every field in full without truncation, generates a CSV audit table for review, and writes approved translations to Shopify only after explicit confirmation. After translation, it verifies the stored content has no encoding corruption and guides you through market configuration — enabling the new locale in the right markets, creating new markets with subfolder URLs, and setting the correct default language for each region.",
+        "zh": "将整个 Shopify 店铺——商品、集合、页面、博客、店铺政策、导航菜单等——翻译成任意目标语言。该技能会检查当前语言和市场配置，获取所有可翻译内容及其 digest 值，使用 AI 进行完整翻译（绝不缩略），生成 CSV 审计表供审核，并在明确确认后才将翻译写入 Shopify。翻译完成后，技能会验证存储内容无编码损坏，并引导您完成市场配置——在正确的市场中启用新语言、创建带子文件夹 URL 的新市场、为每个地区设置正确的默认语言。"
       },
       "introduction": {
         "en": "Go from zero to a fully translated Shopify store in one workflow: language setup, market configuration, AI translation, CSV audit, and approved writes.",
@@ -75,17 +75,17 @@
           "icon": "RefreshCw"
         },
         {
-          "id": "dual-auth-paths",
+          "id": "auto-configure-markets",
           "title": {
-            "en": "Two authentication paths",
-            "zh": "两种认证方式"
+            "en": "Auto-configure markets",
+            "zh": "自动配置市场"
           },
           "description": {
-            "en": "Works with both Store Settings custom app (static token, no CLI needed) and Dev Dashboard app (Shopify CLI OAuth). Beginner-friendly onboarding for both paths.",
-            "zh": "同时支持 Store Settings 自定义应用（静态 token，无需 CLI）和 Dev Dashboard 应用（Shopify CLI OAuth）。两种方式均提供新手友好的引导流程。"
+            "en": "After translation, automatically checks every market's locale configuration, detects which markets are missing the new language, and guides you through setup. Can create new markets with country regions, configure subfolder URLs (e.g. /de/, /ja-jp/, /zh-cn/), and set the correct default and alternate locales — all without leaving the workflow.",
+            "zh": "翻译完成后自动检查每个市场的语言配置，检测哪些市场缺少新语言，并引导您完成设置。可以创建带国家区域的新市场、配置子文件夹 URL（如 /de/、/ja-jp/、/zh-cn/）、设置正确的默认和备选语言——全程无需离开工作流。"
           },
-          "badge": { "en": "Flexible setup", "zh": "灵活配置" },
-          "icon": "KeyRound"
+          "badge": { "en": "Smart setup", "zh": "智能配置" },
+          "icon": "Globe"
         },
         {
           "id": "csv-import-export",

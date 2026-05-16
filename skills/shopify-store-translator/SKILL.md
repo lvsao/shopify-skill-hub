@@ -9,6 +9,9 @@ description: "Translate all Shopify store resources into any target language. Us
 
 - **MUST** run `npx --yes skills update shopify-store-translator -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
 - **After running the update command, immediately re-read the skill's references before proceeding.** Do not use cached or stale instructions.
+- **Encoding/decoding safety (CRITICAL):** Every file written or processed must explicitly use UTF-8 encoding (`'utf8'` in Node.js, `-Encoding utf8` in PowerShell commands). Never rely on system default encoding. When writing CSV files for Shopify import, use UTF-8 with BOM (`\uFEFF` prefix) for Windows Excel compatibility. Test that Chinese, Japanese, Korean, Arabic, and emoji characters survive round-trip encoding — re-read the file after writing to verify no garbled characters (`\uFFFD`, `�`, or mojibake). On Windows, always use `--query-file` with `--output-file` in Shopify CLI, never inline `--query` (PowerShell corrupts quotes and non-ASCII characters). After every Shopify write, verify the stored content has no encoding corruption by re-fetching the translation.
+- **NO TRUNCATION (CRITICAL):** Every translation must be COMPLETE. Never summarize, abbreviate, truncate, or shorten the original content. The translated text must contain every sentence, every paragraph, every word of the source. SEO fields (`meta_title`, `meta_description`) must also be complete translations, not shortened summaries — if the translation exceeds the character limit, note it in the preview and discuss with the user rather than silently truncating. Product descriptions, article body_html, blog content, policy pages — every field must be translated in full without exception.
+- **Post-write verification:** After `translationsRegister` completes, immediately re-fetch `translatableResource(resourceId, translations(locale:"{locale}"))` for each written resource. Compare the stored translation `value` length with the original `value` length. If the translation is significantly shorter (< 60% of original length), flag it for review — this indicates truncation happened. Also verify no garbled/mojibake characters appear in the stored value.
 - Never write translations to Shopify without explicit user approval. Always show a preview or CSV summary first.
 - Never translate `handle` fields under any circumstance. Handles are Shopify URL slugs (e.g. `my-product`, `automated-collection`). Translating them breaks URLs, causes 404 errors, and damages SEO. This rule applies to all resource types: PRODUCT, COLLECTION, ARTICLE, BLOG, PAGE, and any other resource with a handle field. Leave the Translated content column empty for every handle row.
 - Preserve all HTML tags when translating `body_html` fields. Translate only the text content between tags.
@@ -18,128 +21,36 @@ description: "Translate all Shopify store resources into any target language. Us
 - The audit CSV (`translation-audit.csv`) is the only user-facing artifact. Write it to the **current working directory** so the user can find and open it. Never write the audit CSV to the OS temp directory or system drive.
 - Use `{TEMP_DIR}` (OS temp directory) only for intermediate files: fetch JSON output, CLI query files, CLI output files. Delete all files under `{TEMP_DIR}` immediately after the write step completes or fails.
 - After the task finishes, verify the working directory contains only: `skill-hub.env`, `translation-audit.csv`, and the skill source files. Remove any generated JSON, CSV fragments, or helper scripts.
-- The only artifacts that remain in the working directory after a task completes are: `skill-hub.env` (config) and `translation-audit.csv` (audit output). Everything else is temporary and must be deleted.
+- The only artifacts that remain in the working directory after a task are: `skill-hub.env` (config) and `translation-audit.csv` (audit output). Everything else is temporary and must be deleted.
 
 Read `references/translation-api.md` before executing any translation workflow.
+Read `references/market-lang-setup.md` for market and language configuration workflow.
 
 ## Beginner Onboarding First
 
-Before asking any setup question, inspect the local environment:
+**Read `references/onboarding-guide.md` before executing any onboarding steps.** This guide is the single source of truth for all Selofy skills. Do not duplicate its instructions here.
 
-1. Identify the current working directory.
-2. Look for `skill-hub.env` in that directory.
-3. If it exists, read variable names and check whether required values are present. Do not print secrets.
-4. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app` and token is present → run connection check.
-5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app` and the store domain plus Client ID plus App Automation Token are present → run connection check. If it returns `CLI_AUTH_REQUIRED`, run the Path B setup silently.
-6. If connection check succeeds → proceed directly to the requested task.
-
-Ask the setup question only when `skill-hub.env` is missing, incomplete, or access method is unknown:
-
-```
-Where did you create your Shopify app?
-
-A - Shopify store Settings custom app (Legacy Custom App)
-B - Dev Dashboard app
-```
-
-Immediately add `skill-hub.env` to `.gitignore` if the project has one.
-
-### Path A: Store Settings Custom App
-
-Create env file:
-```
-node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-```
-
-Ask the user to fill only. Show these exact options — never ask for a `.myshopify.com` domain:
-
-**Your store address**
-- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
-- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
-
-**Your Admin API token** — from Shopify store Settings → Apps → Develop apps
-
-Required scopes:
-```
-read_locales, write_locales, read_markets, write_markets, read_translations, write_translations, read_products, read_content
-```
-
-Connection check:
-```
-node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs connection-check --env skill-hub.env
-```
-
-### Path B: Dev Dashboard App
-
-Create env file:
-```
-node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
-```
-
-Ask user to fill only three things. Present these exact options verbatim — never ask for a `.myshopify.com` domain:
-
-**1. Your store address**
-- Option 1 (recommended): Copy your Shopify admin URL from your browser — it looks like `https://admin.shopify.com/store/your-store-name`
-- Option 2: Your website address (must not be password-protected) — for example `www.your-store.com`
-
-**2. Your app Client ID** — from Dev Dashboard app settings.
-
-**3. Your App Automation Token** — from Dev Dashboard → App → Settings → App Automation Token (must start with `atkn_`).
-
-Then the agent runs this setup for you automatically (you don't need to type commands):
-
-**Step 1 — Check your tools**
-`node -v`, `npm -v`, `shopify version`. If CLI is missing, the agent installs it.
-
-**Step 2 — Create app config**
-The agent creates a temp folder and writes a TOML config file with your Client ID, the unified app name "Selofy Skill Hub", and the required scopes.
-
-**Step 3 — Validate and deploy**
-The agent validates the config and deploys the scopes to your Dev Dashboard app using the App Automation Token.
-
-**Step 4 — Authorize on your store**
-A Shopify page opens in your browser. Review the permissions and click "Authorize."
-
-**Step 5 — Verify**
-The agent runs a quick check. If authorization didn't stick, you'll be asked to try Step 4 again.
-
-**Step 6 — Clean up**
-Temporary files are deleted.
-
-**Agent technical runbook** (execute silently, do not show user):
-1. **Resolve domain**: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`; already `.myshopify.com` → use directly; custom domain → use `curl -s https://<domain> | findstr "Shopify.shop"` (Windows) or `curl -s https://<domain> | grep "Shopify.shop"` (Linux/Mac) to extract domain from HTML; if all fail, ask user for admin URL. Do NOT retry more than 2 times.
-2. **Precheck CLI tools**, install `@shopify/cli@latest` if needed.
-3. **Create temp dir**, create TOML manually (do NOT use `shopify app config link`): write `client_id`, `name = "Selofy Skill Hub"`, and merged scopes.
-4. **Set automation token**: `$env:SHOPIFY_APP_AUTOMATION_TOKEN = "<token>"` (PowerShell) or `export SHOPIFY_APP_AUTOMATION_TOKEN="<token>"` (bash).
-5. **Validate**: `shopify app config validate --path <temp-dir> --no-color`
-6. **Deploy**: `shopify app deploy --client-id <client-id> --path <temp-dir> --allow-updates --no-color`
-7. **Tell user browser auth is coming**, then `shopify store auth --store <domain>.myshopify.com --scopes "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_products,read_content" --json --no-color`.
-8. **Verify** via connection check. Rerun auth if `CLI_AUTH_REQUIRED`.
-9. **Delete temp dir**.
+Follow this condensed flow:
 
 ## Translation Workflow
 
 > **Path A** uses `node ... shopify-translator-admin.mjs` commands (direct HTTP with Admin token).  
 > **Path B** uses `shopify store execute --query-file` commands (Shopify CLI OAuth). All Path B GraphQL must be written to a file first — never use inline `--query` on Windows.
 
-### Step 1: Language Check
+### Step 1: Full Language & Market Configuration Check
 
-**Path A:**
+Use the bundled market-lang check script:
+
 ```
-node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs check-locales --env skill-hub.env --target {locale}
+node skills/shopify-store-translator/scripts/shopify-market-lang-check.mjs check --target {locale} --env skill-hub.env
 ```
 
-**Path B:** Write query to `{TEMP_DIR}/check-locales.graphql`:
-```graphql
-query { shopLocales { locale primary published } }
-```
-Then run:
-```
-shopify store execute --store {store}.myshopify.com --query-file {TEMP_DIR}/check-locales.graphql --output-file {TEMP_DIR}/locales-out.json --no-color
-```
-Read `{TEMP_DIR}/locales-out.json` to check if target locale exists and is published.
+This checks:
+1. Whether the locale is enabled and published
+2. Whether the locale is present in any market's web presence (default or alternate)
+3. Which markets are missing the locale
 
-If locale needs to be added or published, confirm with user, then:
+If the locale needs to be added/published:
 
 **Path A:**
 ```
@@ -161,7 +72,7 @@ mutation { shopLocaleUpdate(locale: "{locale}", shopLocale: { published: true })
 shopify store execute --store {store}.myshopify.com --allow-mutations --query-file {TEMP_DIR}/publish-locale.graphql --output-file {TEMP_DIR}/publish-out.json --no-color
 ```
 
-### Step 2: Market Check
+### Step 2: Full Market Configuration Check
 
 **Path A:**
 ```
@@ -176,20 +87,36 @@ query { markets(first: 20) { nodes { id name enabled primary webPresence { id ro
 shopify store execute --store {store}.myshopify.com --query-file {TEMP_DIR}/check-markets.graphql --output-file {TEMP_DIR}/markets-out.json --no-color
 ```
 
-Confirm with user which markets should serve the new language, then:
+Read `references/market-lang-setup.md` for complete market/locale configuration options including:
+- Adding locale to an existing market's `alternateLocales`
+- Creating a new market with country regions and web presence (subfolder URLs)
+- Setting locale as default for an existing market
 
-**Path A:**
+After translation completes, present a human-readable summary:
 ```
-node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs add-locale-to-market --env skill-hub.env --market-web-presence-id {id} --locale {locale}
+Translation completed for {locale}.
+
+Language Status:
+  ✅ {locale} is enabled and published
+
+Market Configuration:
+  ✅ Market A: {locale} is DEFAULT locale
+  ✅ Market B: {locale} is ALTERNATE locale
+  🟢 Market C: {locale} NOT configured
+
+For detailed tutorial: https://www.selofy.com/tutorials/shopify/shopify-international-market-translation
 ```
 
-**Path B:** Read current `alternateLocales` from markets-out.json, then write to `{TEMP_DIR}/add-locale.graphql` (include ALL existing locales + new one):
-```graphql
-mutation { marketWebPresenceUpdate(webPresenceId: "{webPresenceId}", webPresence: { alternateLocales: ["{existing1}", "{existing2}", "{locale}"] }) { market { webPresence { alternateLocales { locale } } } userErrors { message } } }
+Then ask:
 ```
+Would you like me to help configure markets for {locale}?
+A - Guide me through manual setup
+B - Let the agent update market configurations via API
+C - I'll set it up myself later
+D - Show me the tutorial at https://www.selofy.com/tutorials/shopify/shopify-international-market-translation
 ```
-shopify store execute --store {store}.myshopify.com --allow-mutations --query-file {TEMP_DIR}/add-locale.graphql --output-file {TEMP_DIR}/add-locale-out.json --no-color
-```
+
+If user chooses B, use `references/market-lang-setup.md` for the exact API mutations to execute.
 
 ### Step 3: Fetch Translatable Content
 
@@ -219,21 +146,29 @@ Paginate by updating the `$cursor` variable until `pageInfo.hasNextPage` is fals
 Supported `--resource-type` values (all 30 Shopify types):
 `PRODUCT`, `PRODUCT_OPTION`, `PRODUCT_OPTION_VALUE`, `COLLECTION`, `PAGE`, `ARTICLE`, `BLOG`, `SHOP`, `SHOP_POLICY`, `LINK`, `FILTER`, `METAFIELD`, `METAOBJECT`, `MEDIA_IMAGE`, `ARTICLE_IMAGE`, `COLLECTION_IMAGE`, `EMAIL_TEMPLATE`, `DELIVERY_METHOD_DEFINITION`, `MENU`, `PAYMENT_GATEWAY`, `SELLING_PLAN`, `SELLING_PLAN_GROUP`, `PACKING_SLIP_TEMPLATE`, `ONLINE_STORE_THEME`, `ONLINE_STORE_THEME_APP_EMBED`, `ONLINE_STORE_THEME_JSON_TEMPLATE`, `ONLINE_STORE_THEME_LOCALE_CONTENT`, `ONLINE_STORE_THEME_SECTION_GROUP`, `ONLINE_STORE_THEME_SETTINGS_CATEGORY`, `ONLINE_STORE_THEME_SETTINGS_DATA_SECTIONS`
 
-### Step 4: AI Translation
+### Step 4: AI Translation — NO TRUNCATION ENFORCED
 
 Read the fetch output. For each field with status `NEW` or `OUTDATED`:
-- Translate `value` from the store's primary language to the target language
-- For `body_html` fields: preserve all HTML tags, translate only text content
-- Do not translate: `handle` fields, brand names, product model numbers, URLs
-- Keep SEO fields (`meta_title`, `meta_description`) within character limits: title ≤ 70 chars, description ≤ 160 chars
+
+**CRITICAL: NO TRUNCATION RULES**
+
+1. **Every word must be translated.** Do not summarize, abbreviate, or shorten the source content. The translation must contain every sentence, paragraph, and word.
+2. **Compare lengths:** After translating, compare the translated text character count to the original. If translation length < 80% of original length (for non-Asian languages) or < 60% (for CJK languages where characters are more compact), the translation is likely truncated — redo it in full.
+3. **SEO fields:** Translate `meta_title` and `meta_description` completely. If the full translation exceeds 70 chars (title) or 160 chars (description), include the full translation in the CSV and note the character limit issue in the preview. Do NOT silently truncate them.
+4. **HTML preservation:** For `body_html` fields: preserve all HTML tags (including all attributes), translate only the text content between tags.
+5. **Non-translatable:** Do not translate: `handle` fields, brand names, product model numbers, URLs, Liquid variables (`{{ ... }}`, `{% ... %}`).
+6. **Encoding safety:** Ensure all non-ASCII characters (Chinese, Japanese, Korean, Arabic, emoji, accents) survive encoding. Write CSV with UTF-8 encoding. Verify by re-reading the CSV and checking for garbled characters.
 
 Generate a CSV audit table at `translation-audit.csv` (in the current working directory) with columns:
-`resource_id, resource_type, resource_name, field_key, original, translation_{locale}, status, digest`
+`resource_id, resource_type, resource_name, field_key, original, original_length, translation_{locale}, translation_length, status, digest`
+
+Add `original_length` and `translation_length` columns so the user can verify no truncation occurred.
 
 Present a summary to the user:
 - X fields to translate (NEW)
 - Y fields to update (OUTDATED)
 - Z fields skipped (CURRENT)
+- Any length-ratio warnings (translation < 80% of original)
 
 ### Step 5: User Review and Approval
 
@@ -258,7 +193,48 @@ shopify store execute --store {store}.myshopify.com --allow-mutations --query-fi
 ```
 Check each output file for `userErrors`. Stop and report on any error.
 
-### Step 7: Cleanup
+### Step 7: Verify Written Translations
+
+After all writes complete, verify the stored translations on Shopify:
+
+**Path A:**
+For each written resource, re-query its translations:
+```
+node C:\Users\qiuru\.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type {TYPE} --locale {locale} --output {TEMP_DIR}/verify-output.json
+```
+Read `{TEMP_DIR}/verify-output.json` and for each translation:
+1. Check the stored `value` has no garbled characters (mojibake). Look for `???` replacement characters, broken multi-byte sequences, or unexpected `\uFFFD` replacement characters.
+2. Compare stored translation length vs original length. If translation length < 60% of original, flag it as truncated and re-translate.
+3. Confirm `userErrors` list is empty.
+
+**Path B:**
+Write to `{TEMP_DIR}/verify-translations.graphql`:
+```graphql
+query($resourceId: ID!) {
+  translatableResource(resourceId: $resourceId) {
+    resourceId
+    translatableContent { key value digest locale }
+    translations(locale: "{locale}") { key value outdated }
+  }
+}
+```
+Execute for each written resource and perform the same checks as Path A.
+
+### Step 8: Market Configuration Reminder
+
+After all verifications pass, present the market configuration summary:
+
+1. Run the market-lang check again to get current state:
+```
+node skills/shopify-store-translator/scripts/shopify-market-lang-check.mjs check --target {locale} --env skill-hub.env
+```
+2. From the output, present the human-readable summary showing:
+   - Whether the locale is enabled and published
+   - Which markets serve this locale
+   - Which markets are missing the locale
+3. Ask if the user wants help configuring markets (follow steps in `references/market-lang-setup.md`)
+
+### Step 9: Cleanup
 
 1. Delete all files under `{TEMP_DIR}` (fetch JSON, CLI query/out files) immediately after write completes or fails.
 2. **Do not delete `translation-audit.csv`** — this is the user-facing artifact.
@@ -306,6 +282,8 @@ shopify-translator-admin.mjs add-locale-to-market --env skill-hub.env --market-w
 shopify-translator-admin.mjs fetch                --env skill-hub.env --resource-type {TYPE} --locale {locale} --output {file}
 shopify-translator-admin.mjs write                --env skill-hub.env --input {csv} --locale {locale}
 shopify-translator-admin.mjs translate-csv        --input {shopify-export.csv} --output {translated.csv} --locale {locale}
+shopify-market-lang-check.mjs check               --target {locale} --env skill-hub.env
+shopify-market-lang-check.mjs validate-setup      --target {locale} --env skill-hub.env
 ```
 
 ## CSV Import/Export Translation Workflow
@@ -450,6 +428,20 @@ Shopify Admin → Settings → Languages → select target language → **Import
 
 Shopify will validate the file and apply all filled `Translated content` values. Rows with empty `Translated content` are ignored.
 
+### Encoding Safety for CSV
+
+- **Always write CSV with UTF-8 encoding**: Use Node.js `writeFileSync(path, content, 'utf8')`. On Windows, prepend UTF-8 BOM (`\uFEFF`) to the file for Excel compatibility: `writeFileSync(path, '\uFEFF' + content, 'utf8')`.
+- **Verify non-ASCII characters**: After writing the CSV, read it back and check that Chinese, Japanese, Arabic, accented, and emoji characters are not garbled. Look for `\uFFFD` (replacement character) or `�` in the re-read content. If found, the encoding was corrupted — rewrite with explicit UTF-8.
+- **Cross-platform**: PowerShell `Out-File` defaults to UTF-16 on some Windows versions. Never rely on PowerShell redirection (`>`) or `Out-File` without explicit `-Encoding utf8`. Use Node.js file writes instead.
+- **BOM for import**: Shopify import requires UTF-8 with BOM for proper character detection. Always prefix CSV files with BOM when they will be imported through Shopify Admin.
+
+### NO TRUNCATION for CSV
+
+- Every row with translatable content must have the **complete** translation in the `Translated content` column.
+- After filling all translations, compare the length of `Default content` vs `Translated content` for each row.
+- If any `Translated content` is significantly shorter than `Default content` (< 80% length for non-CJK, < 60% for CJK), the translation is likely truncated. Re-translate the row in full.
+- The `Translated content` column must contain every word, sentence, and paragraph from `Default content` in the target language. No summaries, no abbreviations.
+
 ### Common import errors
 
 | Error | Cause | Fix |
@@ -458,3 +450,4 @@ Shopify will validate the file and apply all filled `Translated content` values.
 | "Digest mismatch" | Source content changed after export | Re-export and re-translate |
 | "Unknown resource" | Deleted resource ID in CSV | Remove that row |
 | Translated content not showing | Locale not published | Publish locale in Settings → Languages |
+| Garbled characters in storefront | Encoding mismatch or truncated content | Re-export, re-translate, verify encoding |

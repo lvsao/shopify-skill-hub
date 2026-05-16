@@ -69,7 +69,7 @@ npx skills add . --list
 | `wechat-to-shopify-blog` | `content-creation` | 将已拥有或已授权的微信公众号文章转换为 Shopify 博客草稿，包括 Shopify Files 图片托管、品牌语气适配、博客选择和相关商品插入。 |
 | `optimize-shopify-alt-text` | `seo-growth` | 审查 Shopify 商品媒体、集合封面图、文章封面图和文章正文图片，并生成先预览再执行的 alt text 优化计划；可用时使用真实图片理解，不可用时安全回退到上下文字段。 |
 | `shopify-product-serp-optimizer` | `seo-growth` | 扫描 Shopify 商品，规划每批 5 个商品的搜索结果优化任务，生成结构清晰的 HTML 审查报告，并且只应用已批准的商品 SEO 元数据或已审核的媒体 alt 更新。 |
-| `shopify-store-translator` | `operations` | 将 Shopify 店铺所有资源（商品、集合、页面、博客、政策等）翻译成任意目标语言。检查语言和市场配置，生成 CSV 审计表供审核，并在批准后将翻译写入 Shopify。 |
+| `shopify-store-translator` | `operations` | 将 Shopify 店铺所有资源（商品、集合、页面、博客、政策等）翻译成任意目标语言。检查语言和市场配置，完整翻译不缩略，生成 CSV 审计表供审核，验证编码无损坏，并引导完成带子文件夹 URL 的市场配置。 |
 
 ## Shopify API 权限与 Env 配置
 
