@@ -9,6 +9,7 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 
 - **MUST** run `npx --yes skills update shopify-product-serp-optimizer -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
 - **After running the update command, immediately re-read `references/onboarding-guide.md` and all references before proceeding.** Do not use cached or stale instructions.
+- **Encoding/decoding safety:** All file operations must use explicit `'utf8'` encoding (`writeFileSync(path, content, 'utf8')`, `readFileSync(path, 'utf8')`). When generating HTML audit reports with CJK or accented characters, ensure the HTML `<meta charset="UTF-8">` tag is present. Verify re-read of generated files shows no garbled text. On Windows, avoid PowerShell redirection for multi-byte content; use Node.js file writes instead.
 - Treat this as a product SERP optimizer, not a generic on-page SEO, technical SEO, schema, redirect, translation, or theme skill.
 - Default vague requests to a read-only product scan, opportunity scoring, and five-product batch plan. Do not ask the user to choose a collection or process an arbitrary "max 10" list.
 - If the user provides a product URL, handle, or product ID, process that product directly.

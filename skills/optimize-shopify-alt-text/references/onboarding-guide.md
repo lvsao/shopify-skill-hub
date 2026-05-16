@@ -116,7 +116,7 @@ Immediately ensure `.gitignore` contains `skill-hub.env`. Do not ask the user to
 Use the skill's `init-env` script to create the env file:
 
 ```text
-node skills/<skill-name>/scripts/<skill-script>.mjs init-env --method admin_custom_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method admin_custom_app --env skill-hub.env
 ```
 
 Ask the user to fill only two things:
@@ -143,7 +143,7 @@ If the merchant only needs SEO title and meta description (no alt text), `read_p
 After the user fills the env file, run:
 
 ```text
-node skills/<skill-name>/scripts/<skill-script>.mjs connection-check --env skill-hub.env
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs connection-check --env skill-hub.env
 ```
 
 If it succeeds, proceed to the skill's main workflow.
@@ -159,7 +159,7 @@ This path uses **Shopify CLI + App Automation Token** for a fully non-interactiv
 Use the skill's `init-env` script to create the env file:
 
 ```text
-node skills/<skill-name>/scripts/<skill-script>.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method dev_dashboard_app --env skill-hub.env
 ```
 
 Ask the user to fill only three things:
@@ -306,7 +306,7 @@ Set-Content -Path "$env:TEMP\shopify-skill-config\shopify.app.toml" -Value $toml
 
 **Verify TOML has single quotes, not double-double quotes:**
 - ✅ Correct: `client_id = "YOUR_CLIENT_ID"`
--  Wrong: `client_id = ""YOUR_CLIENT_ID""`
+- ❌ Wrong: `client_id = ""YOUR_CLIENT_ID""`
 - If you see `""`, fix before running validate.
 
 **Step 2 — Validate config (non-interactive, uses automation token):**
@@ -350,7 +350,7 @@ This command opens the browser for the user to approve permissions. The agent sh
 
 **Step 5 — Verify connection:**
 ```text
-node skills/<skill-name>/scripts/<skill-script>.mjs connection-check --env skill-hub.env
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs connection-check --env skill-hub.env
 ```
 If it reports `CLI_AUTH_REQUIRED`, rerun `shopify store auth` and ensure the user clicked Authorize in the browser.
 
@@ -406,10 +406,10 @@ Do not collapse all failures into a generic "auth problem" message.
 Skills that implement this onboarding must provide a helper script with at least these commands:
 
 ```text
-node skills/<skill-name>/scripts/<skill-script>.mjs init-env --method admin_custom_app --env skill-hub.env
-node skills/<skill-name>/scripts/<skill-script>.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
-node skills/<skill-name>/scripts/<skill-script>.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node skills/<skill-name>/scripts/<skill-script>.mjs connection-check --env skill-hub.env
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method admin_custom_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs connection-check --env skill-hub.env
 ```
 
 The `connection-check` command must:
