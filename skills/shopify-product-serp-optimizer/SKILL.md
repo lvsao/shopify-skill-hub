@@ -120,8 +120,8 @@ Use this decision tree:
 For vague requests, run:
 
 ```text
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs scan-products --env skill-hub.env
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs scan-products --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
 ```
 
 In conversation, summarize:
@@ -199,18 +199,18 @@ Batch meaning:
 Use the bundled native Node.js helper. It uses only Node.js built-ins.
 
 ```text
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs connection-check --env skill-hub.env
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs product --env skill-hub.env --id gid://shopify/Product/...
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs metafield-audit --env skill-hub.env --handle <product-handle>
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs scan-products --env skill-hub.env
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs report --input - --output shopify-serp-report-YYYYMMDD-HHMM.html
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs apply --env skill-hub.env --input -
-node <user-home>/.agents\skills\shopify-product-serp-optimizer\scripts\shopify-product-serp-admin.mjs apply --env skill-hub.env --input - --execute
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs connection-check --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --id gid://shopify/Product/...
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs metafield-audit --env skill-hub.env --handle <product-handle>
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs scan-products --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs report --input - --output shopify-serp-report-YYYYMMDD-HHMM.html
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs apply --env skill-hub.env --input -
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs apply --env skill-hub.env --input - --execute
 ```
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.
