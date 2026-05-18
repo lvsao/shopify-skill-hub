@@ -48,18 +48,18 @@ When the user names a specific product, collection, article, image, URL, or ID, 
 Use the helper's `target` command for targeted requests:
 
 ```text
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product"
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-handle-or-product-url>
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-handle-or-url>
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-article-url-or-title>
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product"
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-handle-or-product-url>
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-handle-or-url>
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-article-url-or-title>
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
 ```
 
 Add `--download --limit 3` when you need local files for visual inspection:
 
 ```text
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product" --download --limit 3
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product" --download --limit 3
 ```
 
 The command returns matching resources and an `items` array with directly applicable IDs, current alt text, issue status, image URL, and context. If `--download` is used, it also returns temp local image paths that must be opened through the host's native image input before claiming visual evidence.
@@ -153,19 +153,19 @@ Context-only candidates are review-only by default. Do not mark context-only can
 Use the bundled native Node.js helper. It uses only Node.js built-ins.
 
 ```text
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs connection-check --env skill-hub.env
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url>
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url> --download --limit 3
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-title-or-handle-or-url>
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-url-or-title>
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs vision-sample --env skill-hub.env --limit 3
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs apply --env skill-hub.env --input -
-node <user-home>/.agents\skills\optimize-shopify-alt-text\scripts\shopify-alt-text-admin.mjs apply --env skill-hub.env --input - --execute
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url>
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product <product-title-or-handle-or-url> --download --limit 3
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --collection <collection-title-or-handle-or-url>
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --article <article-gid-or-url-or-title>
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --media-id gid://shopify/MediaImage/...
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --url <cdn-image-url>
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs vision-sample --env skill-hub.env --limit 3
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input -
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs apply --env skill-hub.env --input - --execute
 ```
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.

@@ -62,7 +62,7 @@ If the locale needs to be added/published:
 
 **Path A:**
 ```
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs enable-locale --env skill-hub.env --locale {locale}
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs enable-locale --env skill-hub.env --locale {locale}
 ```
 
 **Path B:** Write to `{TEMP_DIR}/enable-locale.graphql`:
@@ -84,7 +84,7 @@ shopify store execute --store {store}.myshopify.com --allow-mutations --query-fi
 
 **Path A:**
 ```
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs check-markets --env skill-hub.env --locale {locale}
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs check-markets --env skill-hub.env --locale {locale}
 ```
 
 **Path B:** Write to `{TEMP_DIR}/check-markets.graphql`:
@@ -132,7 +132,7 @@ If user chooses B, use `references/market-lang-setup.md` for the exact API mutat
 
 **Path A:**
 ```
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type PRODUCT --locale {locale} --output {TEMP_DIR}/fetch-output.json
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type PRODUCT --locale {locale} --output {TEMP_DIR}/fetch-output.json
 ```
 
 **Path B:** Write to `{TEMP_DIR}/fetch.graphql`:
@@ -165,7 +165,7 @@ Supported `--resource-type` values (all 30 Shopify types):
 Read the fetch JSON output file. For every translatable field:
 - If `field.value.length` (in the file, compute with `node -e`) is > 1500 characters, the Read tool truncated the display. Extract the **complete** value:
   ```
-  node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs get-field --input <fetch.json> --resource-id <gid> --field <key>
+  node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs get-field --input <fetch.json> --resource-id <gid> --field <key>
   ```
   Read the full output of this command as your source text.
 
@@ -194,14 +194,14 @@ fs.writeFileSync('translation-audit.json', JSON.stringify(data, null, 2), 'utf8'
 Verify the written file is valid JSON and contains no garbled characters:
 ```
 node -e "const d=JSON.parse(require('fs').readFileSync('translation-audit.json','utf8')); console.log('OK, resources:', d.resources.length)"
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs check-encoding --file translation-audit.json
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs check-encoding --file translation-audit.json
 ```
 
 #### 4d. Generate the audit CSV (for user review)
 
 Run the `generate-audit` command to produce `translation-audit.csv` from the annotated JSON:
 ```
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs generate-audit --input translation-audit.json --locale {locale}
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs generate-audit --input translation-audit.json --locale {locale}
 ```
 
 This command:
@@ -214,7 +214,7 @@ This command:
 
 Run encoding check on the generated CSV:
 ```
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs check-encoding --file translation-audit.csv
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs check-encoding --file translation-audit.csv
 ```
 
 Present the summary to the user:
@@ -237,7 +237,7 @@ Do not proceed until the user explicitly approves. Do NOT write anything to Shop
 
 Only proceed after receiving explicit user approval. Use the `write` command with the audit CSV:
 ```
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs write --env skill-hub.env --input translation-audit.csv --locale {locale}
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs write --env skill-hub.env --input translation-audit.csv --locale {locale}
 ```
 
 **Path B:** For each resource in the CSV, write a mutation file to `{TEMP_DIR}/write-batch-{n}.graphql` and execute:
@@ -253,7 +253,7 @@ After all writes complete, verify the stored translations on Shopify:
 **Path A:**
 For each written resource, re-query its translations:
 ```
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type {TYPE} --locale {locale} --output {TEMP_DIR}/verify-output.json
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type {TYPE} --locale {locale} --output {TEMP_DIR}/verify-output.json
 ```
 Read `{TEMP_DIR}/verify-output.json` and for each translation:
 1. Check the stored `value` has no garbled characters (mojibake). Look for `???` replacement characters, broken multi-byte sequences, or unexpected `\uFFFD` replacement characters.
@@ -469,7 +469,7 @@ When using the API path, fetch `translatableContent.type` and apply:
 ### Using the script for CSV translation
 
 ```
-node <user-home>/.agents\skills\shopify-store-translator\scripts\shopify-translator-admin.mjs translate-csv \
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs translate-csv \
   --input /path/to/shopify-export.csv \
   --output /path/to/translated.csv \
   --locale de

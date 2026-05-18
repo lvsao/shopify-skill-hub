@@ -40,7 +40,7 @@ Before continuing with article work, check:
 Use the bundled native context script when available:
 
 ```text
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-context.mjs --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-context.mjs --env skill-hub.env
 ```
 
 ## Bundled Native Scripts
@@ -57,18 +57,18 @@ Treat script output as merchant context. Do not commit generated JSON or tempora
 Reference commands:
 
 ```text
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-context.mjs --env skill-hub.env --product-page-size 50
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\fetch-wechat-article.mjs --url <mp.weixin.qq.com URL> --download-images --output-dir <temporary-existing-or-disposable-folder>
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs context --env skill-hub.env --product-page-size 50
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json --execute
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --require-images
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute --require-images
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs update-draft --env skill-hub.env --article-id gid://shopify/Article/... --input draft-article.json --execute --require-images
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs verify --env skill-hub.env --article-id gid://shopify/Article/...
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs init-env --method admin_custom_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-context.mjs --env skill-hub.env --product-page-size 50
+node <absolute-path-to-skill>/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>
+node <absolute-path-to-skill>/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL> --download-images --output-dir <temporary-existing-or-disposable-folder>
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs context --env skill-hub.env --product-page-size 50
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json --execute
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --require-images
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute --require-images
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs update-draft --env skill-hub.env --article-id gid://shopify/Article/... --input draft-article.json --execute --require-images
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs verify --env skill-hub.env --article-id gid://shopify/Article/...
 ```
 
 Use `--execute` only after explicit user approval. Delete `image-manifest.json`, `draft-article.json`, downloaded images, and any temporary folders after verification.
@@ -222,7 +222,7 @@ For the selected product:
 Use the bundled `scripts/related-product-block.mjs` helper when useful. It turns one selected product JSON object into consistent HTML with a product link and optional product image.
 
 ```text
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\related-product-block.mjs --product selected-product.json --primary-domain <primary-domain> --heading "Related product"
+node <absolute-path-to-skill>/scripts/related-product-block.mjs --product selected-product.json --primary-domain <primary-domain> --heading "Related product"
 ```
 
 Delete `selected-product.json` after the task finishes.
@@ -234,7 +234,7 @@ Preserve or add external source/reference links only when they are relevant and 
 Use the bundled native script first:
 
 ```text
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>
+node <absolute-path-to-skill>/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>
 ```
 
 It uses only Node.js built-ins and extracts from the WeChat HTML:
@@ -251,7 +251,7 @@ It uses only Node.js built-ins and extracts from the WeChat HTML:
 When image files need local inspection or Shopify upload preparation, use:
 
 ```text
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\fetch-wechat-article.mjs --url <mp.weixin.qq.com URL> --download-images --output-dir <temporary-existing-or-disposable-folder>
+node <absolute-path-to-skill>/scripts/fetch-wechat-article.mjs --url <mp.weixin.qq.com URL> --download-images --output-dir <temporary-existing-or-disposable-folder>
 ```
 
 Delete that output folder after the task. Do not keep WeChat images in the user's project folder after the final Shopify draft is verified.
@@ -317,8 +317,8 @@ The helper previews by default. It writes only when called with `--execute`.
 Use staged upload as the required Shopify Files method so filenames are controlled. Prefer:
 
 ```text
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json --execute
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs upload-images --env skill-hub.env --input image-manifest.json --execute
 ```
 
 `image-manifest.json` should be the `shopifyUploadManifest` array returned by `fetch-wechat-article.mjs`, or an object with `{ "images": [...] }`. Each item must include `path`, `filename`, `mimeType`, and `alt`.
@@ -350,14 +350,14 @@ If any selected image upload fails, stop before article creation. Do not silentl
 Create the article with `articleCreate`. Prefer:
 
 ```text
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --require-images
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute --require-images
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --require-images
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs create-draft --env skill-hub.env --input draft-article.json --execute --require-images
 ```
 
 If a previous run already created a text-only draft, fix it instead of creating another article:
 
 ```text
-node <user-home>/.agents\skills\wechat-to-shopify-blog\scripts\shopify-blog-admin.mjs update-draft --env skill-hub.env --article-id gid://shopify/Article/... --input draft-article.json --execute --require-images
+node <absolute-path-to-skill>/scripts/shopify-blog-admin.mjs update-draft --env skill-hub.env --article-id gid://shopify/Article/... --input draft-article.json --execute --require-images
 ```
 
 Set:
