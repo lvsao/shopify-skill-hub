@@ -1,7 +1,7 @@
 # Selofy Shopify Skill Hub
 
 [![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
-[![Skills](https://img.shields.io/badge/skills-4-2563eb)](./skills)
+[![Skills](https://img.shields.io/badge/skills-5-2563eb)](./skills)
 [![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 [![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
@@ -70,6 +70,7 @@ This local command is for maintainers only. Regular users should install from Gi
 | `optimize-shopify-alt-text` | `seo-growth` | Audit Shopify product media, collection featured images, article featured images, and article inline images, then prepare a preview-first alt text optimization plan with real image understanding when available and safe context-only fallback when it is not. |
 | `shopify-product-serp-optimizer` | `seo-growth` | Scan Shopify products, plan five-product SERP optimization batches, generate polished HTML audit reports, and apply only approved product SEO metadata or reviewed media alt updates. |
 | `shopify-store-translator` | `operations` | Translate all Shopify store resources (products, collections, pages, blogs, policies, and more) into any target language. Checks language and market configuration, auto-translates in full without truncation, generates a CSV audit table for review, verifies encoding, and guides you through market setup with subfolder URLs. |
+| `shopify-gmc-misrepresentation-auditor` | `product-feed` | Crawl any live Shopify store and audit for Google Merchant Center Misrepresentation policy risks — no API token required. Simulates how Google's crawler sees your store. Produces a prioritized HTML report with evidence, a Manual Checklist (MC-01 to MC-07) for items requiring merchant verification, and a staged remediation plan. |
 
 ## Shopify API Access And Env
 
@@ -169,6 +170,15 @@ skills/
       translation-api.md
     scripts/
       shopify-translator-admin.mjs
+  shopify-gmc-misrepresentation-auditor/
+    SKILL.md
+    agents/
+      openai.yaml
+    references/
+      gmc-policy-baseline.md
+    scripts/
+      gmc-store-audit.mjs
+      gmc-product-audit.mjs
 catalog/
   INDEX.json
   content-creation/

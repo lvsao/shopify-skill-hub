@@ -21,7 +21,10 @@
     "support",
     "email",
     "translation",
-    "markets"
+    "markets",
+    "gmc",
+    "compliance",
+    "audit"
   ],
   "integrations": [
     "shopify",
