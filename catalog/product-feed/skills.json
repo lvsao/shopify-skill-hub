@@ -1,32 +1,68 @@
 {
   "skills": [
-  {
-    "name": "shopify-gmc-misrepresentation-auditor",
-    "slug": "shopify-gmc-misrepresentation-auditor",
-    "category": "product-feed",
-    "title": "Shopify GMC Misrepresentation Auditor",
-    "title_zh": "Shopify GMC 虚假陈述审计工具",
-    "description": "Crawl any live Shopify store and audit for Google Merchant Center Misrepresentation policy risks. No API token required — simulates how Google's crawler sees your store. Produces a prioritized HTML report with evidence, a Manual Checklist for items that require merchant verification, and a staged remediation plan.",
-    "description_zh": "无需 API 授权，直接爬取真实上线的 Shopify 店铺，模拟 GMC 爬虫视角，检测 Misrepresentation 政策风险。输出带证据的优先级 HTML 报告、需要商家手动核查的 Checklist，以及分阶段修复计划。",
-    "features": [
-      "Two-phase audit: store-level identity/policy/pricing checks + product-level deep crawl",
-      "Parses all JSON-LD schema blocks including review app blocks",
-      "Manual Checklist (MC-01 to MC-07) for items that cannot be verified by crawling",
-      "Systemic pattern detection across sampled products",
-      "Single-file HTML report with risk score, evidence, and staged remediation plan"
-    ],
-    "features_zh": [
-      "两阶段审计：店铺级身份/政策/定价检查 + 产品级深度爬取",
-      "解析所有 JSON-LD schema 块，包括评论应用生成的块",
-      "手动核查清单（MC-01 至 MC-07），涵盖爬取无法验证的项目",
-      "跨采样产品的系统性问题模式检测",
-      "单文件 HTML 报告，含风险评分、证据和分阶段修复计划"
-    ],
-    "prerequisites": [],
-    "tags": ["google", "feed", "ads"],
-    "integrations": ["shopify", "google"],
-    "scripts": ["gmc-store-audit.mjs", "gmc-product-audit.mjs"],
-    "install": "npx skills add lvsao/shopify-skill-hub --skill shopify-gmc-misrepresentation-auditor"
-  }
+    {
+      "name": "shopify-gmc-misrepresentation-auditor",
+      "displayName": "Shopify GMC Misrepresentation Auditor",
+      "path": "../../skills/shopify-gmc-misrepresentation-auditor",
+      "tags": ["google", "gmc", "audit"],
+      "integrations": ["shopify", "google", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Crawl any live Shopify store and audit for Google Merchant Center Misrepresentation policy risks — no API token required",
+        "zh": "无需 API 授权，直接爬取真实上线的 Shopify 店铺，检测 GMC Misrepresentation 政策风险"
+      },
+      "longDescription": {
+        "en": "Simulates how Google's crawler sees your Shopify store. Runs a two-phase audit: Phase A checks store-level identity, policies, pricing integrity, social proof, urgency widgets, and technical infrastructure. Phase B deep-crawls sampled products with full JSON-LD multi-block analysis, variant state, and claims detection. Produces a single HTML report with risk score, prioritized findings, evidence, a Manual Checklist (MC-01 to MC-07) for items requiring merchant verification, and a staged remediation plan.",
+        "zh": "模拟 Google 爬虫视角审查你的 Shopify 店铺。分两阶段审计：A 阶段检查店铺级身份、政策、定价完整性、社会证明、紧迫感组件和技术基础设施；B 阶段对采样商品进行深度爬取，包含完整 JSON-LD 多块分析、变体状态和声明检测。输出单文件 HTML 报告，含风险评分、优先级发现、证据、需商家手动核查的 Checklist（MC-01 至 MC-07）以及分阶段修复计划。"
+      },
+      "introduction": {
+        "en": "Find out exactly why your GMC account was suspended — or prevent suspension before it happens — with a full automated store crawl and prioritized HTML audit report.",
+        "zh": "通过全自动店铺爬取和优先级 HTML 审计报告，精准定位 GMC 账号被暂停的原因，或在暂停发生前提前预防。"
+      },
+      "features": [
+        {
+          "id": "two-phase-audit",
+          "title": { "en": "Two-phase audit", "zh": "两阶段审计" },
+          "description": {
+            "en": "Phase A covers store-level identity, policies, pricing, and technical checks. Phase B deep-crawls sampled products with JSON-LD multi-block analysis.",
+            "zh": "A 阶段覆盖店铺级身份、政策、定价和技术检查；B 阶段对采样商品进行 JSON-LD 多块深度分析。"
+          },
+          "badge": { "en": "Store + Products", "zh": "店铺 + 商品" },
+          "icon": "Search"
+        },
+        {
+          "id": "no-api-token",
+          "title": { "en": "No API token required", "zh": "无需 API 授权" },
+          "description": {
+            "en": "Crawls only public pages — no Shopify Admin API token needed. Works on any live Shopify store.",
+            "zh": "仅爬取公开页面，无需 Shopify Admin API 授权，适用于任何已上线的 Shopify 店铺。"
+          },
+          "badge": { "en": "Zero setup", "zh": "零配置" },
+          "icon": "Unlock"
+        },
+        {
+          "id": "html-report",
+          "title": { "en": "HTML audit report", "zh": "HTML 审计报告" },
+          "description": {
+            "en": "Single-file HTML report with risk score, prioritized findings, evidence, Manual Checklist, official GMC reference links, and staged remediation plan.",
+            "zh": "单文件 HTML 报告，含风险评分、优先级发现、证据、手动核查清单、官方 GMC 参考链接和分阶段修复计划。"
+          },
+          "badge": { "en": "Actionable", "zh": "可执行" },
+          "icon": "FileText"
+        },
+        {
+          "id": "policy-discovery",
+          "title": { "en": "Smart policy discovery", "zh": "智能政策页面发现" },
+          "description": {
+            "en": "Scans all page links to find policy pages at any URL path, including custom /pages/ paths. Detects empty policy content and suggests migration to canonical /policies/ paths.",
+            "zh": "扫描所有页面链接，发现任意路径下的政策页面（包括自定义 /pages/ 路径），检测空内容并建议迁移到规范 /policies/ 路径。"
+          },
+          "badge": { "en": "Smart scan", "zh": "智能扫描" },
+          "icon": "Shield"
+        }
+      ],
+      "prerequisites": []
+    }
   ]
 }
