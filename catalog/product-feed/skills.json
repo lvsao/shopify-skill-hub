@@ -9,57 +9,57 @@
       "public": true,
       "status": "PUBLISHED",
       "shortDescription": {
-        "en": "Crawl any live Shopify store and audit for Google Merchant Center Misrepresentation policy risks — no API token required",
-        "zh": "无需 API 授权，直接爬取真实上线的 Shopify 店铺，检测 GMC Misrepresentation 政策风险"
+        "en": "Audit your Shopify store for Google Merchant Center Misrepresentation policy violations before your GMC account gets suspended — no API token required",
+        "zh": "在 Google Merchant Center 账号被暂停前，提前审计 Shopify 店铺的 GMC 虚假陈述政策风险——无需 API 授权"
       },
       "longDescription": {
-        "en": "Simulates how Google's crawler sees your Shopify store. Runs a two-phase audit: Phase A checks store-level identity, policies, pricing integrity, social proof, urgency widgets, and technical infrastructure. Phase B deep-crawls sampled products with full JSON-LD multi-block analysis, variant state, and claims detection. Produces a single HTML report with risk score, prioritized findings, evidence, a Manual Checklist (MC-01 to MC-07) for items requiring merchant verification, and a staged remediation plan.",
-        "zh": "模拟 Google 爬虫视角审查你的 Shopify 店铺。分两阶段审计：A 阶段检查店铺级身份、政策、定价完整性、社会证明、紧迫感组件和技术基础设施；B 阶段对采样商品进行深度爬取，包含完整 JSON-LD 多块分析、变体状态和声明检测。输出单文件 HTML 报告，含风险评分、优先级发现、证据、需商家手动核查的 Checklist（MC-01 至 MC-07）以及分阶段修复计划。"
+        "en": "Google Merchant Center suspends thousands of Shopify stores every month for Misrepresentation policy violations — missing return policies, empty shipping pages, fake urgency widgets, price mismatches between product pages and the GMC feed, and unverifiable trust claims. Most merchants only discover the problem after their Shopping ads stop running and their free listings disappear.\n\nThis skill simulates exactly how Google's crawler sees your Shopify store and surfaces every Misrepresentation risk before Google does. It runs a two-phase audit: Phase A checks store-level identity (business name, contact info, About page), policy completeness (returns, shipping, privacy, terms), pricing integrity, social proof authenticity, urgency widget behavior, and technical signals like Liquid errors and robots.txt. Phase B deep-crawls a stratified sample of your products, parsing all JSON-LD schema blocks including review app injections, checking variant availability consistency, and detecting unsubstantiated medical, eco, or certification claims.\n\nThe output is a single HTML report with a composite risk score, Critical and High findings prioritized at the top, a Manual Checklist (MC-01 to MC-07) for items that require merchant verification such as GMC account address matching and feed vs landing page consistency, official Google Merchant Center policy reference links, and a staged four-phase remediation plan. The report tells you exactly what to fix before submitting a GMC appeal — so you stop wasting review attempts on a store that will be rejected again.",
+        "zh": "Google Merchant Center 每月因虚假陈述政策暂停数千家 Shopify 店铺——缺失退货政策、空白运费页面、虚假紧迫感组件、商品页面与 GMC Feed 价格不一致、无法核实的信任声明。大多数商家只有在购物广告停投、免费商品列表消失后才发现问题。\n\n这个技能精确模拟 Google 爬虫视角审查你的 Shopify 店铺，在 Google 发现之前找出所有虚假陈述风险。分两阶段审计：A 阶段检查店铺级身份（商家名称、联系方式、About 页面）、政策完整性（退货、运费、隐私、条款）、定价完整性、社会证明真实性、紧迫感组件行为，以及 Liquid 错误和 robots.txt 等技术信号；B 阶段对分层采样商品进行深度爬取，解析所有 JSON-LD schema 块（包括评论 App 注入），检查变体可用性一致性，检测未经证实的医疗、环保或认证声明。\n\n输出单文件 HTML 报告，含综合风险评分、Critical 和 High 发现优先展示、需商家手动核查的 Checklist（MC-01 至 MC-07，涵盖 GMC 账号地址匹配和 Feed 与落地页一致性）、官方 Google Merchant Center 政策参考链接，以及四阶段修复计划。报告告诉你在提交 GMC 申诉前需要修复什么——不再浪费审核机会。"
       },
       "introduction": {
-        "en": "Find out exactly why your GMC account was suspended — or prevent suspension before it happens — with a full automated store crawl and prioritized HTML audit report.",
-        "zh": "通过全自动店铺爬取和优先级 HTML 审计报告，精准定位 GMC 账号被暂停的原因，或在暂停发生前提前预防。"
+        "en": "Your Google Merchant Center account is at risk if your Shopify store has missing policies, price mismatches, fake urgency, or unverifiable claims. Audit every risk in minutes — before Google suspends your account or rejects your appeal.",
+        "zh": "如果你的 Shopify 店铺存在政策缺失、价格不一致、虚假紧迫感或无法核实的声明，你的 Google Merchant Center 账号随时面临暂停风险。几分钟内审计所有风险——在 Google 暂停账号或拒绝申诉之前。"
       },
       "features": [
         {
-          "id": "two-phase-audit",
-          "title": { "en": "Two-phase audit", "zh": "两阶段审计" },
+          "id": "pre-suspension-audit",
+          "title": { "en": "Catch GMC violations before suspension", "zh": "在账号暂停前发现 GMC 违规" },
           "description": {
-            "en": "Phase A covers store-level identity, policies, pricing, and technical checks. Phase B deep-crawls sampled products with JSON-LD multi-block analysis.",
-            "zh": "A 阶段覆盖店铺级身份、政策、定价和技术检查；B 阶段对采样商品进行 JSON-LD 多块深度分析。"
+            "en": "Identifies the exact Misrepresentation policy violations Google flags — missing return policies, empty shipping pages, fake countdown timers, and price inconsistencies — before your Shopping ads go dark.",
+            "zh": "在购物广告停投前，精准识别 Google 标记的虚假陈述政策违规：缺失退货政策、空白运费页面、虚假倒计时和价格不一致。"
           },
-          "badge": { "en": "Store + Products", "zh": "店铺 + 商品" },
+          "badge": { "en": "Prevent suspension", "zh": "预防暂停" },
+          "icon": "ShieldAlert"
+        },
+        {
+          "id": "two-phase-audit",
+          "title": { "en": "Full store + product audit", "zh": "店铺 + 商品全面审计" },
+          "description": {
+            "en": "Phase A audits store identity, policies, pricing, and technical signals. Phase B deep-crawls sampled products with JSON-LD multi-block analysis to catch schema mismatches and unverifiable claims.",
+            "zh": "A 阶段审计店铺身份、政策、定价和技术信号；B 阶段对采样商品进行 JSON-LD 多块深度分析，发现 schema 不一致和无法核实的声明。"
+          },
+          "badge": { "en": "Two-phase", "zh": "两阶段" },
           "icon": "Search"
         },
         {
-          "id": "no-api-token",
-          "title": { "en": "No API token required", "zh": "无需 API 授权" },
+          "id": "appeal-ready-report",
+          "title": { "en": "Appeal-ready HTML report", "zh": "可用于申诉的 HTML 报告" },
           "description": {
-            "en": "Crawls only public pages — no Shopify Admin API token needed. Works on any live Shopify store.",
-            "zh": "仅爬取公开页面，无需 Shopify Admin API 授权，适用于任何已上线的 Shopify 店铺。"
+            "en": "Prioritized findings with evidence, a Manual Checklist for GMC account vs website consistency, official Google Merchant Center policy links, and a staged remediation plan — so you know exactly what to fix before submitting a GMC appeal.",
+            "zh": "带证据的优先级发现、GMC 账号与网站一致性手动核查清单、官方 Google Merchant Center 政策链接和分阶段修复计划——让你在提交 GMC 申诉前清楚知道需要修复什么。"
           },
-          "badge": { "en": "Zero setup", "zh": "零配置" },
-          "icon": "Unlock"
-        },
-        {
-          "id": "html-report",
-          "title": { "en": "HTML audit report", "zh": "HTML 审计报告" },
-          "description": {
-            "en": "Single-file HTML report with risk score, prioritized findings, evidence, Manual Checklist, official GMC reference links, and staged remediation plan.",
-            "zh": "单文件 HTML 报告，含风险评分、优先级发现、证据、手动核查清单、官方 GMC 参考链接和分阶段修复计划。"
-          },
-          "badge": { "en": "Actionable", "zh": "可执行" },
+          "badge": { "en": "Fix before appeal", "zh": "申诉前修复" },
           "icon": "FileText"
         },
         {
-          "id": "policy-discovery",
-          "title": { "en": "Smart policy discovery", "zh": "智能政策页面发现" },
+          "id": "no-api-token",
+          "title": { "en": "Works on any Shopify store", "zh": "适用于任何 Shopify 店铺" },
           "description": {
-            "en": "Scans all page links to find policy pages at any URL path, including custom /pages/ paths. Detects empty policy content and suggests migration to canonical /policies/ paths.",
-            "zh": "扫描所有页面链接，发现任意路径下的政策页面（包括自定义 /pages/ 路径），检测空内容并建议迁移到规范 /policies/ 路径。"
+            "en": "Crawls only public pages — no Shopify Admin API token, no app install, no store access needed. Audit your own store or any competitor's live store in minutes.",
+            "zh": "仅爬取公开页面——无需 Shopify Admin API 授权、无需安装 App、无需店铺访问权限。几分钟内审计自己的店铺或任何竞争对手的在线店铺。"
           },
-          "badge": { "en": "Smart scan", "zh": "智能扫描" },
-          "icon": "Shield"
+          "badge": { "en": "Zero setup", "zh": "零配置" },
+          "icon": "Unlock"
         }
       ],
       "prerequisites": []
