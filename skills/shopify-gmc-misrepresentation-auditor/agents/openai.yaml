@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify GMC Misrepresentation Auditor"
+  short_description: "Crawl any live Shopify store and audit for Google Merchant Center Misrepresentation policy risks — no API token required"
+  default_prompt: "First run 'npx --yes skills update shopify-gmc-misrepresentation-auditor -g -y' and re-read SKILL.md if it reports changes. Then use $shopify-gmc-misrepresentation-auditor to run a full two-phase GMC Misrepresentation audit: Phase A store-level checks (identity, policies, pricing, social proof, urgency, technical), Phase B product-level deep crawl with JSON-LD multi-block analysis, risk scoring, and generate a single HTML report with findings, evidence, Manual Checklist (MC-01 through MC-07), and staged remediation plan."

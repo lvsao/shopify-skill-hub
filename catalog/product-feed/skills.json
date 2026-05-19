@@ -1,3 +1,32 @@
 {
-  "skills": []
+  "skills": [
+  {
+    "name": "shopify-gmc-misrepresentation-auditor",
+    "slug": "shopify-gmc-misrepresentation-auditor",
+    "category": "product-feed",
+    "title": "Shopify GMC Misrepresentation Auditor",
+    "title_zh": "Shopify GMC 虚假陈述审计工具",
+    "description": "Crawl any live Shopify store and audit for Google Merchant Center Misrepresentation policy risks. No API token required — simulates how Google's crawler sees your store. Produces a prioritized HTML report with evidence, a Manual Checklist for items that require merchant verification, and a staged remediation plan.",
+    "description_zh": "无需 API 授权，直接爬取真实上线的 Shopify 店铺，模拟 GMC 爬虫视角，检测 Misrepresentation 政策风险。输出带证据的优先级 HTML 报告、需要商家手动核查的 Checklist，以及分阶段修复计划。",
+    "features": [
+      "Two-phase audit: store-level identity/policy/pricing checks + product-level deep crawl",
+      "Parses all JSON-LD schema blocks including review app blocks",
+      "Manual Checklist (MC-01 to MC-07) for items that cannot be verified by crawling",
+      "Systemic pattern detection across sampled products",
+      "Single-file HTML report with risk score, evidence, and staged remediation plan"
+    ],
+    "features_zh": [
+      "两阶段审计：店铺级身份/政策/定价检查 + 产品级深度爬取",
+      "解析所有 JSON-LD schema 块，包括评论应用生成的块",
+      "手动核查清单（MC-01 至 MC-07），涵盖爬取无法验证的项目",
+      "跨采样产品的系统性问题模式检测",
+      "单文件 HTML 报告，含风险评分、证据和分阶段修复计划"
+    ],
+    "prerequisites": [],
+    "tags": ["google", "feed", "ads"],
+    "integrations": ["shopify", "google"],
+    "scripts": ["gmc-store-audit.mjs", "gmc-product-audit.mjs"],
+    "install": "npx skills add lvsao/shopify-skill-hub --skill shopify-gmc-misrepresentation-auditor"
+  }
+  ]
 }
