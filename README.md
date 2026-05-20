@@ -1,7 +1,7 @@
 # Selofy Shopify Skill Hub
 
 [![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
-[![Skills](https://img.shields.io/badge/skills-5-2563eb)](./skills)
+[![Skills](https://img.shields.io/badge/skills-6-2563eb)](./skills)
 [![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 [![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
@@ -48,6 +48,12 @@ Or install only the Shopify product SERP optimization skill:
 npx skills add lvsao/shopify-skill-hub --skill shopify-product-serp-optimizer
 ```
 
+Or install only the Shopify Theme & Apps Detector skill:
+
+```bash
+npx skills add lvsao/shopify-skill-hub --skill shopify-theme-apps-detector
+```
+
 List available skills before installing:
 
 ```bash
@@ -71,6 +77,7 @@ This local command is for maintainers only. Regular users should install from Gi
 | `shopify-product-serp-optimizer` | `seo-growth` | Scan Shopify products, plan five-product SERP optimization batches, generate polished HTML audit reports, and apply only approved product SEO metadata or reviewed media alt updates. |
 | `shopify-store-translator` | `operations` | Translate all Shopify store resources (products, collections, pages, blogs, policies, and more) into any target language. Checks language and market configuration, auto-translates in full without truncation, generates a CSV audit table for review, verifies encoding, and guides you through market setup with subfolder URLs. |
 | `shopify-gmc-misrepresentation-auditor` | `product-feed` | Crawl any live Shopify store and audit for Google Merchant Center Misrepresentation policy risks — no API token required. Simulates how Google's crawler sees your store. Produces a prioritized HTML report with evidence, a Manual Checklist (MC-01 to MC-07) for items requiring merchant verification, and a staged remediation plan. |
+| `shopify-theme-apps-detector` | `operations` | Scan any public Shopify store and reveal its theme and every detectable app — no API token, no login required. Produces a self-contained visual HTML report with app logos, App Store links, confidence badges, and traceable evidence chains. Perfect for competitor research, agency prospecting, and ecommerce market intelligence. |
 
 ## Shopify API Access And Env
 
@@ -179,6 +186,16 @@ skills/
     scripts/
       gmc-store-audit.mjs
       gmc-product-audit.mjs
+  shopify-theme-apps-detector/
+    SKILL.md
+    agents/
+      openai.yaml
+    assets/
+      report-template.html
+    references/
+      detection-principles.md
+    scripts/
+      store-scanner.mjs
 catalog/
   INDEX.json
   content-creation/

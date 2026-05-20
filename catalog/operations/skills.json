@@ -1,6 +1,96 @@
 {
   "skills": [
     {
+      "name": "shopify-theme-apps-detector",
+      "displayName": "Shopify Theme & Apps Detector",
+      "displayName_zh": "Shopify 主题与插件检测器",
+      "path": "../../skills/shopify-theme-apps-detector",
+      "tags": ["shopify", "analytics", "competitor-research"],
+      "integrations": ["chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Reveal any Shopify store's theme and installed apps — no API token required, instant visual HTML report",
+        "zh": "无需 API Token，一键检测任意 Shopify 店铺的主题和插件，生成可视化 HTML 报告"
+      },
+      "longDescription": {
+        "en": "Enter any Shopify store URL and get a complete tech-stack audit in minutes. The skill crawls public pages, extracts raw evidence (script URLs, window globals, CSS namespaces, response headers), uses AI reasoning to identify every theme and app, cross-verifies each finding with live web search, and produces a polished HTML report with app logos, App Store links, theme links, confidence ratings, and traceable evidence chains. No API token, no login, no browser extension — works on any publicly accessible Shopify store.",
+        "zh": "输入任意 Shopify 店铺 URL，几分钟内获得完整技术栈审计。技能爬取公开页面，提取原始证据（脚本 URL、全局变量、CSS 命名空间、响应头），通过 AI 推理识别主题和插件，联网搜索交叉验证每个发现，最终生成精美 HTML 报告，包含插件 Logo、App Store 链接、主题链接、置信度评级和可追溯证据链。无需 API Token、无需登录、无需浏览器扩展。"
+      },
+      "introduction": {
+        "en": "Spy on any Shopify store's tech stack: theme, apps, and evidence — all in one visual report, zero credentials needed.",
+        "zh": "一键侦测任意 Shopify 店铺技术栈：主题、插件、证据链——全部呈现在一份可视化报告中，无需任何授权。"
+      },
+      "features": [
+        {
+          "id": "shopify-detection-gate",
+          "title": {
+            "en": "Automatic Shopify detection",
+            "zh": "自动 Shopify 识别"
+          },
+          "description": {
+            "en": "Before scanning, verifies the URL is actually a Shopify store using response headers, window.Shopify object, and CDN signals. Non-Shopify sites are rejected immediately with a clear explanation.",
+            "zh": "扫描前通过响应头、window.Shopify 对象和 CDN 信号验证目标是否为 Shopify 店铺，非 Shopify 网站立即拒绝并给出明确说明。"
+          },
+          "badge": { "en": "Smart gate", "zh": "智能识别" },
+          "icon": "ShieldCheck"
+        },
+        {
+          "id": "theme-detection",
+          "title": {
+            "en": "Theme identification with version",
+            "zh": "主题识别含版本号"
+          },
+          "description": {
+            "en": "Extracts the Shopify.theme object to get theme name, schema_name, version, and theme_store_id. Links directly to the Shopify Theme Store page for official themes, or finds the vendor page for custom themes via web search.",
+            "zh": "提取 Shopify.theme 对象获取主题名称、schema_name、版本号和 theme_store_id。官方主题直链 Shopify Theme Store，自定义主题通过网络搜索找到供应商页面。"
+          },
+          "badge": { "en": "Version-aware", "zh": "含版本信息" },
+          "icon": "Palette"
+        },
+        {
+          "id": "app-detection",
+          "title": {
+            "en": "AI-powered app detection",
+            "zh": "AI 驱动插件检测"
+          },
+          "description": {
+            "en": "Detects installed apps from script URLs, app embed blocks, window globals, and CSS class namespaces — without any hardcoded signature list. Every candidate is verified via live web search before being reported.",
+            "zh": "从脚本 URL、App Embed Block、全局变量和 CSS 命名空间检测已安装插件，无硬编码特征库。每个候选结果均通过实时网络搜索验证后才输出。"
+          },
+          "badge": { "en": "No signature list", "zh": "无硬编码库" },
+          "icon": "Puzzle"
+        },
+        {
+          "id": "html-report",
+          "title": {
+            "en": "Visual HTML report with logos",
+            "zh": "含 Logo 的可视化 HTML 报告"
+          },
+          "description": {
+            "en": "Generates a self-contained HTML file with app logos, direct App Store links, theme store links, color-coded confidence badges (HIGH / MEDIUM / LOW), and collapsible evidence chains for every finding.",
+            "zh": "生成独立 HTML 文件，包含插件 Logo、App Store 直链、主题商店链接、颜色编码置信度徽章（HIGH / MEDIUM / LOW）以及每个发现的可折叠证据链。"
+          },
+          "badge": { "en": "One-click share", "zh": "一键分享" },
+          "icon": "FileHtml"
+        },
+        {
+          "id": "evidence-chains",
+          "title": {
+            "en": "Traceable evidence chains",
+            "zh": "可追溯证据链"
+          },
+          "description": {
+            "en": "Every detection result cites the raw HTML/header snippet that triggered it, plus the web search result that confirmed it. No black-box guessing — every conclusion is auditable.",
+            "zh": "每个检测结果都引用触发它的原始 HTML/响应头片段，以及确认它的网络搜索结果。无黑盒猜测，每个结论均可审计。"
+          },
+          "badge": { "en": "Audit-ready", "zh": "可审计" },
+          "icon": "Link"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
       "name": "shopify-store-translator",
       "displayName": "Shopify Store Translator",
       "displayName_zh": "Shopify 店铺翻译器",
