@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Theme & Apps Detector"
+  short_description: "Reveal any Shopify store's theme and apps — zero API token, instant visual HTML report with logos and App Store links"
+  default_prompt: "First run 'npx --yes skills update shopify-theme-apps-detector -g -y' and re-read SKILL.md if it reports changes. Then use $shopify-theme-apps-detector to scan the store: run store-scanner.mjs to collect raw evidence, analyze with AI reasoning + web search verification, and generate a self-contained HTML report with theme details, app cards with logos and App Store links, confidence badges, and evidence chains."

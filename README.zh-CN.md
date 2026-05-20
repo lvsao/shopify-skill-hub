@@ -1,7 +1,7 @@
 # Selofy Shopify Skill Hub
 
 [![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
-[![Skills](https://img.shields.io/badge/skills-4-2563eb)](./skills)
+[![Skills](https://img.shields.io/badge/skills-6-2563eb)](./skills)
 [![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 [![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
@@ -48,6 +48,12 @@ npx skills add lvsao/shopify-skill-hub --skill optimize-shopify-alt-text
 npx skills add lvsao/shopify-skill-hub --skill shopify-product-serp-optimizer
 ```
 
+只安装 Shopify 主题与插件检测 skill：
+
+```bash
+npx skills add lvsao/shopify-skill-hub --skill shopify-theme-apps-detector
+```
+
 安装前查看可用 skills：
 
 ```bash
@@ -70,6 +76,8 @@ npx skills add . --list
 | `optimize-shopify-alt-text` | `seo-growth` | 审查 Shopify 商品媒体、集合封面图、文章封面图和文章正文图片，并生成先预览再执行的 alt text 优化计划；可用时使用真实图片理解，不可用时安全回退到上下文字段。 |
 | `shopify-product-serp-optimizer` | `seo-growth` | 扫描 Shopify 商品，规划每批 5 个商品的搜索结果优化任务，生成结构清晰的 HTML 审查报告，并且只应用已批准的商品 SEO 元数据或已审核的媒体 alt 更新。 |
 | `shopify-store-translator` | `operations` | 将 Shopify 店铺所有资源（商品、集合、页面、博客、政策等）翻译成任意目标语言。检查语言和市场配置，完整翻译不缩略，生成 CSV 审计表供审核，验证编码无损坏，并引导完成带子文件夹 URL 的市场配置。 |
+| `shopify-gmc-misrepresentation-auditor` | `product-feed` | 爬取任意 Shopify 店铺，审查 Google Merchant Center 虚假陈述政策风险——无需 API Token。模拟 Google 爬虫视角，生成带证据的优先级 HTML 报告、需商家核实的手动检查清单（MC-01 至 MC-07）以及分阶段整改计划。 |
+| `shopify-theme-apps-detector` | `operations` | 扫描任意公开 Shopify 店铺，无需 API Token、无需登录，即可揭示其主题和所有可检测的 App。生成独立可视化 HTML 报告，包含 App Logo、App Store 链接、置信度徽章和可追溯证据链。适合竞品调研、代理商开发和电商市场情报。 |
 
 ## Shopify API 权限与 Env 配置
 
@@ -161,6 +169,16 @@ skills/
       serp-methodology.md
     scripts/
       shopify-product-serp-admin.mjs
+  shopify-theme-apps-detector/
+    SKILL.md
+    agents/
+      openai.yaml
+    assets/
+      report-template.html
+    references/
+      detection-principles.md
+    scripts/
+      store-scanner.mjs
 catalog/
   INDEX.json
   content-creation/
