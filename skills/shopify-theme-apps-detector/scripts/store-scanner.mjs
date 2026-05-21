@@ -9,6 +9,7 @@
 const TIMEOUT_MS = 15000;
 const REQUEST_DELAY_MS = 800;
 const MAX_PAGES = 5;
+const MAX_RETRIES = 2;
 const USER_AGENT = 'Mozilla/5.0 (compatible; ShopifyDetector/1.0; +https://selofy.com)';
 
 const url = process.argv[2];
@@ -74,9 +75,18 @@ function extractShopifyTheme(html) {
   if (start === -1) return null;
   const brace = html.indexOf('{', start);
   let depth = 0, i = brace;
+  let inString = false, stringChar = null, escapeNext = false;
   for (; i < html.length; i++) {
-    if (html[i] === '{') depth++;
-    else if (html[i] === '}') { depth--; if (depth === 0) break; }
+    const ch = html[i];
+    if (escapeNext) { escapeNext = false; continue; }
+    if (inString) {
+      if (ch === '\\') { escapeNext = true; continue; }
+      if (ch === stringChar) { inString = false; }
+      continue;
+    }
+    if (ch === '"' || ch === "'") { inString = true; stringChar = ch; continue; }
+    if (ch === '{') { depth++; continue; }
+    if (ch === '}') { depth--; if (depth === 0) break; }
   }
   try { return JSON.parse(html.slice(brace, i + 1)); } catch { return null; }
 }
@@ -190,6 +200,10 @@ function extractAppBlockComments(html) {
   return [...new Set(slugs)];
 }
 
+function stripHtmlComments(html) {
+  return html.replace(/<!--[\s\S]*?-->/g, '');
+}
+
 function extractBodyClasses(html) {
   const m = html.match(/<body\b[^>]*class=["']([^"']+)["']/i);
   return m ? m[1].split(/\s+/).filter(Boolean) : [];
@@ -219,20 +233,35 @@ function detectPasswordPage(html) {
 
 async function scanPage(pageUrl, pageType) {
   let res, html, headers;
-  try {
-    res = await fetchWithTimeout(pageUrl, {
-      headers: { 'User-Agent': USER_AGENT, 'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9' }
-    });
-    headers = extractHeaders(res);
-    html = await res.text();
-  } catch (err) {
-    return { url: pageUrl, pageType, error: err.message, status: null };
+  let effectiveUrl = pageUrl;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      res = await fetchWithTimeout(pageUrl, {
+        headers: { 'User-Agent': USER_AGENT, 'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9' }
+      });
+      headers = extractHeaders(res);
+      effectiveUrl = res.url;
+      if (res.ok) break;
+      if ((res.status === 429 || res.status >= 500) && attempt < MAX_RETRIES) {
+        await sleep(REQUEST_DELAY_MS * Math.pow(2, attempt));
+        continue;
+      }
+      return { url: pageUrl, effectiveUrl, pageType, status: res.status, error: `HTTP ${res.status}` };
+    } catch (err) {
+      if (attempt < MAX_RETRIES) {
+        await sleep(REQUEST_DELAY_MS * Math.pow(2, attempt));
+        continue;
+      }
+      return { url: pageUrl, pageType, error: err.message, status: null };
+    }
   }
+  html = await res.text();
 
   const isPasswordPage = detectPasswordPage(html);
   const shopifyTheme = extractShopifyTheme(html);
   const shopifyShop = extractShopifyShop(html);
-  const { external, appEmbeds, inline } = extractScripts(html, new URL(pageUrl).origin);
+  const htmlNoComments = stripHtmlComments(html);
+  const { external, appEmbeds, inline } = extractScripts(htmlNoComments, new URL(effectiveUrl).origin);
   const windowGlobals = extractWindowGlobals(html);
   const cssClassNamespaces = extractCssClassNamespaces(html);
   const dataAttributes = extractDataAttributes(html);
@@ -245,6 +274,7 @@ async function scanPage(pageUrl, pageType) {
 
   return {
     url: pageUrl,
+    effectiveUrl,
     pageType,
     status: res.status,
     isPasswordPage,

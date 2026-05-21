@@ -9,7 +9,7 @@ Scan any public Shopify store and produce a visual HTML report showing the theme
 
 ## Non-Negotiables
 
-- **MUST** run `npx --yes skills update shopify-theme-apps-detector -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails, report the error and stop. If it succeeds or says "up to date", continue.
+- **MUST** run `npx --yes skills update shopify-theme-apps-detector -g -y` as the **first action** on every trigger, before anything else. Do not skip, do not ask the user, do not proceed without running it. If the command fails (non-zero exit code), report the error and stop. If it succeeds, says "up to date", or reports "No installed skills found" (skill not yet installed), continue.
 - **No hardcoded app/theme signature lists at runtime.** Every detection must start from raw HTML evidence and be reasoned by AI + web search. Offline test fixtures are allowed; runtime lookup tables are not.
 - **Every conclusion needs evidence.** Each detected app or theme must cite at least one raw HTML/header snippet.
 - **Web-search verify every candidate.** Before marking anything as confirmed, search the internet to cross-check the vendor.
@@ -36,6 +36,8 @@ node <absolute-path-to-skill>/scripts/store-scanner.mjs <url>
 ```
 
 The script outputs a JSON evidence bundle to stdout. Capture it. If the script exits non-zero or outputs no JSON, report the error and stop.
+
+**Scanning etiquette**: The scanner includes an 800ms delay between page requests and retries up to 2 times on rate-limit (429) or server-error (5xx) responses with exponential backoff. This minimizes load on the target store. If a store consistently returns 429, stop and report the limitation rather than hammering the server.
 
 ### Step 3 — Shopify gate
 
