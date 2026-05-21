@@ -455,11 +455,11 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
       <div class="app-card high">
         <div class="app-header">
           <!-- Use <img> if logo loads, else use .app-logo-fallback with emoji -->
-          <div class="app-logo">
+          <div class="app-logo" data-fallback="{{APP_EMOJI}}">
             <img
               src="https://logo.clearbit.com/{{APP_VENDOR_DOMAIN}}"
               alt="{{APP_NAME}} logo"
-              onerror="this.parentElement.innerHTML='<span style=\'font-size:20px\'>{{APP_EMOJI}}</span>'"
+              onerror="var p=this.parentElement;this.remove();p.textContent=p.getAttribute('data-fallback')||'\u2753';p.style.fontSize='20px';p.style.display='flex';p.style.alignItems='center';p.style.justifyContent='center'"
             >
           </div>
           <div class="app-info">
