@@ -377,32 +377,118 @@ function checkTrustSignals(html) {
   return checks;
 }
 
+// ─── AI Bulk / Dropshipping signal checks ──────────────────────────────────────
+
+function checkDropshippingSignals(homeHtml, storeUrl, productCount) {
+  const checks = [];
+  const signals = { noCustomDomain: false, productCountSignal: null, chinaPatterns: false, templateDescs: false };
+
+  // 1. Custom domain check
+  const isMyshopify = /\.myshopify\.com/i.test(storeUrl);
+  if (isMyshopify) {
+    signals.noCustomDomain = true;
+    checks.push({
+      id: 'dropship:no_custom_domain',
+      severity: 'medium', confidence: 0.8,
+      message: 'Store uses default .myshopify.com subdomain with no custom domain — common in new/dropshipping stores',
+      policyBasis: 'Custom domain signals business investment and brand commitment',
+    });
+  }
+
+  // 2. Product count vs typical store profile
+  if (productCount > 100) {
+    signals.productCountSignal = 'high';
+    checks.push({
+      id: 'dropship:large_catalog_young_store',
+      severity: productCount > 200 ? 'high' : 'medium',
+      confidence: 0.7,
+      message: `Store has ${productCount} products without established brand presence — high-volume catalog is typical of AI-bulk or dropshipping operations`,
+      policyBasis: 'GMC expects authentic inventory from established businesses',
+    });
+  } else if (productCount > 50) {
+    signals.productCountSignal = 'moderate';
+    checks.push({
+      id: 'dropship:moderate_catalog',
+      severity: 'low', confidence: 0.6,
+      message: `Store has ${productCount} products — moderate catalog size, monitor for rapid expansion`,
+      policyBasis: 'Rapid product addition without brand building is a risk signal',
+    });
+  }
+
+  // 3. China/dropshipping supplier patterns in page text
+  const pageText = extractText(homeHtml).toLowerCase();
+  const supplierPatterns = [
+    /\b(?:ship\s+from\s+china|china\s+warehouse|sold\s+by\s+\w+store\d*\b)/i,
+    /\b(?:order\s+within\s+\d+\s+(?:hours|days)\s+for\s+(?:same\s+day|next\s+day)\s+dispatch)/i,
+    /\b(?:processing\s+time\s*:\s*\d+\s*(?:business\s+)?days)/i,
+    /\b(?:estimated\s+delivery\s*:\s*\d+[–-]\d+\s*(?:business\s+)?days)/i,
+  ];
+  const matchedPatterns = supplierPatterns.filter(p => p.test(homeHtml));
+  if (matchedPatterns.length >= 2) {
+    signals.chinaPatterns = true;
+    checks.push({
+      id: 'dropship:supplier_fulfillment_patterns',
+      severity: 'medium', confidence: 0.7,
+      message: 'Multiple dropshipping fulfillment patterns detected (China warehouse, processing times, estimated delivery ranges)',
+      policyBasis: 'GMC requires transparent fulfillment — undisclosed dropshipping can trigger misrepresentation',
+    });
+  }
+
+  // 5. Product titles look auto-generated (sequential numbers + generic keywords)
+  const titleText = extractText(homeHtml).slice(0, 3000);
+  const autoGenPatterns = [
+    /\d+\s*(?:in\s+)?1\s*(?:pcs|pack|set)/i,          // "1 pcs", "1 pack"
+    /(?:free\s+shipping|hot\s+sale|wholesale)\s+\w+/i,  // generic sale qualifiers
+    /\d+\s*%\s*off/i,                                    // percentage off
+  ];
+  const autoGenMatched = autoGenPatterns.filter(p => p.test(homeHtml)).length;
+
+  return { checks, signals };
+}
+
 // ─── Product URL discovery ────────────────────────────────────────────────────
 
 async function discoverProductUrls(storeUrl) {
   const productUrls = new Set();
 
-  // Try sitemap.xml
+  // Try sitemap.xml — Shopify uses a sitemapindex that links to sub-sitemaps
   const sitemapRes = await fetchPage(new URL('/sitemap.xml', storeUrl).href);
   await sleep(1000);
 
   if (sitemapRes.ok) {
-    const productMatches = sitemapRes.text.match(/<loc>([^<]+\/products\/[^<]+)<\/loc>/gi) || [];
-    for (const m of productMatches) {
-      const url = m.replace(/<\/?loc>/gi, '').trim();
-      productUrls.add(url);
+    // Check if root sitemap is a sitemapindex (links to sub-sitemaps)
+    const subSitemaps = sitemapRes.text.match(/<loc>([^<]+sitemap_products_[^<]+\.xml[^<]*)<\/loc>/gi) || [];
+    
+    if (subSitemaps.length > 0) {
+      // Fetch each product sub-sitemap
+      for (const ss of subSitemaps) {
+        const subUrl = ss.replace(/<\/?loc>/gi, '').trim();
+        const subRes = await fetchPage(subUrl);
+        await sleep(1000);
+        if (subRes.ok) {
+          const productMatches = subRes.text.match(/<loc>([^<]+\/products\/[^<]+)<\/loc>/gi) || [];
+          for (const m of productMatches) {
+            productUrls.add(m.replace(/<\/?loc>/gi, '').trim());
+          }
+        }
+        if (productUrls.size >= 200) break;
+      }
+    } else {
+      // Fallback: try direct product URL extraction from root sitemap
+      const directMatches = sitemapRes.text.match(/<loc>([^<]+\/products\/[^<]+)<\/loc>/gi) || [];
+      for (const m of directMatches) {
+        productUrls.add(m.replace(/<\/?loc>/gi, '').trim());
+      }
     }
   }
 
-  // Try collections page for additional discovery
-  if (productUrls.size < 5) {
-    const collectionsRes = await fetchPage(new URL('/collections/all', storeUrl).href);
-    await sleep(1000);
-    if (collectionsRes.ok) {
-      const links = extractLinks(collectionsRes.text, storeUrl);
-      for (const link of links) {
-        if (link.includes('/products/') && !link.includes('?')) productUrls.add(link);
-      }
+  // Always try collections page for additional discovery (catches products not in sitemap)
+  const collectionsRes = await fetchPage(new URL('/collections/all', storeUrl).href);
+  await sleep(1000);
+  if (collectionsRes.ok) {
+    const links = extractLinks(collectionsRes.text, storeUrl);
+    for (const link of links) {
+      if (link.includes('/products/') && !link.includes('?')) productUrls.add(link);
     }
   }
 
@@ -442,6 +528,7 @@ async function runStoreAudit(storeUrl) {
     policies: {},
     productUrls: [],
     sampledProductUrls: [],
+    dropshippingSignals: {},
     score: null,
   };
 
@@ -568,6 +655,11 @@ async function runStoreAudit(storeUrl) {
   result.productUrls = allProductUrls;
   result.sampledProductUrls = sampleProducts(allProductUrls, homeRes.text);
 
+  // 10b. AI Bulk / Dropshipping detection
+  const dropshipResult = checkDropshippingSignals(homeRes.text, storeUrl, allProductUrls.length);
+  result.checks.push(...dropshipResult.checks);
+  result.dropshippingSignals = dropshipResult.signals;
+
   // 11. Score
   result.score = computeScore(result.checks);
 
@@ -579,23 +671,17 @@ async function runStoreAudit(storeUrl) {
 function computeScore(checks) {
   const weights = { critical: 25, high: 12, medium: 5, low: 2 };
   let total = 0;
-  let hasCritical = false;
 
   for (const c of checks) {
     const w = weights[c.severity] || 0;
     const conf = c.confidence || 0.7;
     const ef = c.evidenceFactor || 1.0;
     total += w * conf * ef;
-    if (c.severity === 'critical') hasCritical = true;
   }
 
   const risk = Math.min(100, Math.round(total));
-  let decision;
-  if (hasCritical || risk >= 40) decision = 'fail';
-  else if (risk >= 20) decision = 'review';
-  else decision = 'pass';
 
-  return { risk, decision, hasCritical };
+  return { risk };
 }
 
 // ─── Entry point ──────────────────────────────────────────────────────────────

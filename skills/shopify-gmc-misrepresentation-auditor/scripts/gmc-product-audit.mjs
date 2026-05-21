@@ -236,16 +236,27 @@ function runProductChecks(html, url) {
   }
 
   // PQ-11: Missing GTIN/MPN/brand
-  const missingIds = [];
-  for (const pb of productBlocks) {
-    if (!pb.gtin && !pb.gtin13 && !pb.gtin14 && !pb.mpn) missingIds.push('gtin/mpn');
-    if (!pb.brand && !pb['brand']) missingIds.push('brand');
+  // Check across ALL product blocks — only flag if EVERY block lacks it
+  // Also check within offers[] for gtin12/gtin8 fallback
+  function hasGtin(pb) {
+    if (pb.gtin || pb.gtin12 || pb.gtin13 || pb.gtin14 || pb.gtin8 || pb.mpn) return true;
+    // Check offers for nested GTIN
+    const offers = Array.isArray(pb.offers) ? pb.offers : pb.offers ? [pb.offers] : [];
+    return offers.some(o => o.gtin || o.gtin12 || o.gtin13 || o.gtin14 || o.gtin8);
   }
-  if (productBlocks.length > 0 && missingIds.length > 0) {
+  function hasBrand(pb) {
+    return !!(pb.brand || pb['brand']);
+  }
+  const allMissing = productBlocks.length > 0 && productBlocks.every(pb => !hasGtin(pb));
+  const brandMissing = productBlocks.length > 0 && productBlocks.every(pb => !hasBrand(pb));
+  const missingParts = [];
+  if (allMissing) missingParts.push('gtin/mpn');
+  if (brandMissing) missingParts.push('brand');
+  if (missingParts.length > 0) {
     checks.push({
       id: 'schema:missing_gtin',
       severity: 'medium', confidence: 0.9,
-      message: `Product JSON-LD missing: ${[...new Set(missingIds)].join(', ')}`,
+      message: `Product JSON-LD missing: ${missingParts.join(', ')}`,
       policyBasis: 'GTIN/MPN/brand improve feed matching and product eligibility',
     });
   }
@@ -290,6 +301,38 @@ function runProductChecks(html, url) {
     });
   }
 
+  // PQ-15: Dropshipping supplier patterns in product description
+  const descText = pageText.toLowerCase();
+  const supplierKeywords = [
+    /\b(?:origin|manufacturer|supplier|factory)\s*(?::|is|from)?\s*(?:cn|china|shenzhen|guangzhou|hong kong)\b/i,
+    /\b(?:cm|mm|kg|g|ml)\s*(?:\*|x)\s*(?:\d+)/i,  // China-style spec measurements
+    /\b(?:material|color|size|weight|dimension)\s*[:：].*(?:abs|plastic|nylon|stainless|alloy)\b/i,
+    /\b(?:package\s+include|package\s+list|package\s+content|what's\s+in\s+the\s+box)\b/i,
+    /\b(?:wholesale|bulk\s+order|drop\s*shipping|dropshipping|moq|minimum\s+order)\b/i,
+  ];
+  const matchedSupplier = supplierKeywords.filter(p => p.test(html));
+  if (matchedSupplier.length >= 2) {
+    checks.push({
+      id: 'dropship:supplier_description_patterns',
+      severity: 'medium', confidence: 0.65,
+      message: `Product description contains ${matchedSupplier.length} supplier/dropshipping patterns (spec measurements, China origin, wholesale terms)`,
+      evidence: { matchedCount: matchedSupplier.length },
+      policyBasis: 'Supplier-origin product text indicates possible undisclosed dropshipping',
+    });
+  }
+
+  // PQ-16: Product description is very thin (AI-bulk signal)
+  const descWords = pageText.split(/\s+/).length;
+  if (descWords > 0 && descWords < 50) {
+    checks.push({
+      id: 'dropship:thin_product_description',
+      severity: 'medium', confidence: 0.6,
+      message: `Product page has very thin content (${descWords} words) — typical of bulk-imported/AI-generated listings`,
+      evidence: { wordCount: descWords },
+      policyBasis: 'Thin product content signals possible auto-generated listings',
+    });
+  }
+
   return {
     url,
     checks,
@@ -306,17 +349,14 @@ function runProductChecks(html, url) {
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 
-function computeScore(checks, scopeMultiplier = 1.0) {
+function computeScore(checks) {
   const weights = { critical: 25, high: 12, medium: 5, low: 2 };
   let total = 0;
-  let hasCritical = false;
   for (const c of checks) {
-    total += (weights[c.severity] || 0) * (c.confidence || 0.7) * (c.evidenceFactor || 1.0) * scopeMultiplier;
-    if (c.severity === 'critical') hasCritical = true;
+    total += (weights[c.severity] || 0) * (c.confidence || 0.7) * (c.evidenceFactor || 1.0);
   }
   const risk = Math.min(100, Math.round(total));
-  let decision = risk >= 40 || hasCritical ? 'fail' : risk >= 20 ? 'review' : 'pass';
-  return { risk, decision, hasCritical };
+  return { risk };
 }
 
 // ─── Systemic pattern detection ───────────────────────────────────────────────
@@ -355,12 +395,6 @@ function severityBadge(s) {
   return `<span style="background:${map[s]||'#6b7280'};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;text-transform:uppercase">${s}</span>`;
 }
 
-function verdictBadge(decision) {
-  if (decision === 'fail') return `<span style="background:#dc2626;color:#fff;padding:4px 14px;border-radius:6px;font-weight:700;font-size:0.9rem">FAIL</span>`;
-  if (decision === 'review') return `<span style="background:#d97706;color:#fff;padding:4px 14px;border-radius:6px;font-weight:700;font-size:0.9rem">MANUAL REVIEW</span>`;
-  return `<span style="background:#16a34a;color:#fff;padding:4px 14px;border-radius:6px;font-weight:700;font-size:0.9rem">PASS WITH NOTES</span>`;
-}
-
 function checkRow(c) {
   const ev = c.evidence ? `<div style="font-size:0.78rem;color:#64748b;margin-top:4px;font-family:monospace;background:#f8fafc;padding:4px 8px;border-radius:4px">${JSON.stringify(c.evidence)}</div>` : '';
   return `
@@ -371,7 +405,14 @@ function checkRow(c) {
   </tr>`;
 }
 
-function generateHtmlReport({ storeUrl, fetchedAt, storeChecks, productResults, systemicPatterns, overallScore, policies, themeHints, sampledCount, totalDiscovered }) {
+function generateHtmlReport({ storeUrl, fetchedAt, storeChecks, productResults, systemicPatterns, overallScore, policies, themeHints, sampledCount, totalDiscovered, dropshippingSignals }) {
+  // Dropshipping signal assessment
+  const dsSignals = dropshippingSignals || {};
+  const dsSignalCount = Object.values(dsSignals).filter(Boolean).length;
+  let dsLevel, dsColor, dsLabel;
+  if (dsSignalCount >= 3) { dsLevel = 'high'; dsColor = '#dc2626'; dsLabel = 'High — Strong AI-bulk / Dropshipping indicators'; }
+  else if (dsSignalCount >= 1) { dsLevel = 'suspected'; dsColor = '#d97706'; dsLabel = 'Suspected — Some AI-bulk / Dropshipping indicators found'; }
+  else { dsLevel = 'low'; dsColor = '#16a34a'; dsLabel = 'Low — No obvious AI-bulk or Dropshipping indicators'; }
   const allChecks = [...storeChecks, ...productResults.flatMap(p => p.checks)];
   const critCount = allChecks.filter(c => c.severity === 'critical').length;
   const highCount = allChecks.filter(c => c.severity === 'high').length;
@@ -387,10 +428,21 @@ function generateHtmlReport({ storeUrl, fetchedAt, storeChecks, productResults, 
     <td style="font-size:.75rem;color:#64748b;padding:8px 6px">${c.policyBasis || ''}</td>
   </tr>`).join('');
 
-  const medLowRows = allChecks.filter(c => c.severity === 'medium' || c.severity === 'low').map(c => `
+  // Deduplicate identical medium/low findings by combining id + first 80 chars of message
+  const medLowGroups = {};
+  const rawMedLow = allChecks.filter(c => c.severity === 'medium' || c.severity === 'low');
+  for (const c of rawMedLow) {
+    const key = `${c.id}::${JSON.stringify(c.policyBasis)}`;
+    if (!medLowGroups[key]) {
+      medLowGroups[key] = { ...c, count: 1 };
+    } else {
+      medLowGroups[key].count++;
+    }
+  }
+  const medLowRows = Object.values(medLowGroups).map(c => `
   <tr>
     <td>${severityBadge(c.severity)}</td>
-    <td style="font-size:.83rem;color:#334155;padding:6px">${c.message}</td>
+    <td style="font-size:.83rem;color:#334155;padding:6px">${c.message}${c.count > 1 ? ` <strong style="color:#6366f1">(×${c.count})</strong>` : ''}</td>
     <td style="font-size:.73rem;color:#94a3b8;padding:6px">${c.policyBasis || ''}</td>
   </tr>`).join('');
 
@@ -443,17 +495,17 @@ h2{font-size:1.1rem;font-weight:700;margin-bottom:10px}
 .card{background:#fff;border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(15,23,42,.07)}
 .score-row{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap}
 .score-num{font-size:2.6rem;font-weight:800;line-height:1}
-.score-num.fail{color:#dc2626}.score-num.review{color:#d97706}.score-num.pass{color:#16a34a}
+.score-num.low{color:#16a34a}.score-num.moderate{color:#d97706}.score-num.high{color:#dc2626}
+
 .chips{display:flex;gap:.6rem;flex-wrap:wrap}
 .chip{padding:.35rem .8rem;border-radius:6px;background:#f8fafc;text-align:center;min-width:60px}
 .chip .n{font-size:1.2rem;font-weight:700}.chip .l{font-size:.65rem;color:#64748b;text-transform:uppercase}
 .n.c{color:#dc2626}.n.h{color:#d97706}.n.m{color:#6366f1}
-.verdict-msg{flex:1;font-size:.83rem;color:#475569;max-width:380px;min-width:180px}
+
 table{width:100%;border-collapse:collapse}
 th{padding:7px 8px;text-align:left;font-size:.72rem;color:#64748b;background:#f8fafc;font-weight:600}
 td{padding:7px 8px;vertical-align:top;border-top:1px solid #f1f5f9}
-.badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:.7rem;font-weight:700;text-transform:uppercase;color:#fff}
-.badge.critical{background:#dc2626}.badge.high{background:#d97706}.badge.medium{background:#6366f1}.badge.low{background:#94a3b8}
+
 .phase{padding:10px 14px;border-radius:7px;margin-bottom:8px;font-size:.84rem}
 .p1,.p2{background:#fef2f2;border-left:4px solid #dc2626}
 .p3{background:#fff7ed;border-left:4px solid #d97706}
@@ -474,7 +526,6 @@ td{padding:7px 8px;vertical-align:top;border-top:1px solid #f1f5f9}
   <div style="max-width:1060px;margin:0 auto">
     <h1>GMC Misrepresentation Audit</h1>
     <div class="sub">${storeUrl} &nbsp;·&nbsp; ${new Date(fetchedAt).toLocaleString()} &nbsp;·&nbsp; ${sampledCount} product(s) audited of ${totalDiscovered} discovered</div>
-    <div style="margin-top:.6rem">${verdictBadge(overallScore.decision)}</div>
   </div>
 </div>
 <div class="wrap">
@@ -488,7 +539,7 @@ td{padding:7px 8px;vertical-align:top;border-top:1px solid #f1f5f9}
     <div class="score-row">
       <div>
         <div style="font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Risk Score</div>
-        <div class="score-num ${overallScore.decision}">${overallScore.risk}<span style="font-size:1rem;font-weight:400;color:#94a3b8"> /100</span></div>
+        <div class="score-num ${overallScore.risk < 20 ? 'low' : overallScore.risk < 50 ? 'moderate' : 'high'}">${overallScore.risk}<span style="font-size:1rem;font-weight:400;color:#94a3b8"> /100</span></div>
       </div>
       <div class="chips">
         <div class="chip"><div class="n c">${critCount}</div><div class="l">Critical</div></div>
@@ -496,13 +547,6 @@ td{padding:7px 8px;vertical-align:top;border-top:1px solid #f1f5f9}
         <div class="chip"><div class="n m">${medCount}</div><div class="l">Medium</div></div>
         <div class="chip"><div class="n" style="color:#16a34a">${sampledCount}</div><div class="l">Products</div></div>
       </div>
-      <div class="verdict-msg">${
-        overallScore.decision === 'fail'
-          ? '⛔ <strong>Do not appeal yet.</strong> Fix all Critical findings first.'
-          : overallScore.decision === 'review'
-          ? '⚠️ Manual review needed. Address High findings before appealing.'
-          : '✅ No critical issues. Complete the Manual Checklist before submitting.'
-      }</div>
     </div>
   </div>
 
@@ -531,6 +575,25 @@ td{padding:7px 8px;vertical-align:top;border-top:1px solid #f1f5f9}
     <p style="font-size:.75rem;color:#94a3b8;margin-top:8px">Non-canonical = served from /pages/ path. Consider migrating to Shopify's canonical /policies/ path for better GMC reliability.</p>
   </div>` : ''}
 
+  ${dsSignalCount > 0 || allChecks.some(c => c.id.startsWith('dropship:')) ? `
+  <div class="card">
+    <h2>🧬 AI Bulk / Dropshipping Assessment</h2>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <span style="background:${dsColor};color:#fff;padding:4px 14px;border-radius:6px;font-weight:700;font-size:0.9rem">${dsLevel.toUpperCase()}</span>
+      <span style="font-size:.85rem;color:#475569">${dsLabel}</span>
+    </div>
+    <p style="font-size:.82rem;color:#64748b;margin-bottom:10px">The following automated signals were detected from crawling. <strong>Agent-assisted web search is required</strong> to complete the assessment (see SKILL.md).</p>
+    <table>
+      <thead><tr><th style="width:40%">Signal</th><th>Status</th><th style="width:200px">Detail</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:7px 8px;font-size:.84rem">Custom domain configured</td><td style="padding:7px 8px">${dsSignals.noCustomDomain ? '<span style="color:#dc2626;font-weight:600">✗ No custom domain</span>' : '<span style="color:#16a34a">✓ Custom domain found</span>'}</td><td style="padding:7px 8px;font-size:.8rem;color:#64748b">${dsSignals.noCustomDomain ? '.myshopify.com only — low barrier to launch' : ''}</td></tr>
+        <tr><td style="padding:7px 8px;font-size:.84rem">Catalog size vs brand presence</td><td style="padding:7px 8px">${dsSignals.productCountSignal === 'high' ? '<span style="color:#dc2626;font-weight:600">Large catalog</span>' : dsSignals.productCountSignal === 'moderate' ? '<span style="color:#d97706">Moderate catalog</span>' : '<span style="color:#16a34a">Small catalog</span>'}</td><td style="padding:7px 8px;font-size:.8rem;color:#64748b">${totalDiscovered} products found</td></tr>
+        <tr><td style="padding:7px 8px;font-size:.84rem">Supplier fulfillment patterns</td><td style="padding:7px 8px">${dsSignals.chinaPatterns ? '<span style="color:#d97706">Supplier patterns detected</span>' : '<span style="color:#16a34a">None detected on homepage</span>'}</td><td style="padding:7px 8px;font-size:.8rem;color:#64748b">${dsSignals.chinaPatterns ? 'China warehouse / processing time patterns' : ''}</td></tr>
+        <tr><td style="padding:7px 8px;font-size:.84rem">Product description quality</td><td style="padding:7px 8px">${allChecks.some(c => c.id === 'dropship:thin_product_description') ? '<span style="color:#d97706">Thin descriptions detected</span>' : '<span style="color:#16a34a">Adequate descriptions</span>'}</td><td style="padding:7px 8px;font-size:.8rem;color:#64748b">${allChecks.filter(c => c.id === 'dropship:thin_product_description').length > 0 ? 'Some products have <50 words of content' : ''}</td></tr>
+      </tbody>
+    </table>
+  </div>` : ''}
+
   ${productResults.length > 0 ? `
   <div class="card">
     <h2>Product-Level Detail (${sampledCount} product(s))</h2>
@@ -552,6 +615,7 @@ td{padding:7px 8px;vertical-align:top;border-top:1px solid #f1f5f9}
     <div class="cg"><h3>MC-01 — GMC Account vs Website</h3><ul class="cl">
       <li><input type="checkbox"> Business name in GMC matches website footer exactly (Inc./LLC/Ltd. suffixes matter)</li>
       <li><input type="checkbox"> Business address in GMC matches address on website</li>
+      <li><input type="checkbox"> Phone number in GMC matches phone on website contact page</li>
       <li><input type="checkbox"> Website domain in GMC matches actual store domain (www vs non-www)</li>
     </ul></div>
     <div class="cg"><h3>MC-02 — Feed vs Landing Page</h3><ul class="cl">
@@ -672,15 +736,17 @@ async function main() {
   // Systemic patterns
   const systemicPatterns = detectSystemicPatterns(productResults);
 
-  // Overall score: combine store + product checks with scope multiplier
-  const allChecks = [
-    ...storeChecks,
-    ...productResults.flatMap(pr => pr.checks),
-  ];
+  // Overall score: store checks (no multiplier) + average per-product risk × scope
+  const productChecks = productResults.flatMap(pr => pr.checks);
+  const storeScore = computeScore(storeChecks);
+  const productRaw = computeScore(productChecks);
   const scopeMultiplier = systemicPatterns.length > 0
     ? Math.max(...systemicPatterns.map(p => p.scopeMultiplier))
     : 1.0;
-  const overallScore = computeScore(allChecks, scopeMultiplier);
+  const avgProductRisk = productResults.length > 0 ? productRaw.risk / productResults.length : 0;
+  const overallScore = {
+    risk: Math.min(100, Math.round(storeScore.risk + avgProductRisk * scopeMultiplier)),
+  };
 
   // Generate report
   const html = generateHtmlReport({
@@ -691,16 +757,18 @@ async function main() {
     systemicPatterns,
     overallScore,
     policies,
-    themeHints,
+    themeHints: storePhaseData?.themeHints || null,
     sampledCount: productResults.length,
     totalDiscovered,
+    dropshippingSignals: storePhaseData?.dropshippingSignals || {},
   });
 
   const outPath = resolve(process.cwd(), outFile);
   writeFileSync(outPath, html, 'utf8');
+  const finalAllChecks = [...storeChecks, ...productChecks];
   process.stderr.write(`\nReport written to: ${outPath}\n`);
-  process.stderr.write(`Verdict: ${overallScore.decision.toUpperCase()} (risk score: ${overallScore.risk}/100)\n`);
-  process.stderr.write(`Critical: ${allChecks.filter(c => c.severity === 'critical').length} | High: ${allChecks.filter(c => c.severity === 'high').length} | Medium: ${allChecks.filter(c => c.severity === 'medium').length}\n`);
+  process.stderr.write(`Risk score: ${overallScore.risk}/100\n`);
+  process.stderr.write(`Critical: ${finalAllChecks.filter(c => c.severity === 'critical').length} | High: ${finalAllChecks.filter(c => c.severity === 'high').length} | Medium: ${finalAllChecks.filter(c => c.severity === 'medium').length}\n`);
 }
 
 // Only run main() when executed directly (not when imported as a module)
