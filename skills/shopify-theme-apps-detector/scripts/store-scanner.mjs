@@ -53,8 +53,6 @@ function extractHeaders(res) {
 function detectShopifyFromHeaders(headers) {
   const signals = [];
   if (/shopify/i.test(headers['powered-by'] || '')) signals.push({ type: 'header', key: 'powered-by', value: headers['powered-by'] });
-  if (headers['x-shop-id']) signals.push({ type: 'header', key: 'x-shop-id', value: headers['x-shop-id'] });
-  if ((headers['set-cookie'] || '').includes('_shopify_essential')) signals.push({ type: 'header', key: 'set-cookie', value: '_shopify_essential cookie present' });
   const st = headers['server-timing'] || '';
   const themeMatch = st.match(/theme;desc="([^"]+)"/);
   if (themeMatch) signals.push({ type: 'header', key: 'server-timing-theme', value: themeMatch[1] });
@@ -63,10 +61,10 @@ function detectShopifyFromHeaders(headers) {
 
 function detectShopifyFromHtml(html) {
   const signals = [];
-  if (/window\.Shopify\s*=/.test(html) || /var\s+Shopify\s*=/.test(html)) signals.push({ type: 'html', key: 'window.Shopify', value: 'window.Shopify object found' });
-  if (/cdn\.shopify\.com/.test(html)) signals.push({ type: 'html', key: 'cdn.shopify.com', value: 'Shopify CDN reference found' });
-  if (/shopify-digital-wallet/.test(html)) signals.push({ type: 'html', key: 'shopify-digital-wallet', value: 'meta tag found' });
-  if (/_shopify_essential/.test(html)) signals.push({ type: 'html', key: '_shopify_essential', value: 'cookie reference in HTML' });
+  const htmlLower = html.toLowerCase();
+  if (/cdn\.shopify\.com/.test(htmlLower)) signals.push({ type: 'html', key: 'cdn.shopify.com', value: 'Shopify CDN reference found' });
+  if (/myshopify\.com/.test(htmlLower)) signals.push({ type: 'html', key: 'myshopify.com', value: 'myshopify.com domain reference found' });
+  if (/window\.shopify\s*=/.test(htmlLower)) signals.push({ type: 'html', key: 'window.Shopify', value: 'window.Shopify object found' });
   return signals;
 }
 

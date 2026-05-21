@@ -43,7 +43,7 @@ The script outputs a JSON evidence bundle to stdout. Capture it. If the script e
 
 Read `evidenceBundle.isShopify`. If `false`, stop immediately and tell the user:
 
-> "**Not a Shopify store.** The URL `<url>` does not appear to be powered by Shopify. Detection signals checked: `powered-by` header, `window.Shopify` object, `_shopify_essential` cookie, `cdn.shopify.com` asset references. None were found."
+> "**Not a Shopify store.** The URL `<url>` does not appear to be powered by Shopify. The scanner checks the HTML for `cdn.shopify.com` or `myshopify.com` references, and the response headers for the `powered-by: Shopify` header. None were found."
 
 Do not proceed to theme/app analysis for non-Shopify sites.
 

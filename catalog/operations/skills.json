@@ -23,29 +23,16 @@
       },
       "features": [
         {
-          "id": "shopify-detection-gate",
-          "title": {
-            "en": "Automatic Shopify detection",
-            "zh": "自动 Shopify 识别"
-          },
-          "description": {
-            "en": "Before scanning, verifies the URL is actually a Shopify store using response headers, window.Shopify object, and CDN signals. Non-Shopify sites are rejected immediately with a clear explanation.",
-            "zh": "扫描前通过响应头、window.Shopify 对象和 CDN 信号验证目标是否为 Shopify 店铺，非 Shopify 网站立即拒绝并给出明确说明。"
-          },
-          "badge": { "en": "Smart gate", "zh": "智能识别" },
-          "icon": "ShieldCheck"
-        },
-        {
           "id": "theme-detection",
           "title": {
-            "en": "Theme identification with version",
-            "zh": "主题识别含版本号"
+            "en": "Theme identification",
+            "zh": "主题识别"
           },
           "description": {
             "en": "Extracts the Shopify.theme object to get theme name, schema_name, version, and theme_store_id. Links directly to the Shopify Theme Store page for official themes, or finds the vendor page for custom themes via web search.",
             "zh": "提取 Shopify.theme 对象获取主题名称、schema_name、版本号和 theme_store_id。官方主题直链 Shopify Theme Store，自定义主题通过网络搜索找到供应商页面。"
           },
-          "badge": { "en": "Version-aware", "zh": "含版本信息" },
+          "badge": { "en": "Smart detect", "zh": "智能检测" },
           "icon": "Palette"
         },
         {
@@ -64,12 +51,12 @@
         {
           "id": "html-report",
           "title": {
-            "en": "Visual HTML report with logos",
-            "zh": "含 Logo 的可视化 HTML 报告"
+            "en": "Visual HTML report",
+            "zh": "可视化报告"
           },
           "description": {
-            "en": "Generates a self-contained HTML file with app logos, direct App Store links, theme store links, color-coded confidence badges (HIGH / MEDIUM / LOW), and collapsible evidence chains for every finding.",
-            "zh": "生成独立 HTML 文件，包含插件 Logo、App Store 直链、主题商店链接、颜色编码置信度徽章（HIGH / MEDIUM / LOW）以及每个发现的可折叠证据链。"
+            "en": "Generates a self-contained HTML file with direct App Store links, theme store links, color-coded confidence badges (HIGH / MEDIUM / LOW), and collapsible evidence chains for every finding.",
+            "zh": "生成独立 HTML 文件，包含 App Store 直链、主题商店链接、颜色编码置信度徽章（HIGH / MEDIUM / LOW）以及每个发现的可折叠证据链。"
           },
           "badge": { "en": "One-click share", "zh": "一键分享" },
           "icon": "FileHtml"
