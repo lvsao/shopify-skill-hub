@@ -4,15 +4,12 @@
 
 | Signal | Source | Reliability |
 |--------|--------|-------------|
+| `cdn.shopify.com` asset references | HTML body | Highest — every Shopify store serves assets via Shopify CDN |
+| `myshopify.com` domain reference (e.g. `Shopify.shop`) | HTML body | Highest — explicit store identifier |
 | `powered-by: Shopify` response header | HTTP HEAD | Highest — set by Shopify infrastructure |
 | `window.Shopify` JS object in HTML | HTML body | Highest — injected by Shopify platform |
-| `_shopify_essential` cookie in `set-cookie` header | HTTP HEAD | High |
-| `shopify-digital-wallet` meta tag | HTML body | High |
-| `cdn.shopify.com` asset references | HTML body | Medium — headless stores still use Shopify CDN |
-| `server-timing: theme;desc="<id>"` header | HTTP HEAD | High — confirms active theme |
-| `Shopify.shop = "xxx.myshopify.com"` | HTML body | Highest — explicit store identifier |
 
-**Non-Shopify indicators**: `x-powered-by: Next.js`, `x-powered-by: WooCommerce`, absence of all above signals.
+**Non-Shopify indicators**: absence of all `cdn.shopify.com`, `myshopify.com`, `powered-by: Shopify`, and `window.Shopify` signals.
 
 ## Theme Detection
 
