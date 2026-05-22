@@ -17,7 +17,7 @@ Scan any public Shopify store and produce a visual HTML report showing the theme
 - **Zero dependencies.** The scanner script uses only Node.js built-ins (fetch, fs, url, crypto). No npm install required.
 - **Zero authorization.** Only public pages are crawled. No API tokens, cookies, or passwords needed.
 - **HTML report is mandatory.** Every run must produce a self-contained `.html` file saved to the user's current working directory.
-- **Use the exact report template.** The file `<absolute-path-to-skill>/assets/report-template.html` is the mandatory visual foundation. Copy it verbatim and substitute placeholders. Do not redesign the layout or change the color scheme.
+- **Use the report template as the structural foundation.** The file `<absolute-path-to-skill>/assets/report-template.html` provides the required layout sections (hero, stat bar, theme card, apps grid, clues table, appendix). Copy it and substitute placeholders. You may adjust colors, fonts, and visual styling to match your preferred aesthetic.
 - **UTF-8 everywhere.** All file writes must use explicit `'utf8'` encoding.
 
 ## Workflow
@@ -83,10 +83,9 @@ Deduplicate: if multiple signals point to the same vendor, merge them into one r
 
 ### Step 6 — Generate the HTML report
 
-**HARD CONSTRAINT: You MUST use the template at `<absolute-path-to-skill>/assets/report-template.html` as the exact structural and visual foundation.** Do not invent a different layout. Copy the full template, then substitute every `{{PLACEHOLDER}}` with real data.
+**Use the template at `<absolute-path-to-skill>/assets/report-template.html` as the structural foundation.** Keep the required layout sections (hero, stat bar, theme card, apps grid, clues table, appendix) and substitute every `{{PLACEHOLDER}}` with real data. You may freely customize colors, fonts, and visual styling.
 
-The template provides:
-- Dark dashboard aesthetic (deep navy `#0a0e1a` background, `#00ff88` green accent)
+The template by default includes:
 - Google Fonts: DM Sans + JetBrains Mono (loaded via `@import` in the `<style>` block)
 - Hero header with store URL, scan date, Shopify badge
 - Stat bar: theme name, confirmed app count, probable count, clue count
