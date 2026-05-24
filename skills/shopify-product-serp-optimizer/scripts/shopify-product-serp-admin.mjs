@@ -106,19 +106,28 @@ async function ensureGitignoreLine(line) {
 async function initEnv(args) {
   const method = args.method || "admin_custom_app";
   const envFile = args.env || DEFAULT_ENV;
-  if (!["admin_custom_app", "dev_dashboard_app"].includes(method)) {
-    fail("--method must be admin_custom_app or dev_dashboard_app");
+  const force = args.force || args.f || false;
+  if (!["admin_custom_app", "dev_dashboard_app", "public_storefront"].includes(method)) {
+    fail("--method must be admin_custom_app, dev_dashboard_app, or public_storefront");
   }
   const scopes = args.scopes || DEFAULT_SCOPES;
-  const template =
-    method === "admin_custom_app"
-      ? `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store\nSKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx\n`
-      : `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store\nSKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id\n`;
-
+  
+  const templates = {
+    admin_custom_app: `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store\nSKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx\n`,
+    dev_dashboard_app: `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store\nSKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id\nSHOPIFY_APP_AUTOMATION_TOKEN=atkn_xxx\n`,
+    public_storefront: `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=public_storefront\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com\n`,
+  };
+  
+  const template = templates[method];
   const exists = await fs.readFile(envFile, "utf8").then(() => true).catch(() => false);
-  if (!exists) await fs.writeFile(envFile, template, "utf8");
+  
+  // Only write if file doesn't exist OR force flag is set
+  if (!exists || force) {
+    await fs.writeFile(envFile, template, "utf8");
+  }
+  
   const gitignoreUpdated = await ensureGitignoreLine(envFile);
-  console.log(JSON.stringify({ ok: true, envFile, created: !exists, gitignoreUpdated, requiredScopes: scopes }, null, 2));
+  console.log(JSON.stringify({ ok: true, envFile, created: !exists, overwritten: exists && force, gitignoreUpdated, requiredScopes: scopes }, null, 2));
 }
 
 async function shopifyCliFetch({ env = {}, shop, query, variables, allowMutations = false }) {
@@ -248,11 +257,42 @@ async function resolveShopifyDomain(rawInput) {
   return null;
 }
 
+async function fetchPublicProduct(shop, handle) {
+  const response = await fetch(`https://${shop}/products/${handle}.json`, {
+    headers: { "User-Agent": "Shopify-Skill-Hub/1.0" },
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data?.product || null;
+}
+
+async function fetchPublicProductHtml(shop, handle) {
+  const response = await fetch(`https://${shop}/products/${handle}`, {
+    headers: { "User-Agent": "Shopify-Skill-Hub/1.0" },
+  });
+  if (!response.ok) return null;
+  return response.text();
+}
+
 async function resolveAdmin(env) {
   const method = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || "admin_custom_app";
   const rawInput = (env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || "").trim();
   if (!rawInput) fail("Missing SKILL_HUB_SHOPIFY_STORE_DOMAIN.");
 
+  // Path C: Public storefront (no API needed)
+  if (method === "public_storefront") {
+    const shop = normalizeDomain(rawInput);
+    if (!shop) fail("Missing or invalid store domain for public_storefront mode.");
+    // Test accessibility of public JSON endpoint
+    const testUrl = `https://${shop}/products.json?limit=1`;
+    const testResponse = await fetch(testUrl, { headers: { "User-Agent": "Shopify-Skill-Hub/1.0" } }).catch(() => null);
+    if (!testResponse || !testResponse.ok) {
+      fail(`Could not access public products endpoint at ${testUrl}. Verify the store domain is correct and the store is not bot-protected.`);
+    }
+    return { mode: "public_storefront", shop, env };
+  }
+
+  // Path B: Dev Dashboard App with CLI
   if (method === "dev_dashboard_app") {
     const shop = await resolveShopifyDomain(rawInput);
     if (!shop) {
@@ -272,6 +312,7 @@ async function resolveAdmin(env) {
     return { mode: "cli", shop, env };
   }
 
+  // Path A: Admin Custom App with token
   const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
   if (!token) fail("Missing SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN.");
 
@@ -280,7 +321,7 @@ async function resolveAdmin(env) {
     : DEFAULT_VERSION_CANDIDATES;
   const uniqueVersions = [...new Set(versions)];
 
-  let shop = inputDomain;
+  let shop = rawInput;
   if (!shop.endsWith(".myshopify.com")) {
     const probeVersion = uniqueVersions[0];
     const probe = await fetch(`https://${shop}/admin/api/${probeVersion}/graphql.json`, {
@@ -312,6 +353,9 @@ async function resolveAdmin(env) {
 }
 
 async function gql(client, query, variables = {}) {
+  if (client.mode === "public_storefront") {
+    fail("GraphQL queries are not available in public_storefront mode. This command requires Admin API access (Path A or B).");
+  }
   if (client.mode === "cli") {
     const allowMutations = /(^|\n)\s*mutation\b/i.test(query);
     const result = await shopifyCliFetch({ env: client.env, shop: client.shop, query, variables, allowMutations });
@@ -433,6 +477,12 @@ const METAFIELD_DEFINITIONS_QUERY = `query SerpOptimizerMetafieldDefinitions($ow
 async function connectionCheck(args) {
   const env = await loadEnv(args.env || DEFAULT_ENV);
   const client = await resolveAdmin(env);
+  
+  if (client.mode === "public_storefront") {
+    console.log(JSON.stringify({ ok: true, shop: client.shop, mode: client.mode, note: "Public storefront mode: read-only access via public JSON endpoints" }, null, 2));
+    return;
+  }
+  
   const data = await gql(client, "query SkillHubSerpConnectionCheck { shop { name myshopifyDomain primaryDomain { host url } } }");
   console.log(JSON.stringify({ ok: true, shop: data.shop, mode: client.mode }, null, 2));
 }
@@ -444,6 +494,28 @@ async function productCommand(args) {
     ? { id: args.id }
     : { handle: handleFromUrl(args.handle || args.url || args._[0]) };
   if (!identifier.id && !identifier.handle) fail("Provide --id, --handle, --url, or a product URL/handle argument.");
+  
+  // Public storefront mode: fetch from JSON endpoint
+  if (client.mode === "public_storefront") {
+    if (!identifier.handle) fail("In public_storefront mode, use --handle or product URL (--id is not supported).");
+    const rawProduct = await fetchPublicProduct(client.shop, identifier.handle);
+    if (!rawProduct) {
+      fail(`Product handle "${identifier.handle}" was not found at ${client.shop}. Verify the handle and store domain.`);
+    }
+    // Also fetch HTML for SEO fields
+    const html = await fetchPublicProductHtml(client.shop, identifier.handle);
+    const titleMatch = html ? html.match(/<title>([^<]*)<\/title>/i) : null;
+    const metaDescMatch = html ? html.match(/<meta\s+name="description"\s+content="([^"]*)"/i) : null;
+    const normalized = normalizePublicProduct(rawProduct, client.shop);
+    normalized.seo.title = titleMatch ? titleMatch[1].trim() : "";
+    normalized.seo.description = metaDescMatch ? metaDescMatch[1].trim() : "";
+    normalized.seoTitle = normalized.seo.title;
+    normalized.seoDescription = normalized.seo.description;
+    console.log(JSON.stringify({ ok: true, product: normalized, mode: "public_storefront" }, null, 2));
+    return;
+  }
+  
+  // API modes (Path A and B)
   const data = await gql(client, PRODUCT_QUERY, { identifier }).catch((error) => {
     fail(`Shopify API error when reading product: ${error.message}. Check that the product exists and your token has read_products scope. Provided identifier: ${JSON.stringify(identifier)}`);
   });
@@ -542,6 +614,11 @@ function buildMetafieldAudit(product, definitions) {
 async function metafieldAuditCommand(args) {
   const env = await loadEnv(args.env || DEFAULT_ENV);
   const client = await resolveAdmin(env);
+  
+  if (client.mode === "public_storefront") {
+    fail("Metafield audit is not available in public_storefront mode. Metafields require Admin API access (Path A or B). To audit metafields, please use your Admin API token instead.");
+  }
+  
   const identifier = identifierFromArgs(args);
   if (!identifier.id && !identifier.handle) fail("Provide --id, --handle, --url, --product, or a product URL/handle argument.");
   const productData = await gql(client, PRODUCT_QUERY, { identifier });
@@ -704,11 +781,64 @@ function scoreProduct(product) {
     opportunityScore: Math.max(0, Math.min(100, score)),
     eligible,
     reasons,
-    exclusions,
+     exclusions,
+   };
+}
+
+function normalizePublicProduct(raw, shop) {
+  return {
+    id: raw.id,
+    title: raw.title,
+    handle: raw.handle,
+    status: "ACTIVE",
+    onlineStoreUrl: `https://${shop}/products/${raw.handle}`,
+    productType: raw.product_type || "",
+    vendor: raw.vendor || "",
+    tags: raw.tags || "",
+    descriptionHtml: raw.body_html || "",
+    description: (raw.body_html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
+    seo: { title: null, description: null },
+    media: (raw.images || []).map((img) => ({
+      alt: img.alt || "",
+      url: img.src,
+    })),
+    variants: (raw.variants || []).map((v) => ({
+      id: v.id,
+      title: v.title,
+      price: v.price,
+      sku: v.sku,
+    })),
   };
 }
 
+async function readAllProductsPublic(shop, args) {
+  const pageSize = Math.min(Math.max(Number(args["page-size"] || 50), 1), 250);
+  const maxProducts = Math.min(Math.max(Number(args.limit || MAX_SCAN_PRODUCTS), 1), 500);
+  const products = [];
+  let page = 1;
+  while (products.length < maxProducts) {
+    const response = await fetch(`https://${shop}/products.json?limit=${pageSize}&page=${page}`, {
+      headers: { "User-Agent": "Shopify-Skill-Hub/1.0" },
+    });
+    if (!response.ok) break;
+    const data = await response.json();
+    const batch = data?.products || [];
+    if (batch.length === 0) break;
+    for (const raw of batch) {
+      products.push(normalizePublicProduct(raw, shop));
+      if (products.length >= maxProducts) break;
+    }
+    if (batch.length < pageSize) break;
+    page += 1;
+  }
+  return products;
+}
+
 async function readAllProducts(client, args) {
+  if (client.mode === "public_storefront") {
+    return readAllProductsPublic(client.shop, args);
+  }
+  
   const pageSize = Math.min(Math.max(Number(args["page-size"] || 50), 1), 100);
   const maxProducts = Math.min(Math.max(Number(args.limit || MAX_SCAN_PRODUCTS), 1), 500);
   const query = args.query ? String(args.query) : null;
@@ -1586,16 +1716,21 @@ async function reportCommand(args) {
 
 async function applyCommand(args) {
   const plan = await loadJsonInput(args.input || "-");
-  const changes = validatePlan(plan);
   const execute = Boolean(args.execute);
-
+  const env = await loadEnv(args.env || DEFAULT_ENV);
+  const client = await resolveAdmin(env);
+  
+  if (client.mode === "public_storefront") {
+    fail("Apply/write operations are not available in public_storefront mode. This is a read-only mode. To write changes, use your Admin API token (Path A or B) instead.");
+  }
+  
+  const changes = validatePlan(plan);
+  
   if (!execute) {
     console.log(JSON.stringify({ ok: true, preview: true, changes }, null, 2));
     return;
   }
-
-  const env = await loadEnv(args.env || DEFAULT_ENV);
-  const client = await resolveAdmin(env);
+  
   const results = [];
 
   for (const change of changes.filter((item) => item.type === "product_full_bundle")) {
@@ -1689,7 +1824,7 @@ async function applyCommand(args) {
   console.log(JSON.stringify({ ok: true, executed: true, results }, null, 2));
 }
 
-async function main() {
+function main() {
   const [command, ...rest] = process.argv.slice(2);
   const args = parseArgs(rest);
   if (command === "init-env") return initEnv(args);

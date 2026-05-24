@@ -55,7 +55,7 @@ Follow this condensed flow:
 
 1. **Preflight**: Check for `skill-hub.env` in the current working directory. If it exists with complete values for the chosen access method, run `connection-check` and proceed. Do not ask setup questions.
 2. **Ask once**: If env is missing or incomplete, ask the A/B/C question exactly as written in the onboarding guide.
-3. **Create env**: Use the skill's `init-env` script to create `skill-hub.env` with placeholders. Ensure `.gitignore` contains `skill-hub.env`.
+3. **Create env**: Use the skill's `init-env` script to create `skill-hub.env` with placeholders. Ensure `.gitignore` contains `skill-hub.env`. If you need to switch access methods, use `--force` flag: `init-env --method <new-method> --env skill-hub.env --force`
 4. **Guide the user**: Tell the user exactly which fields to fill and where to find each value, as described in the onboarding guide.
 5. **Execute CLI runbook**: For Path B, follow the silent, non-interactive runbook in the onboarding guide. Set `SHOPIFY_APP_AUTOMATION_TOKEN` from the env before running any `shopify app` commands.
 6. **Verify**: Run `connection-check`. If it succeeds, proceed to the skill's main workflow.
