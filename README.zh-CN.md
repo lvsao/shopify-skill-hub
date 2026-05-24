@@ -1,7 +1,7 @@
 # Selofy Shopify Skill Hub
 
 [![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
-[![Skills](https://img.shields.io/badge/skills-6-2563eb)](./skills)
+[![Skills](https://img.shields.io/badge/skills-7-2563eb)](./skills)
 [![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 [![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
@@ -54,6 +54,12 @@ npx skills add lvsao/shopify-skill-hub --skill shopify-product-serp-optimizer
 npx skills add lvsao/shopify-skill-hub --skill shopify-theme-apps-detector
 ```
 
+只安装 Shopify 商品图片下载器 skill：
+
+```bash
+npx skills add lvsao/shopify-skill-hub --skill shopify-product-images-downloader
+```
+
 安装前查看可用 skills：
 
 ```bash
@@ -78,6 +84,7 @@ npx skills add . --list
 | `shopify-store-translator` | `operations` | 将 Shopify 店铺所有资源（商品、集合、页面、博客、政策等）翻译成任意目标语言。检查语言和市场配置，完整翻译不缩略，生成 CSV 审计表供审核，验证编码无损坏，并引导完成带子文件夹 URL 的市场配置。 |
 | `shopify-gmc-misrepresentation-auditor` | `product-feed` | 爬取任意 Shopify 店铺，审查 Google Merchant Center 虚假陈述政策风险——无需 API Token。模拟 Google 爬虫视角，生成带证据的优先级 HTML 报告、需商家核实的手动检查清单（MC-01 至 MC-07）以及分阶段整改计划。 |
 | `shopify-theme-apps-detector` | `operations` | 扫描任意公开 Shopify 店铺，无需 API Token、无需登录，即可揭示其主题和所有可检测的 App。生成独立可视化 HTML 报告，包含 App Logo、App Store 链接、置信度徽章和可追溯证据链。适合竞品调研、代理商开发和电商市场情报。 |
+| `shopify-product-images-downloader` | `operations` | 从任意公开 Shopify 店铺下载所有商品图片——无需 API 授权。验证店铺后通过公开 JSON API 发现商品、获取每件商品的所有图片，并保存到按域名/商品名/文件名组织的文件夹结构。支持全店、按集合筛选和按单品下载。 |
 
 ## Shopify API 权限与 Env 配置
 
@@ -179,6 +186,12 @@ skills/
       detection-principles.md
     scripts/
       store-scanner.mjs
+  shopify-product-images-downloader/
+    SKILL.md
+    agents/
+      openai.yaml
+    scripts/
+      shopify-image-downloader.mjs
 catalog/
   INDEX.json
   content-creation/

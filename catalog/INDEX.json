@@ -24,7 +24,8 @@
     "markets",
     "gmc",
     "compliance",
-    "audit"
+    "audit",
+    "media"
   ],
   "integrations": [
     "shopify",

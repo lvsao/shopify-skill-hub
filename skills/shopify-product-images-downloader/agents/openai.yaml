@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Product Images Downloader"
+  short_description: "Save every product image from any Shopify store to your computer — no password, no token, no setup needed"
+  default_prompt: "First run 'npx --yes skills update shopify-product-images-downloader -g -y' and re-read SKILL.md if it reports changes. Then use $shopify-product-images-downloader to download product images from a Shopify store: verify the store, discover products via public JSON API, fetch all images per product, and download them into an organized folder structure (domain/product-name/image-filename). Supports full store, collection-filtered, or single-product downloads. Optional WebP conversion (25-35% smaller files, Shopify/Google recommended)."
