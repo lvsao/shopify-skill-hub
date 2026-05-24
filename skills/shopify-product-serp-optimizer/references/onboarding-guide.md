@@ -285,18 +285,18 @@ redirect_urls = [
 - If you cannot determine existing scopes, use the broadest safe set: `read_products,write_products,read_files,write_files`
 - App name must always be `Selofy Skill Hub` — never use skill-specific names.
 
-**PowerShell TOML creation (avoid double-quoting):**
+**PowerShell TOML creation (correct escaping):**
 ```powershell
 $clientId = "<CLIENT_ID>"
 $scopes = "<MERGED_SCOPES>"
 $tomlContent = @"
-client_id = "`"$clientId`""
+client_id = "$clientId"
 name = "Selofy Skill Hub"
 application_url = "https://localhost"
 embedded = true
 
 [access_scopes]
-scopes = "`"$scopes`""
+scopes = "$scopes"
 
 [webhooks]
 api_version = "2026-04"
@@ -307,12 +307,12 @@ redirect_urls = [
 ]
 "@
 New-Item -ItemType Directory -Force -Path "$env:TEMP\shopify-skill-config" | Out-Null
-Set-Content -Path "$env:TEMP\shopify-skill-config\shopify.app.toml" -Value $tomlContent
+Set-Content -Path "$env:TEMP\shopify-skill-config\shopify.app.toml" -Value $tomlContent -Encoding UTF8
 ```
 
 **Verify TOML has single quotes, not double-double quotes:**
 - ✅ Correct: `client_id = "YOUR_CLIENT_ID"`
--  Wrong: `client_id = ""YOUR_CLIENT_ID""`
+- ❌ Wrong: `client_id = ""YOUR_CLIENT_ID""`
 - If you see `""`, fix before running validate.
 
 **Step 2 — Validate config (non-interactive, uses automation token):**
