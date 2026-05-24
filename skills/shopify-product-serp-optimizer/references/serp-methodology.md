@@ -139,6 +139,8 @@ Supported evidence can come from:
 - Merchant-provided target query or positioning.
 - GSC query evidence when the user provides it.
 
+**In Path C (public mode):** SEO fields come from HTML `<title>` and `<meta>` tags only (cannot distinguish custom vs fallback). Metafield evidence is unavailable. Collection data is unavailable. Product status is inferred from `published_at`. Product URL is constructed from domain + handle.
+
 Unsupported or high-risk claims include:
 
 - "Best", "safest", "guaranteed", "certified", "doctor recommended", "eco-friendly", "non-toxic", "waterproof", "crash tested", "free shipping", and warranty or return claims unless directly evidenced.
@@ -190,6 +192,8 @@ Use these rules before auditing:
 | `seo.description` | Falls back to the first 155 characters of `product.description` | Score that fallback text as the current effective meta description. |
 
 Do not write "missing SEO title" or "missing meta description" in the report just because the API field is null. Say that Shopify is using the default product title or product description fallback, then judge whether the fallback is good enough.
+
+**In Path C (public mode):** The fallback rules above cannot be resolved because the HTML always shows the effective value. Treat SEO title and meta description values as `"public_html_effective"` — do not claim they are custom SEO fields or Shopify fallbacks. Score the content itself (is it weak? generic? misaligned?) rather than the source.
 
 ## SEO Title Rubric
 
@@ -464,7 +468,9 @@ When this skill is triggered:
 - Generate the report in the same turn by default.
 - Do not stop after giving chat-only title/meta suggestions.
 - Do not ask whether the user wants the report unless file creation is actually blocked.
-- If Shopify access is unavailable but the product title is specific enough, generate a provisional read-only report from merchant-visible product wording plus live Google and Amazon evidence, and label the evidence limits clearly.
+- If Shopify access is unavailable:
+  - If a product URL is available, use **Path C (Public Storefront)** to extract full product data from public JSON + HTML scraping per `references/public-data-extraction.md`.
+  - If only a product title is available, generate a provisional read-only report from merchant-visible product wording plus live Google and Amazon evidence, and label the evidence limits clearly.
 - For broader requests, generate the report for the current analyzed batch rather than waiting for all future batches.
 
 Stop completely before writes when:

@@ -11,6 +11,7 @@ This document is the single source of truth for connecting any Selofy skill to a
 - Never use skill-specific names like `serp-optimizer`, `alt-text-tool`, etc.
 - When creating or updating the TOML config, always set `name = "Selofy Skill Hub"`
 - This ensures all skills share one Dev Dashboard app instead of creating multiple apps.
+- **Path C (public_storefront) does not use an app name or TOML** — skip this constraint.
 
 ### 2. Scopes Are Additive Only — Never Remove
 - **Scopes can only be added, never removed.**
@@ -20,6 +21,7 @@ This document is the single source of truth for connecting any Selofy skill to a
 - **Merge strategy**: Take the union of existing scopes + new skill's required scopes.
 - Example: If existing app has `read_products` and new skill needs `read_products,write_products,read_files`, the final scopes should be `read_products,write_products,read_files` (not just the new skill's scopes).
 - When in doubt, use the broadest safe set: `read_products,write_products,read_files,write_files,read_themes,write_themes`
+- **Path C (public_storefront) does not use scopes** — skip all scope merging for this path.
 
 ### 3. Script Path Resolution — Use Absolute Paths
 - **Always use the absolute path to skill scripts.** Never use relative paths like `skills/<skill-name>/scripts/...`.
@@ -61,7 +63,7 @@ redirect_urls = [
 ## How This Guide Works
 
 1. **Agent reads this guide** when `skill-hub.env` is missing, incomplete, or the user requests setup.
-2. **Agent asks one A/B question** to determine the access method.
+2. **Agent asks one A/B/C question** to determine the access method.
 3. **Agent creates `skill-hub.env`** with placeholder values for the chosen path.
 4. **Agent guides the user** to fill only the required fields.
 5. **Agent runs the connection check** and executes the CLI runbook silently.
@@ -69,6 +71,8 @@ redirect_urls = [
 
 ### After Skill Updates — Force Reload
 When the user runs a skill update command (e.g., `skills update` or similar), the agent **MUST** immediately re-read this onboarding guide and all skill `SKILL.md` files before proceeding. Do not use cached or stale skill instructions. Always fetch the latest version from the skill registry.
+
+For Path C (public_storefront), also re-read `references/public-data-extraction.md` before extracting product data.
 
 ---
 
@@ -81,8 +85,9 @@ Before asking any setup question:
 3. Read only variable names and whether required values are present. Never print secrets.
 4. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `admin_custom_app` and the store domain plus Admin API token are present, run the skill's `connection-check`.
 5. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `dev_dashboard_app` and the store domain plus Client ID plus App Automation Token are present, run the skill's `connection-check`.
-6. If the check succeeds, continue directly to the skill's main workflow. Do not ask where the app was created.
-7. If the user says "already configured", "B is configured", or similar, inspect the env instead of asking the A/B question again.
+6. If `SKILL_HUB_SHOPIFY_ACCESS_METHOD` is `public_storefront` and the store domain is present, run the skill's `connection-check` (tests public JSON endpoint accessibility). No tokens required.
+7. If the check succeeds, continue directly to the skill's main workflow. Do not ask where the app was created.
+7. If the user says "already configured", "B is configured", "C is configured", or similar, inspect the env instead of asking the A/B/C question again.
 
 Ask the setup question only when `skill-hub.env` is missing, incomplete, placeholder-only, or the access method cannot be determined.
 
@@ -93,10 +98,11 @@ Ask the setup question only when `skill-hub.env` is missing, incomplete, placeho
 Ask the user exactly once:
 
 ```text
-Where did you create your Shopify app?
+How do you want to connect to the store?
 
-A - Shopify store Settings custom app (Legacy Custom App)
-B - Dev Dashboard app
+A - Shopify Admin API token (from store Settings → custom app)
+B - Dev Dashboard app (Shopify CLI + automation token)
+C - Public product URL only (no API needed, read-only preview)
 ```
 
 Then create or update one private shared file in the current working directory:
@@ -383,6 +389,118 @@ Delete the temporary folder using the current terminal's native recursive delete
 
 ---
 
+## Path C: Public Storefront URL (No API Needed)
+
+This path is for merchants who want a read-only SEO audit without granting any Shopify API permissions. The skill will fetch all available product data from Shopify's built-in public JSON endpoints and HTML scraping.
+
+### What the user needs to provide
+
+Just one product URL or store domain — no tokens, no app creation, no scopes.
+
+**1. A product URL or store address** — choose one:
+- Option A (most useful): A product page URL like `https://www.your-store.com/products/product-name`
+- Option B: A store domain like `www.your-store.com` or `your-store.myshopify.com`
+
+### Env file setup
+
+Create `skill-hub.env` with the store domain:
+
+```text
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method public_storefront --env skill-hub.env
+```
+
+Or create it manually:
+
+```text
+# Skill Hub shared Shopify configuration
+# Keep this file private. Do not commit it or paste tokens into chat.
+
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=public_storefront
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+```
+
+### Connection verification
+
+Test that the store's public JSON endpoints are accessible:
+
+```text
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs connection-check --env skill-hub.env
+```
+
+If the check succeeds, the store is accessible. If it fails, the store may use bot protection (Cloudflare, Akamai, etc.) — suggest Path A or Path B instead.
+
+### What this path can do (read-only)
+
+| Feature | Available | Notes |
+|---------|-----------|-------|
+| Read product title, description, vendor, type, tags | ✅ | From `/products/{handle}.json` |
+| Read variants, prices, SKUs, inventory | ✅ | Full variant data in JSON |
+| Read all product images with alt text | ✅ | CDN URLs are publicly downloadable |
+| Generate alt text via vision (download + analyze) | ✅ | CDN is public, no auth needed |
+| Read effective SEO title and meta description | ✅ | From `<title>` and `<meta>` tags in page HTML |
+| Score product metadata and suggest improvements | ✅ | Effective values are available |
+| Generate full HTML audit report | ✅ | All above fields support scoring |
+| Read product description (`descriptionHtml`) | ✅ | `body_html` in JSON = Admin API `descriptionHtml` |
+| Scan multiple products via storefront | ✅ | `/products.json` pagination |
+| Narrow by collection | ✅ | `/collections.json` + `/collections/{handle}/products.json` |
+
+### What this path CANNOT do
+
+| Feature | Reason |
+|---------|--------|
+| Distinguish custom SEO fields from Shopify fallbacks | HTML `<title>` and `<meta>` always show the effective (resolved) value — we cannot see if `seo.title` is explicitly set or empty. Mark as "effective" rather than "custom" or "fallback". |
+| Read or audit metafields | Not exposed in any public endpoint |
+| Read metafieldDefinitions | Not exposed in any public endpoint |
+| Read collection memberships | Not in public product JSON |
+| Read onlineStoreUrl | Not in public JSON (can construct from domain + handle) |
+| Determine product status (active/archived/draft) | Not in public JSON (assume active if published_at is set) |
+| Write any changes | Read-only by nature |
+| Access stores behind Cloudflare/Akamai | Public endpoints may be blocked; advise Path A or B |
+
+### Data source priority
+
+When reading a product in Path C, use this priority:
+
+1. **`/products/{handle}.json`** — best source for title, description, variants, images, prices, SKUs, vendor, type, tags, options, timestamps
+2. **Product page HTML** — `<title>` and `<meta name="description">` for effective SEO fields
+3. **`/products.json`** — for scanning all products (paginated, lacks `body_html`)
+
+### How to extract the product handle from a URL
+
+The user may provide a full URL like:
+
+```text
+https://www.your-store.com/collections/dog-harnesses/products/flora-dog-walking-set
+```
+
+Extract the handle by taking the path segment immediately after `/products/`:
+
+```text
+/products/<handle>.json
+/flora-dog-walking-set.json (wrong — include the full products path)
+```
+
+The handle is `flora-dog-walking-set`. Fetch:
+
+```text
+https://www.your-store.com/products/flora-dog-walking-set.json
+```
+
+### How to resolve store domain
+
+Same methods as Path B:
+
+- Admin URL: `admin.shopify.com/store/<name>` → `<name>.myshopify.com`
+- Direct: `your-store.myshopify.com` → use directly
+- Website: `www.your-store.com` → fetch HTML and extract `Shopify.shop` variable
+- Extract from product URL: `https://www.your-store.com/products/...` → domain is `www.your-store.com`, then resolve via HTML
+
+### After connecting
+
+After the connection check succeeds, read `references/public-data-extraction.md` for detailed guidance on extracting each field type from public sources.
+
+---
+
 ## Common Error Classes
 
 When CLI commands fail, agents must report the exact failure class:
@@ -409,6 +527,7 @@ Skills that implement this onboarding must provide a helper script with at least
 node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method admin_custom_app --env skill-hub.env
 node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
 node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/<skill-script>.mjs init-env --method public_storefront --env skill-hub.env
 node <absolute-path-to-skill>/scripts/<skill-script>.mjs connection-check --env skill-hub.env
 ```
 
@@ -416,8 +535,9 @@ The `connection-check` command must:
 1. Read `skill-hub.env` to determine the access method.
 2. For `admin_custom_app`: make a read-only GraphQL probe to the Admin API using the token.
 3. For `dev_dashboard_app`: run `shopify store execute` with a minimal query (e.g., `{ shop { name } }`) and parse the output file.
-4. Return a structured result indicating success, `CLI_AUTH_REQUIRED`, or a specific error class.
-5. Never print tokens or secrets.
+4. For `public_storefront`: fetch `https://<domain>/products.json?limit=1` and verify the response is valid JSON with a `products` array. If the store returns a 403 or blocks the request, suggest Path A or B.
+5. Return a structured result indicating success, `CLI_AUTH_REQUIRED`, or a specific error class.
+6. Never print tokens or secrets.
 
 ---
 
@@ -438,6 +558,12 @@ SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=
 For Path A (admin_custom_app), replace the last two lines with:
 ```text
 SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=
+```
+
+For Path C (public_storefront), nothing needs to be filled beyond the store domain:
+```text
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=public_storefront
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
 ```
 
 The agent should create this file with placeholder values and ask the user to fill only the required fields for their chosen path.
