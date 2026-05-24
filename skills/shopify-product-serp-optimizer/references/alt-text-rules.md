@@ -48,6 +48,8 @@ Required path for `source: "vision"`:
 
 Downloading a file is not image inspection. Filenames, URLs, surrounding text, and product titles are not pixel evidence.
 
+**In Path C (public mode):** Image CDN URLs from the public JSON endpoint are publicly accessible — no API token needed to download. The visual-evidence workflow works identically regardless of access method. If the store's CDN is accessible (which it almost always is), you can download and inspect product images just as in Path A or B.
+
 ## Context-Only Fallback
 
 When direct image inspection is unavailable, generate a lower-confidence candidate only from merchant product context:

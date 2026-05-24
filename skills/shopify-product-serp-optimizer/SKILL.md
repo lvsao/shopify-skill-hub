@@ -37,6 +37,7 @@ description: Plan and optimize Shopify product SERP performance with product-lev
 - Do not promise FAQ rich results. As of April 30, 2026, Google's FAQ rich results are generally limited to health or government sites, so treat FAQ output here as content and snippet guidance unless the user's site is actually eligible.
 - Do not optimize just because a field can be changed. If the current metadata already scores well and there is no query, evidence, or SERP opportunity for improvement, recommend no change.
 - Apply Shopify's SEO fallback rules before auditing. When `seo.title` is null or empty, treat the effective current SEO title as the product title. When `seo.description` is null or empty, treat the effective current meta description as the first 155 characters of the product description. Do not call these fields "missing" unless the fallback source is also missing or unusable.
+- **In Path C (public mode):** HTML `<title>` and `<meta name="description">` always show the effective (resolved) values. The fallback rules above cannot be applied because we cannot see whether `seo.title` or `seo.description` is explicitly set. Use `"public_html_effective"` as the source for both fields and do not distinguish "custom SEO field" from "Shopify fallback" in the report.
 - Match the report language to the user's language. If the user works in Chinese, German, or another language, write the HTML report content and static labels in that language whenever possible.
 - Never print or store access tokens, client secrets, short-lived tokens, session cookies, or real merchant data in public files.
 
@@ -44,6 +45,7 @@ Read `references/serp-methodology.md` before scoring, batching, reporting, or pr
 When metafields are in scope, also read `references/metafield-audit.md`.
 When image alt text is in scope, also read `references/alt-text-rules.md`.
 Before any Shopify connection work, read `references/onboarding-guide.md`.
+In Path C (public mode), also read `references/public-data-extraction.md` before extracting product data.
 
 ## Beginner Onboarding First
 
@@ -52,11 +54,20 @@ Before any Shopify connection work, read `references/onboarding-guide.md`.
 Follow this condensed flow:
 
 1. **Preflight**: Check for `skill-hub.env` in the current working directory. If it exists with complete values for the chosen access method, run `connection-check` and proceed. Do not ask setup questions.
-2. **Ask once**: If env is missing or incomplete, ask the A/B question exactly as written in the onboarding guide.
+2. **Ask once**: If env is missing or incomplete, ask the A/B/C question exactly as written in the onboarding guide.
 3. **Create env**: Use the skill's `init-env` script to create `skill-hub.env` with placeholders. Ensure `.gitignore` contains `skill-hub.env`.
 4. **Guide the user**: Tell the user exactly which fields to fill and where to find each value, as described in the onboarding guide.
 5. **Execute CLI runbook**: For Path B, follow the silent, non-interactive runbook in the onboarding guide. Set `SHOPIFY_APP_AUTOMATION_TOKEN` from the env before running any `shopify app` commands.
 6. **Verify**: Run `connection-check`. If it succeeds, proceed to the skill's main workflow.
+
+**Path C critical notes** (public storefront):
+- No API credentials needed — user provides only a product URL or store domain.
+- Use `references/public-data-extraction.md` for the extraction workflow.
+- Connection check tests whether `/products.json` is accessible.
+- Shopify's SEO fallback rules (line 39) do not apply — the HTML `<title>` always shows the effective value regardless of custom SEO field status. Mark all SEO sources as `"public_html_effective"`.
+- The report is read-only. Do not offer to write changes.
+- Metafield audit module is skipped in the report.
+- Product status and `onlineStoreUrl` are inferred from available data, not queried.
 
 **Path B critical notes** (Dev Dashboard app):
 - Use `SHOPIFY_APP_AUTOMATION_TOKEN` for all `shopify app` commands — this makes them non-interactive.
@@ -112,17 +123,20 @@ Use this decision tree:
 
 1. If the user gives a product URL, product handle, product ID, or a clear single product title, produce one product HTML report in the same turn.
 2. If Shopify access is available, read the live product record first and use that as the main evidence source.
-3. If Shopify access is not available but the product title is specific enough, generate a provisional read-only HTML report from the title plus live Google and Amazon evidence. Do not block on setup for this case.
+3. If Shopify access is not available, check whether the user provided a product URL. If so, use **Path C (Public Storefront)** — extract product data from the public JSON endpoint + HTML scraping per `references/public-data-extraction.md`. Generate a full read-only HTML report from extracted public data. Mark SEO source as `"public_html_effective"` and skip the metafield audit module. Do not block on setup for this case.
 4. If the user gives multiple product URLs or handles, read those products, process them in batches of five, and still generate the HTML report for the current batch in the same turn.
 5. If the user gives a collection URL or handle, use it as a narrowing signal only when helpful, then still produce a five-product batch plan and generate the HTML report for the current batch in the same turn.
 6. If the user says a vague request such as "optimize product SEO", "improve product search", or "audit my products", scan the store, create a batch plan, and generate the HTML report for the current batch in the same turn.
 
-For vague requests, run:
+For vague requests:
 
-```text
-node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs scan-products --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
-```
+- **Path A or B (API access):** run:
+  ```text
+  node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs scan-products --env skill-hub.env
+  node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
+  ```
+
+- **Path C (public mode):** scan products manually using the public `/products.json` endpoint. Fetch all product pages, score them using available fields (title, price, variants, images, tags, product type), and produce a batch plan. Read `references/public-data-extraction.md` for the scanning workflow.
 
 In conversation, summarize:
 
@@ -167,6 +181,7 @@ Batch meaning:
 ## Required Order
 
 1. Read `references/onboarding-guide.md`. Create or verify `skill-hub.env`. Run Shopify connection check.
+   - If access method is `public_storefront`, also read `references/public-data-extraction.md` before any data extraction.
 2. Read `references/serp-methodology.md`.
 3. If metafields are in scope, read `references/metafield-audit.md`.
 4. If alt text is in scope, read `references/alt-text-rules.md`.
@@ -174,25 +189,26 @@ Batch meaning:
 6. Commit to generating the `.html` report in this same turn unless a hard blocker prevents file creation.
 7. Gather live Google intent evidence during the current run. Use real Google search surfaces such as autocomplete, related searches, People Also Ask, product/product-review/comparison results, or current SERP wording. Do not reuse stale memory as a substitute for live evidence.
 8. Gather live Amazon ecommerce user-intent evidence during the current run. Use real Amazon surfaces such as autocomplete, category/product result wording, titles, bullets, Compare With Similar Items, Q&A themes, and review themes. Do not reuse stale memory as a substitute for live evidence.
-9. If Shopify access is available, run `metafield-audit` for the product or current batch and separate:
+9. If Shopify access is available (Path A or B), run `metafield-audit` for the product or current batch and separate:
   - definitions with populated values
   - definitions missing values on the product
   - value-only metafields without surfaced definitions
 10. Tell the user the scope, current batch, opportunity reasons, and what can or cannot be executed.
 11. Build a product evidence ledger. Separate supported facts from missing or risky claims.
 12. Classify search intent and create a micro-intent ladder. If no target query is provided, infer conservative hypotheses from product evidence and mark them as hypotheses.
-13. Resolve the current product title, product description, effective SEO title, and effective meta description with Shopify fallback rules, then score those values.
+13. Resolve the current product title, product description, effective SEO title, and effective meta description with Shopify fallback rules, then score those values. In Path C (public mode), SEO title and meta description come from HTML `<title>` and `<meta name="description">` — mark source as `"public_html_effective"` rather than "explicit" or "shopify_title_fallback".
 14. Produce 1-3 candidate product titles, 1-3 product description rewrite directions or final descriptions, 1-3 SEO titles, and 1-3 meta descriptions with evidence, why, risk flags, and score.
 15. Generate metafield optimization suggestions only when the value meaning can be grounded in definition metadata plus product evidence. For missing metafield values, offer fill recommendations instead of guessing.
-16. Generate direct product-image alt text recommendations inside this skill. Download only the current product-image batch to an operating-system temp folder, inspect images through the host's native image input when available, validate against `references/alt-text-rules.md`, and include approved candidates in the same product bundle.
+16. Generate direct product-image alt text recommendations inside this skill. Download only the current product-image batch to an operating-system temp folder, inspect images through the host's native image input when available, validate against `references/alt-text-rules.md`, and include approved candidates in the same product bundle. In Path C (public mode), image CDN URLs are publicly accessible — download and inspection work without any API token.
 17. Build the Enhanced snippets module from merchant evidence plus the live Google and live Amazon evidence. If an item cannot meet that evidence standard, mark it blocked instead of guessing.
 18. Generate the HTML report with the bundled helper.
 19. Tell the user the most important findings directly in the chat and explain how to open the HTML report.
-20. Ask for one explicit approval to apply the exact selected field bundle. The bundle must include every recommended `title`, `descriptionHtml`, `seo.title`, `seo.description`, approved metafield updates, and approved alt text update that should be written now.
-21. Preview the approved write plan with `apply --input -`.
-22. Apply the approved bundle in one execution with `apply --input - --execute`. Do not pause for additional per-field confirmation unless a hard validation or permissions failure blocks execution.
-23. Verify by reading changed products.
-24. Clean up operating-system temp files and confirm no process JSON or generated helper files were left in the working folder.
+20. If in Path C (public mode), inform the user that writes are not available — this is a read-only audit. Recommend switching to Path A or B if they want to apply changes.
+21. If in Path A or B, ask for one explicit approval to apply the exact selected field bundle. The bundle must include every recommended `title`, `descriptionHtml`, `seo.title`, `seo.description`, approved metafield updates, and approved alt text update that should be written now.
+22. Preview the approved write plan with `apply --input -`.
+23. Apply the approved bundle in one execution with `apply --input - --execute`. Do not pause for additional per-field confirmation unless a hard validation or permissions failure blocks execution.
+24. Verify by reading changed products.
+25. Clean up operating-system temp files and confirm no process JSON or generated helper files were left in the working folder.
 
 ## Bundled Script
 
@@ -202,6 +218,7 @@ Use the bundled native Node.js helper. It uses only Node.js built-ins.
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method admin_custom_app --env skill-hub.env --scopes "read_products,write_products"
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method public_storefront --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs connection-check --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --id gid://shopify/Product/...
@@ -212,6 +229,16 @@ node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs report --in
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs apply --env skill-hub.env --input -
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs apply --env skill-hub.env --input - --execute
 ```
+
+In Path C (public mode), only these commands are available:
+- `init-env --method public_storefront`
+- `connection-check` (tests public JSON endpoint)
+- `product` (fetches from public JSON + HTML)
+- `scan-products` (uses `/products.json` pagination)
+- `batch-plan` (uses `/products.json` pagination)
+- `report` (generates HTML report — works the same regardless of data source)
+
+`metafield-audit` and `apply` are not available in Path C.
 
 The `apply` command previews by default. Use `--execute` only after explicit user approval.
 
