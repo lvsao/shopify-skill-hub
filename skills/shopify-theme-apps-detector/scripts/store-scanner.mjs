@@ -94,6 +94,26 @@ function extractShopifyShop(html) {
   return m ? m[1] : null;
 }
 
+function extractFavicon(html, baseUrl) {
+  // Try multiple favicon link patterns in priority order
+  const patterns = [
+    /<link[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["']/i,
+    /<link[^>]*href=["']([^"']+)["'][^>]*rel=["'](?:shortcut )?icon["']/i,
+    /<link[^>]*rel=["']apple-touch-icon["'][^>]*href=["']([^"']+)["']/i,
+    /<link[^>]*href=["']([^"']+)["'][^>]*rel=["']apple-touch-icon["']/i,
+  ];
+  for (const pat of patterns) {
+    const m = html.match(pat);
+    if (m) {
+      const href = m[1];
+      if (/^https?:\/\//i.test(href)) return href;
+      if (/^\/\//.test(href)) return 'https:' + href;
+      try { return new URL(href, baseUrl).href; } catch { continue; }
+    }
+  }
+  return `${baseUrl}/favicon.ico`;
+}
+
 function extractScripts(html, baseOrigin) {
   const external = [];
   const appEmbeds = [];
@@ -269,6 +289,7 @@ async function scanPage(pageUrl, pageType) {
   const bodyClasses = extractBodyClasses(html);
   const metaTags = extractMetaTags(html);
   const htmlSignals = detectShopifyFromHtml(html);
+  const favicon = extractFavicon(html, effectiveUrl);
 
   return {
     url: pageUrl,
@@ -276,6 +297,7 @@ async function scanPage(pageUrl, pageType) {
     pageType,
     status: res.status,
     isPasswordPage,
+    favicon,
     shopifyTheme,
     shopifyShop,
     scripts: { external, appEmbeds, inlineSnippets: inline.slice(0, 5) },
@@ -357,6 +379,7 @@ async function main() {
   if (!isShopify) {
     console.log(JSON.stringify({
       storeUrl,
+      storeFavicon: homePage.favicon || `${storeUrl}/favicon.ico`,
       isShopify: false,
       shopifySignals: [],
       pages: [homePage],
@@ -399,8 +422,11 @@ async function main() {
   const shopifyTheme = pages.find(p => p.shopifyTheme)?.shopifyTheme || null;
   const shopifyShop = pages.find(p => p.shopifyShop)?.shopifyShop || null;
 
+  const storeFavicon = pages.find(p => p.favicon)?.favicon || `${storeUrl}/favicon.ico`;
+
   const bundle = {
     storeUrl,
+    storeFavicon,
     isShopify: true,
     shopifyShop,
     shopifyTheme,

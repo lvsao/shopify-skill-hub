@@ -7,28 +7,27 @@
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
-  --bg:        #0a0e1a;
-  --bg2:       #0f1525;
-  --bg3:       #151d30;
-  --border:    rgba(255,255,255,0.07);
-  --border2:   rgba(255,255,255,0.12);
-  --text:      #e2e8f0;
+  --bg:        #f8fafc;
+  --bg2:       #ffffff;
+  --bg3:       #f1f5f9;
+  --border:    rgba(0,0,0,0.07);
+  --border2:   rgba(0,0,0,0.12);
+  --text:      #0f172a;
   --muted:     #64748b;
-  --high:      #00ff88;
-  --high-dim:  rgba(0,255,136,0.12);
-  --med:       #f59e0b;
-  --med-dim:   rgba(245,158,11,0.12);
-  --low:       #64748b;
-  --low-dim:   rgba(100,116,139,0.10);
-  --accent:    #3b82f6;
-  --accent-dim:rgba(59,130,246,0.12);
+  --high:      #059669;
+  --high-dim:  rgba(5,150,105,0.10);
+  --med:       #d97706;
+  --med-dim:   rgba(217,119,6,0.10);
+  --low:       #94a3b8;
+  --low-dim:   rgba(148,163,184,0.10);
+  --accent:    #2563eb;
+  --accent-dim:rgba(37,99,235,0.08);
   --radius:    12px;
   --radius-sm: 6px;
-  --font-head: 'DM Sans', 'Helvetica Neue', sans-serif;
+  --font-head: 'Inter', 'Helvetica Neue', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 }
 
-/* ── Reset & base ──────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
@@ -42,15 +41,13 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* ── Google Fonts ──────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── Layout ────────────────────────────────────────────────────── */
 .page { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
 
-/* ── Hero header ───────────────────────────────────────────────── */
+/* ── Hero ──────────────────────────────────────────────────────── */
 .hero {
-  background: linear-gradient(135deg, #0d1b3e 0%, #0a0e1a 60%);
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a5f 50%, #0f172a 100%);
   border-bottom: 1px solid var(--border2);
   padding: 48px 0 0;
   position: relative;
@@ -59,30 +56,60 @@ a:hover { text-decoration: underline; }
 .hero::before {
   content: '';
   position: absolute;
-  top: -80px; right: -80px;
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 70%);
+  top: -120px; right: -60px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
   pointer-events: none;
 }
 .hero-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 .hero-eyebrow {
   display: flex; align-items: center; gap: 8px;
   font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--high);
+  text-transform: uppercase; color: rgba(255,255,255,0.5);
   margin-bottom: 16px;
 }
 .hero-eyebrow svg { width: 14px; height: 14px; }
+
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.hero-store-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.hero-store-icon img {
+  width: 100%; height: 100%; object-fit: contain;
+  border-radius: 11px;
+}
+.hero-store-icon .fallback {
+  font-size: 22px; color: rgba(255,255,255,0.6);
+}
+.hero-title-group { flex: 1; min-width: 0; }
 .hero-title {
   font-size: clamp(22px, 4vw, 32px);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.02em;
   color: #fff;
-  margin-bottom: 8px;
+  line-height: 1.2;
 }
-.hero-title span { color: var(--high); }
+.hero-title .domain { color: #60a5fa; }
+.hero-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 4px;
+  font-weight: 400;
+}
+
 .hero-meta {
   display: flex; flex-wrap: wrap; gap: 20px;
-  font-size: 12px; color: var(--muted);
+  font-size: 12px; color: rgba(255,255,255,0.5);
   margin-bottom: 36px;
 }
 .hero-meta-item { display: flex; align-items: center; gap: 6px; }
@@ -92,12 +119,11 @@ a:hover { text-decoration: underline; }
 .stat-bar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--border);
-  margin-top: 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 .stat {
   padding: 20px 24px;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid rgba(255,255,255,0.08);
   position: relative;
 }
 .stat:last-child { border-right: none; }
@@ -106,9 +132,9 @@ a:hover { text-decoration: underline; }
   color: #fff; line-height: 1;
   margin-bottom: 4px;
 }
-.stat-value.green { color: var(--high); }
-.stat-value.amber { color: var(--med); }
-.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.stat-value.green { color: #34d399; }
+.stat-value.amber { color: #fbbf24; }
+.stat-label { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; }
 
 /* ── Section ───────────────────────────────────────────────────── */
 .section { margin-top: 40px; }
@@ -134,17 +160,19 @@ a:hover { text-decoration: underline; }
   align-items: start;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .theme-card::before {
   content: '';
   position: absolute; top: 0; left: 0;
   width: 3px; height: 100%;
   background: var(--high);
+  border-radius: 0 2px 2px 0;
 }
 .theme-card.medium::before { background: var(--med); }
 .theme-card.low::before { background: var(--low); }
 .theme-name {
-  font-size: 20px; font-weight: 700; color: #fff;
+  font-size: 20px; font-weight: 700; color: var(--text);
   letter-spacing: -0.02em; margin-bottom: 4px;
 }
 .theme-schema {
@@ -159,8 +187,8 @@ a:hover { text-decoration: underline; }
   background: var(--bg3); border: 1px solid var(--border);
   color: var(--muted);
 }
-.tag.version { color: var(--accent); border-color: rgba(59,130,246,0.3); background: var(--accent-dim); }
-.tag.store-id { color: var(--high); border-color: rgba(0,255,136,0.3); background: var(--high-dim); }
+.tag.version { color: var(--accent); border-color: rgba(37,99,235,0.3); background: var(--accent-dim); }
+.tag.store-id { color: var(--high); border-color: rgba(5,150,105,0.3); background: var(--high-dim); }
 .theme-link {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: var(--radius-sm);
@@ -168,7 +196,7 @@ a:hover { text-decoration: underline; }
   font-size: 12px; font-weight: 500; color: var(--text);
   white-space: nowrap; transition: border-color 0.2s, color 0.2s;
 }
-.theme-link:hover { border-color: var(--high); color: var(--high); text-decoration: none; }
+.theme-link:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
 .theme-link svg { width: 13px; height: 13px; }
 
 /* ── Confidence badge ──────────────────────────────────────────── */
@@ -178,15 +206,15 @@ a:hover { text-decoration: underline; }
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.badge.high { background: var(--high-dim); color: var(--high); border: 1px solid rgba(0,255,136,0.25); }
-.badge.medium { background: var(--med-dim); color: var(--med); border: 1px solid rgba(245,158,11,0.25); }
-.badge.low { background: var(--low-dim); color: var(--low); border: 1px solid rgba(100,116,139,0.2); }
+.badge.high { background: var(--high-dim); color: var(--high); border: 1px solid rgba(5,150,105,0.25); }
+.badge.medium { background: var(--med-dim); color: var(--med); border: 1px solid rgba(217,119,6,0.25); }
+.badge.low { background: var(--low-dim); color: var(--low); border: 1px solid rgba(148,163,184,0.2); }
 .badge::before { content: '●'; font-size: 8px; }
 
 /* ── Apps grid ─────────────────────────────────────────────────── */
 .apps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
 }
 .app-card {
@@ -194,15 +222,16 @@ a:hover { text-decoration: underline; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
-  transition: border-color 0.2s, transform 0.15s;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
   position: relative; overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
-.app-card:hover { border-color: var(--border2); transform: translateY(-1px); }
-.app-card.high:hover { border-color: rgba(0,255,136,0.3); }
+.app-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.app-card.high:hover { border-color: rgba(5,150,105,0.3); }
 .app-card.high:hover::after {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse at top left, rgba(0,255,136,0.04), transparent 60%);
+  background: radial-gradient(ellipse at top left, rgba(5,150,105,0.03), transparent 60%);
   pointer-events: none;
 }
 .app-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
@@ -212,6 +241,7 @@ a:hover { text-decoration: underline; }
   object-fit: contain; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
+  position: relative;
 }
 .app-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 9px; }
 .app-logo-fallback {
@@ -222,7 +252,7 @@ a:hover { text-decoration: underline; }
 }
 .app-info { flex: 1; min-width: 0; }
 .app-name {
-  font-size: 15px; font-weight: 600; color: #fff;
+  font-size: 15px; font-weight: 600; color: var(--text);
   margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .app-category { font-size: 11px; color: var(--muted); }
@@ -263,7 +293,7 @@ summary::-webkit-details-marker { display: none; }
 }
 .evidence-snippet {
   font-family: var(--font-mono); font-size: 11px;
-  color: #94a3b8; word-break: break-all; line-height: 1.5;
+  color: #475569; word-break: break-all; line-height: 1.5;
 }
 
 /* ── Clues table ───────────────────────────────────────────────── */
@@ -282,7 +312,7 @@ summary::-webkit-details-marker { display: none; }
 .clues-table tr:hover td { background: var(--bg2); }
 .clue-name { font-weight: 600; color: var(--text); }
 .clue-reason { color: var(--muted); }
-.clue-snippet { font-family: var(--font-mono); font-size: 11px; color: #64748b; }
+.clue-snippet { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
 
 /* ── Appendix ──────────────────────────────────────────────────── */
 .appendix {
@@ -302,7 +332,7 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
 .script-list { display: flex; flex-direction: column; gap: 4px; }
 .script-item {
   font-family: var(--font-mono); font-size: 11px;
-  color: #64748b; padding: 4px 0;
+  color: var(--muted); padding: 4px 0;
   border-bottom: 1px solid var(--border);
   word-break: break-all;
 }
@@ -327,11 +357,13 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .stat-bar { grid-template-columns: repeat(2, 1fr); }
-  .stat { border-right: none; border-bottom: 1px solid var(--border); }
-  .stat:nth-child(odd) { border-right: 1px solid var(--border); }
+  .stat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .stat:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.08); }
   .stat:last-child, .stat:nth-last-child(2):nth-child(odd) { border-bottom: none; }
   .theme-card { grid-template-columns: 1fr; }
   .apps-grid { grid-template-columns: 1fr; }
+  .hero-title-row { gap: 12px; }
+  .hero-store-icon { width: 40px; height: 40px; }
 }
 
 /* ── Animations ────────────────────────────────────────────────── */
@@ -352,6 +384,41 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
 
 <body>
 
+<!-- ══ MULTI-SOURCE FAVICON LOADER ═══════════════════════════════ -->
+<script>
+function loadFavicon(img, domain) {
+  if (!domain || domain === 'unknown.com') { showFallback(img); return; }
+  const sources = [
+    'https://logo.clearbit.com/' + domain,
+    'https://www.google.com/s2/favicons?domain=' + domain + '&sz=64',
+    'https://' + domain + '/favicon.ico',
+  ];
+  tryNext(img, sources, 0);
+}
+function tryNext(img, sources, idx) {
+  if (idx >= sources.length) { showFallback(img); return; }
+  img.onload = function() { this.style.display = 'block'; };
+  img.onerror = function() { tryNext(this, sources, idx + 1); };
+  img.src = sources[idx];
+}
+function showFallback(el) {
+  var p = el.parentElement;
+  el.style.display = 'none';
+  var fb = p.querySelector('.logo-fallback');
+  if (fb) fb.style.display = 'flex';
+}
+function loadStoreFavicon(img, url) {
+  var domain;
+  try { domain = new URL(url).hostname; } catch(e) { showFallback(img); return; }
+  var sources = [
+    'https://www.google.com/s2/favicons?domain=' + domain + '&sz=64',
+    'https://logo.clearbit.com/' + domain,
+    'https://' + domain + '/favicon.ico',
+  ];
+  tryNext(img, sources, 0);
+}
+</script>
+
 <!-- ══ HERO ══════════════════════════════════════════════════════ -->
 <div class="hero">
   <div class="hero-inner">
@@ -359,14 +426,20 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       Shopify Theme &amp; Apps Detector · Selofy Skill Hub
     </div>
-    <h1 class="hero-title">
-      Tech Stack Report: <span>{{STORE_DOMAIN}}</span>
-    </h1>
+    <div class="hero-title-row">
+      <div class="hero-store-icon">
+        <img src="" alt="store icon" onerror="showFallback(this)" style="display:none"
+             data-store-url="{{STORE_URL}}">
+        <span class="logo-fallback fallback" style="display:none">🛒</span>
+      </div>
+      <div class="hero-title-group">
+        <h1 class="hero-title">
+          Tech Stack Report: <span class="domain">{{STORE_DOMAIN}}</span>
+        </h1>
+        <div class="hero-subtitle">{{STORE_URL}}</div>
+      </div>
+    </div>
     <div class="hero-meta">
-      <span class="hero-meta-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        {{STORE_URL}}
-      </span>
       <span class="hero-meta-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Scanned {{SCAN_DATE}}
@@ -393,7 +466,7 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
       <div class="stat-label">Apps Probable</div>
     </div>
     <div class="stat">
-      <div class="stat-value" style="color:var(--muted)">{{CLUES_COUNT}}</div>
+      <div class="stat-value" style="color:rgba(255,255,255,0.4)">{{CLUES_COUNT}}</div>
       <div class="stat-label">Unconfirmed Clues</div>
     </div>
   </div>
@@ -409,15 +482,13 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
       Theme
     </div>
 
-    <!-- REPLACE THIS BLOCK per detection result -->
-    <div class="theme-card"><!-- add class="medium" or class="low" based on confidence -->
+    <div class="theme-card">
       <div>
         <div class="theme-name">{{THEME_NAME}}</div>
         <div class="theme-schema">schema: {{THEME_SCHEMA_NAME}} · id: {{THEME_ENTITY_ID}}</div>
         <div class="theme-meta">
-          <span class="badge high">HIGH confidence</span><!-- or medium / low -->
+          <span class="badge high">HIGH confidence</span>
           <span class="tag version">v{{THEME_VERSION}}</span>
-          <!-- Only show if theme_store_id is not null: -->
           <span class="tag store-id">Theme Store #{{THEME_STORE_ID}}</span>
         </div>
         <details style="margin-top:14px;">
@@ -427,12 +498,10 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
               <div class="evidence-type">window.Shopify.theme</div>
               <div class="evidence-snippet">{{THEME_EVIDENCE_SNIPPET}}</div>
             </div>
-            <!-- Repeat .evidence-item for each signal -->
           </div>
         </details>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-        <!-- Link to Theme Store if theme_store_id exists, else to vendor page -->
         <a class="theme-link" href="{{THEME_STORE_URL}}" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           View Theme
@@ -451,22 +520,18 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
     <div class="apps-grid">
 
       <!-- ── App card template (repeat per app) ── -->
-      <!-- Add class="high", "medium", or "low" to .app-card -->
       <div class="app-card high">
         <div class="app-header">
-          <!-- Use <img> if logo loads, else use .app-logo-fallback with emoji -->
-          <div class="app-logo" data-fallback="{{APP_EMOJI}}">
-            <img
-              src="https://logo.clearbit.com/{{APP_VENDOR_DOMAIN}}"
-              alt="{{APP_NAME}} logo"
-              onerror="var p=this.parentElement;this.remove();p.textContent=p.getAttribute('data-fallback')||'\u2753';p.style.fontSize='20px';p.style.display='flex';p.style.alignItems='center';p.style.justifyContent='center'"
-            >
+          <div class="app-logo">
+            <img src="" alt="{{APP_NAME}} logo" style="display:none"
+                 data-vendor-domain="{{APP_VENDOR_DOMAIN}}">
+            <span class="logo-fallback app-logo-fallback" style="display:none">{{APP_EMOJI}}</span>
           </div>
           <div class="app-info">
             <div class="app-name">{{APP_NAME}}</div>
             <div class="app-category">{{APP_CATEGORY}}</div>
           </div>
-          <span class="badge high">HIGH</span><!-- or medium / low -->
+          <span class="badge high">HIGH</span>
         </div>
 
         <div class="app-actions">
@@ -480,20 +545,18 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
           <summary>Evidence ({{APP_EVIDENCE_COUNT}} signals)</summary>
           <div class="evidence-list">
             <div class="evidence-item">
-              <div class="evidence-type">{{EVIDENCE_TYPE}}</div><!-- e.g. script_src / window_global / app_embed / css_class -->
+              <div class="evidence-type">{{EVIDENCE_TYPE}}</div>
               <div class="evidence-snippet">{{EVIDENCE_SNIPPET}}</div>
             </div>
-            <!-- Repeat per evidence item -->
           </div>
         </details>
       </div>
       <!-- ── End app card ── -->
 
-    </div><!-- /.apps-grid -->
+    </div>
   </div>
 
   <!-- ── Unconfirmed Clues ──────────────────────────────────────── -->
-  <!-- Only render this section if there are clues -->
   <div class="section">
     <div class="section-title">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -509,7 +572,6 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
           </tr>
         </thead>
         <tbody>
-          <!-- Repeat per clue -->
           <tr>
             <td><span class="clue-name">{{CLUE_NAME}}</span></td>
             <td><span class="clue-reason">{{CLUE_REASON}}</span></td>
@@ -534,7 +596,6 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
           <div class="appendix-section-title">Pages Crawled</div>
           <table class="pages-table">
             <tbody>
-              <!-- Repeat per page -->
               <tr>
                 <td style="color:var(--muted);font-family:var(--font-mono);font-size:11px;">{{PAGE_URL}}</td>
                 <td><span class="status-ok">{{PAGE_STATUS}}</span></td>
@@ -547,7 +608,6 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
         <div>
           <div class="appendix-section-title">All External Scripts</div>
           <div class="script-list">
-            <!-- Repeat per script -->
             <div class="script-item">{{SCRIPT_URL}}</div>
           </div>
         </div>
@@ -555,7 +615,6 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
         <div>
           <div class="appendix-section-title">Window Globals Detected</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            <!-- Repeat per global -->
             <span class="tag" style="font-family:var(--font-mono);font-size:11px;">{{GLOBAL_NAME}}</span>
           </div>
         </div>
@@ -575,6 +634,25 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
     </div>
   </div>
 
-</div><!-- /.page -->
+</div>
+
+<!-- ══ BOOTSTRAP FAVICON LOADERS ═════════════════════════════════ -->
+<script>
+(function() {
+  // Load store favicon
+  var storeIcon = document.querySelector('.hero-store-icon img');
+  if (storeIcon) {
+    var url = storeIcon.getAttribute('data-store-url');
+    if (url) loadStoreFavicon(storeIcon, url);
+  }
+  // Load app favicons
+  var appLogos = document.querySelectorAll('.app-logo img');
+  for (var i = 0; i < appLogos.length; i++) {
+    var domain = appLogos[i].getAttribute('data-vendor-domain');
+    if (domain) loadFavicon(appLogos[i], domain);
+  }
+})();
+</script>
+
 </body>
 </html>

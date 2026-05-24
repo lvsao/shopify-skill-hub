@@ -39,6 +39,10 @@ The script outputs a JSON evidence bundle to stdout. Capture it. If the script e
 
 **Scanning etiquette**: The scanner includes an 800ms delay between page requests and retries up to 2 times on rate-limit (429) or server-error (5xx) responses with exponential backoff. This minimizes load on the target store. If a store consistently returns 429, stop and report the limitation rather than hammering the server.
 
+The JSON bundle now also includes:
+- `storeFavicon`: the store's favicon URL extracted from HTML `<link rel="icon">` (falls back to `<origin>/favicon.ico`)
+- `pages[*].favicon`: per-page favicon URL
+
 ### Step 3 — Shopify gate
 
 Read `evidenceBundle.isShopify`. If `false`, stop immediately and tell the user:
@@ -86,11 +90,12 @@ Deduplicate: if multiple signals point to the same vendor, merge them into one r
 **Use the template at `<absolute-path-to-skill>/assets/report-template.html` as the structural foundation.** Keep the required layout sections (hero, stat bar, theme card, apps grid, clues table, appendix) and substitute every `{{PLACEHOLDER}}` with real data. You may freely customize colors, fonts, and visual styling.
 
 The template by default includes:
-- Google Fonts: DM Sans + JetBrains Mono (loaded via `@import` in the `<style>` block)
-- Hero header with store URL, scan date, Shopify badge
+- Google Fonts: Inter + JetBrains Mono (loaded via `@import` in the `<style>` block)
+- Hero header with store favicon, store URL, scan date, Shopify badge
+- Multi-source favicon loading for store and app logos (Clearbit → Google Favicons → direct `.ico` → emoji fallback) via built-in JavaScript
 - Stat bar: theme name, confirmed app count, probable count, clue count
 - Theme card with left accent bar (green=HIGH, amber=MEDIUM, slate=LOW), version tag, Theme Store link
-- Apps grid: cards with Clearbit logo, App Store link button, collapsible evidence drawer
+- Apps grid: cards with multi-source logo, App Store link button, collapsible evidence drawer
 - Unconfirmed clues table
 - Collapsible technical appendix (pages crawled, all scripts, window globals)
 - Staggered fade-up card animations
@@ -114,7 +119,7 @@ The template by default includes:
 | `{{THEME_STORE_ID}}` | `Shopify.theme.theme_store_id` (omit tag if null) |
 | `{{THEME_STORE_URL}}` | `https://themes.shopify.com/themes/{{THEME_STORE_ID}}` or vendor URL |
 | `{{THEME_EVIDENCE_SNIPPET}}` | raw JS snippet showing the Shopify.theme object |
-| `{{APP_VENDOR_DOMAIN}}` | e.g. `klaviyo.com` (for Clearbit logo) |
+| `{{APP_VENDOR_DOMAIN}}` | e.g. `klaviyo.com` (for multi-source favicon: Clearbit → Google → direct .ico) |
 | `{{APP_NAME}}` | e.g. `Klaviyo` |
 | `{{APP_EMOJI}}` | fallback emoji if logo fails (e.g. `📧`) |
 | `{{APP_CATEGORY}}` | e.g. `Email Marketing` |
@@ -132,7 +137,7 @@ The template by default includes:
 - `.app-card` (no extra class) + `<span class="badge low">LOW</span>` for LOW
 - Same logic applies to `.theme-card`
 
-**Logo handling:** Use `<img src="https://logo.clearbit.com/{{APP_VENDOR_DOMAIN}}" onerror="...">` exactly as shown in the template. The `onerror` handler replaces the broken image with the fallback emoji span.
+**Logo handling:** The template includes a built-in `loadFavicon(img, domain)` JavaScript function that tries three sources in order: Clearbit → Google Favicons (`s2/favicons?domain=...&sz=64`) → direct `favicon.ico`. If all fail, it shows the emoji fallback. For each app card, set the `<img data-vendor-domain="{{APP_VENDOR_DOMAIN}}">` attribute — the script reads it at page load. For the store favicon in the hero, set `<img data-store-url="{{STORE_URL}}">`. The scanner script now outputs `storeFavicon` in the JSON bundle, extracted from the store's HTML `<link rel="icon">` tag.
 
 **Omit empty sections:** If there are no clues, remove the entire "Unconfirmed Clues" section block. If a theme is not detected, replace the theme card content with a single line: `<div style="color:var(--muted);font-size:13px;">Theme could not be determined (headless or insufficient signals).</div>`
 
