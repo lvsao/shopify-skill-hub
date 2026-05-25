@@ -31,8 +31,8 @@ The skill:
 2. Verifies the URL is a Shopify store.
 3. Discovers products via public JSON API (`/products.json`, `/collections/{handle}/products.json`).
 4. Fetches full product data to get every image (`/products/{handle}.json`).
-5. Shows a preview of total products and images found, then asks if the user wants WebP conversion.
-6. Downloads all images into an organized local folder structure, optionally converting to WebP format.
+5. Shows a preview of total products and images found, detects gibberish filenames (auto-generated numeric IDs), then asks if the user wants WebP conversion and smart renaming.
+6. Downloads all images into an organized local folder structure, optionally converting to WebP format and/or renaming to product-handle-N pattern.
 7. Reports a summary of what was downloaded.
 
 ### About WebP
@@ -58,6 +58,37 @@ When WebP mode is enabled, the script automatically installs the `sharp` library
 ```
 
 When `--webp true` is used, extensions change to `.webp` (e.g. `image-filename-1.webp`). Everything else — folder names, filenames without extension — stays identical.
+
+### About Smart Rename
+
+Many Shopify stores use auto-generated numeric image filenames like `1234567890123.jpg`. These are technically valid but completely uninformative — impossible to identify which image belongs to which product without opening each file.
+
+When `--rename true` is enabled, every image is renamed using the product's URL handle (the same slug that appears in the store URL) plus a sequence number:
+
+```
+Before (gibberish):   124578235689.jpg
+After (smart rename): your-product-handle-1.jpg
+
+Folder structure:
+  your-store.com/
+    Product Name/
+      your-product-handle-1.jpg
+      your-product-handle-2.jpg
+      ...
+```
+
+The handle is Shopify's clean, URL-safe slug (e.g. `classic-leather-jacket`), so filenames are immediately recognizable and sort predictably.
+
+### Gibberish detection
+
+During preview, the script automatically scans all image filenames and counts how many are "gibberish" — purely numeric auto-generated IDs like `1234567890.jpg`. The preview output shows a breakdown:
+
+```
+Analyzing image filenames...
+  150 of 188 images (80%) have auto-generated IDs as filenames
+```
+
+If the percentage is high, the agent should proactively recommend the rename feature to the user.
 
 ## Trigger Scenarios
 
@@ -103,6 +134,7 @@ Where `<absolute-path-to-skill>` resolves to:
 | `--filter` | No | Filter: `all`, `collection:<handle>`, or `product:<handle>` (default: `all`) |
 | `--overwrite` | No | Overwrite existing files (default: skip) |
 | `--webp` | No | Convert images to WebP format: `true` or `false` (default: `false`). Requires the `sharp` library, auto-installed on first use. |
+| `--rename` | No | Rename images to `product-handle-N` pattern: `true` or `false` (default: `false`). Replaces gibberish numeric filenames with recognizable product-slug-based names. |
 | `--yes` | No | Skip confirmation prompt and proceed immediately |
 
 ### Step-by-step
@@ -111,39 +143,44 @@ Where `<absolute-path-to-skill>` resolves to:
 
 2. **Show preview and confirm** — Run the script without `--yes` to display a preview:
    ```bash
-   node <path>/shopify-image-downloader.mjs --store https://your-store.com --filter collection:dog-car-seats
+   node <path>/shopify-image-downloader.mjs --store https://your-store.com --filter collection:some-collection
    ```
    The script will output something like:
    ```
-   Found 15 products
-   Total images: 188
+   Analyzing image filenames...
+     150 of 188 images (80%) have auto-generated IDs as filenames
+
    Preview:
      Root folder: /Users/you/your-store.com
      Products: 15
      Images: 188
+     Gibberish filenames: 150 (80%)
    ```
    Share this with the user and ask:
    - "Found **188 images** across **15 products**. Proceed with download?"
+   - If gibberish count > 0: "**150 of 188 images** have auto-generated numeric filenames like `1234567890.jpg`. Would you like me to rename them to readable names like `product-handle-1.jpg`? This makes files immediately identifiable at a glance."
    - **Then ask:** "Would you also like to convert to **WebP** format? WebP is recommended by both **Shopify and Google** — it produces **25-35% smaller files** at the same quality, which helps with site speed and SEO. Your folder and filenames stay the same, just the extension changes to `.webp`."
 
-3. **Execute the download** — Run the script with `--yes true` and optionally `--webp true`:
+3. **Execute the download** — Run the script with `--yes true` and optionally `--webp true` / `--rename true`:
    ```bash
    node <path>/shopify-image-downloader.mjs \
      --store https://your-store.com \
-     --filter collection:dog-car-seats \
+     --filter collection:some-collection \
      --yes true \
-     --webp true
+     --webp true \
+     --rename true
    ```
    The script:
    - Verifies the store is Shopify-powered.
    - Fetches products (paginated) from public API.
    - Fetches full image data per product.
    - If `--webp true`: auto-installs `sharp` if missing, then downloads + converts to WebP in one pass.
+   - If `--rename true`: renames every image to `product-handle-N.ext` pattern.
    - Downloads (or converts) each image to the organized folder structure.
    - Skips existing files unless `--overwrite` is set.
    - Prints progress and a final summary.
 
-4. **Report results** — Show the summary to the user. Mention the `download-summary-*.txt` path if it was generated. If WebP was used, note that all files are in WebP format.
+4. **Report results** — Show the summary to the user. Mention the `download-summary-*.txt` path if it was generated. If WebP was used, note that all files are in WebP format. If rename was used, note the naming pattern.
 
 ## Script Details
 

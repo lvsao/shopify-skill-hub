@@ -23,6 +23,7 @@ const overwrite = args.overwrite === "true"
 const yes = args.yes === "true"
 const dryRun = args["dry-run"] === "true"
 const webp = args.webp || "false"
+const rename = args.rename === "true"
 
 const domain = extractDomain(storeUrl)
 const baseUrl = `https://${domain}`
@@ -33,6 +34,7 @@ console.log(`Filter: ${filter}`)
 console.log(`Output: ${path.resolve(outputDir)}`)
 console.log(`Overwrite: ${overwrite ? "yes" : "no (skip existing)"}`)
 if (webp === "true") console.log(`Format: WebP (converted)`)
+if (rename) console.log(`Naming: product-handle-N (smart rename)`)
 if (dryRun) console.log(`Mode: dry-run (no files will be downloaded)`)
 console.log("")
 
@@ -83,6 +85,23 @@ for (const p of productImageData) {
 }
 console.log(`  Total images: ${totalImages}\n`)
 
+// ── Gibberish filename analysis ──
+console.log("Analyzing image filenames...")
+let totalGibberish = 0
+for (const p of productImageData) {
+  for (const img of p.images) {
+    const name = path.basename(new URL(img.src).pathname)
+    if (isGibberishFilename(name)) totalGibberish++
+  }
+}
+if (totalGibberish > 0) {
+  const pct = Math.round((totalGibberish / totalImages) * 100)
+  console.log(`  ${totalGibberish} of ${totalImages} images (${pct}%) have auto-generated IDs as filenames`)
+} else {
+  console.log("  All images have meaningful filenames")
+}
+console.log("")
+
 // ── Step 4: Preview ──
 const storeFolderName = sanitizeFolderName(domain.replace(/^www\./, ""))
 const rootFolder = path.resolve(outputDir, storeFolderName)
@@ -92,7 +111,11 @@ console.log("Preview:")
 console.log(`  Root folder: ${rootFolder}`)
 console.log(`  Products: ${products.length}`)
 console.log(`  Images: ${totalImages}`)
+if (totalGibberish > 0) {
+  console.log(`  Gibberish filenames: ${totalGibberish} (${Math.round((totalGibberish / totalImages) * 100)}%)`)
+}
 console.log(`  Format: ${formatLabel}`)
+if (rename) console.log(`  Rename: to product-handle-N pattern`)
 console.log("")
 
 if (!yes) {
@@ -115,7 +138,7 @@ if (webp === "true") {
 }
 
 // ── Step 5: Download images ──
-console.log("Step 4: Downloading images...")
+console.log("Downloading images...")
 
 let downloaded = 0
 let skipped = 0
@@ -125,11 +148,20 @@ const failedItems = []
 for (const product of productImageData) {
   const productFolder = path.join(rootFolder, sanitizeFolderName(product.title))
   fs.mkdirSync(productFolder, { recursive: true })
+  let imageIndex = 0
 
   for (const img of product.images) {
-    const imageUrl = img.src
-    const originalName = path.basename(new URL(imageUrl).pathname)
-    const filename = sharp ? replaceExt(originalName, ".webp") : originalName
+    imageIndex++
+
+    let filename
+    if (rename) {
+      const ext = sharp ? ".webp" : path.extname(new URL(img.src).pathname) || ".jpg"
+      filename = `${product.handle}-${imageIndex}${ext}`
+    } else {
+      const originalName = path.basename(new URL(img.src).pathname)
+      filename = sharp ? replaceExt(originalName, ".webp") : originalName
+    }
+
     const filePath = path.join(productFolder, filename)
 
     if (fs.existsSync(filePath) && !overwrite) {
@@ -139,15 +171,15 @@ for (const product of productImageData) {
 
     try {
       if (sharp) {
-        await downloadAndConvertToWebp(imageUrl, filePath, sharp)
+        await downloadAndConvertToWebp(img.src, filePath, sharp)
       } else {
-        await downloadFile(imageUrl, filePath)
+        await downloadFile(img.src, filePath)
       }
       downloaded++
       process.stdout.write(".")
     } catch (err) {
       failed++
-      failedItems.push({ product: product.title, url: imageUrl, error: err.message })
+      failedItems.push({ product: product.title, url: img.src, error: err.message })
       process.stdout.write("x")
     }
   }
@@ -167,6 +199,7 @@ const summaryLines = [
   `Downloaded: ${downloaded}`,
   `Skipped (already exist): ${skipped}`,
   `Failed: ${failed}`,
+  `Rename: ${rename ? "yes (product-handle-N pattern)" : "no (original filenames)"}`,
   "",
 ]
 
@@ -211,6 +244,11 @@ function extractDomain(url) {
     return new URL(url).hostname
   }
   return url
+}
+
+function isGibberishFilename(filename) {
+  const name = path.parse(filename).name
+  return /^\d+$/.test(name)
 }
 
 async function verifyShopifyStore(url) {
