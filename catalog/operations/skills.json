@@ -194,8 +194,8 @@
         "zh": "把任意 Shopify 店铺的所有商品图片保存到本地——无需密码、无需 Token、无需任何配置"
       },
       "longDescription": {
-        "en": "Need to download your Shopify product images but don't want to mess with API tokens, custom apps, or store passwords? This skill does it in one go.\n\nJust give it a store URL — your own store or any public Shopify store. It uses Shopify's built-in public API (the same one that powers product pages), so there's nothing to install, nothing to configure, and nothing that can break when themes change or apps come and go.\n\nEvery image lands on your computer in a tidy folder structure: `store-name / product-name / original-filename.jpg`. No random filenames, no flat piles of 500 images. Need only one collection? Or just one product? It handles that too.\n\nWant smaller files? Turn on WebP mode and every image is converted during download — 25-35% smaller with no visible quality loss, exactly what Shopify and Google recommend.\n\nPerfect for: store migration, switching platforms, backing up your image assets, giving photos to a designer, archiving a store you're closing, or just having a local copy of everything.",
-        "zh": "想把 Shopify 店铺的商品图片下载到本地，但不想折腾 API Token、自定义应用或店铺密码？这个 skill 一句话就能搞定。\n\n只需给一个店铺网址——你自己的店或任意公开 Shopify 店铺都可以。它用的是 Shopify 自带的公开 API（就是商品页面用的那个），所以不需要安装任何东西、不需要任何配置、也不会因为主题更新或插件变化而出错。\n\n每张图片都会整整齐齐地保存在你的电脑上：`店铺名 / 商品名 / 原始文件名.jpg`。没有随机文件名，不会 500 张图堆在一个文件夹里。只想下载某个分类？或者只下载某一件商品？也完全支持。\n\n想要更小的文件？开启 WebP 模式，下载时自动转换——文件小 25-35%，画质看不出区别，Shopify 和 Google 官方都在用。\n\n适合场景：店铺迁移、切换平台、备份图片资产、把图片交给设计师、关店前归档、或者纯粹想留一份本地副本。"
+        "en": "Need to download your Shopify product images but don't want to mess with API tokens, custom apps, or store passwords? This skill does it in one go.\n\nJust give it a store URL — your own store or any public Shopify store. It uses Shopify's built-in public API (the same one that powers product pages), so there's nothing to install, nothing to configure, and nothing that can break when themes change or apps come and go.\n\nEvery image lands on your computer in a tidy folder structure: `store-name / product-name / original-filename.jpg`. No random filenames, no flat piles of 500 images. Need only one collection? Or just one product? It handles that too.\n\nHate gibberish filenames like `1234567890.jpg`? Turn on smart rename and every image gets a human-readable name like `product-handle-1.jpg` — instantly recognizable at a glance.\n\nWant smaller files? Turn on WebP mode and every image is converted during download — 25-35% smaller with no visible quality loss, exactly what Shopify and Google recommend.\n\nPerfect for: store migration, switching platforms, backing up your image assets, giving photos to a designer, archiving a store you're closing, or just having a local copy of everything.",
+        "zh": "想把 Shopify 店铺的商品图片下载到本地，但不想折腾 API Token、自定义应用或店铺密码？这个 skill 一句话就能搞定。\n\n只需给一个店铺网址——你自己的店或任意公开 Shopify 店铺都可以。它用的是 Shopify 自带的公开 API（就是商品页面用的那个），所以不需要安装任何东西、不需要任何配置、也不会因为主题更新或插件变化而出错。\n\n每张图片都会整整齐齐地保存在你的电脑上：`店铺名 / 商品名 / 原始文件名.jpg`。没有随机文件名，不会 500 张图堆在一个文件夹里。只想下载某个分类？或者只下载某一件商品？也完全支持。\n\n讨厌 `1234567890.jpg` 这种乱码文件名？开启智能重命名，每张图片自动变成 `商品-handle-1.jpg`——不用打开文件也能一眼认出。\n\n想要更小的文件？开启 WebP 模式，下载时自动转换——文件小 25-35%，画质看不出区别，Shopify 和 Google 官方都在用。\n\n适合场景：店铺迁移、切换平台、备份图片资产、把图片交给设计师、关店前归档、或者纯粹想留一份本地副本。"
       },
       "introduction": {
         "en": "Dump all your Shopify product images to your computer in one click — organized by product, no token, no fuss.",
@@ -241,6 +241,16 @@
           },
           "badge": { "en": "Tidy output", "zh": "整齐有序" },
           "icon": "FolderTree"
+        },
+        {
+          "id": "smart-rename",
+          "title": { "en": "Smart rename for gibberish filenames", "zh": "智能重命名乱码文件名" },
+          "description": {
+            "en": "Auto-detects meaningless numeric filenames like `1234567890.jpg` and renames them to `product-handle-1.jpg`. Every file instantly recognizable without opening it.",
+            "zh": "自动检测无意义的数字文件名如 `1234567890.jpg`，重命名为 `商品-handle-1.jpg`。无需打开文件，一眼就能认出是哪张图片。"
+          },
+          "badge": { "en": "Smart naming", "zh": "智能命名" },
+          "icon": "FileSignature"
         }
       ],
       "prerequisites": []
