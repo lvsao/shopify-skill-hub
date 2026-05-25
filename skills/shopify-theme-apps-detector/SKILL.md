@@ -42,6 +42,11 @@ The script outputs a JSON evidence bundle to stdout. Capture it. If the script e
 The JSON bundle now also includes:
 - `storeFavicon`: the store's favicon URL extracted from HTML `<link rel="icon">` (falls back to `<origin>/favicon.ico`)
 - `pages[*].favicon`: per-page favicon URL
+- `aggregated.inlineScriptUrls`: third-party URLs dynamically injected via inline scripts (catches Crisp, Consentmanager, Preciso, AimROAS, etc.)
+- `aggregated.lazyQueueUrls`: URLs from lazy-load queue patterns like `ffLazyQueue` (catches Automizely, Square Marketplace, etc.)
+- `aggregated.appEmbedCss`: `cdn.shopify.com/extensions/` stylesheet links (app CSS embed blocks)
+- `aggregated.dnsPrefetch`: third-party domains from `<link rel="dns-prefetch|preconnect">` tags
+- `aggregated.trackingIds`: extracted `GTM-xxx`, `G-xxx` (GA4), `AW-xxx` (Google Ads), `UA-xxx` IDs
 
 ### Step 3 — Shopify gate
 
@@ -69,14 +74,23 @@ For custom/third-party themes: web-search the `schema_name` to find the official
 
 ### Step 5 — Analyze app evidence
 
-For each signal in `evidenceBundle.aggregated`, `evidenceBundle.pages[*].appBlockComments`, `windowGlobals`, `cssClassNamespaces`, `dataAttributes`:
+The scanner outputs the following signal fields. Analyze **all of them** — many apps only appear in one or two:
 
-1. **Script src URLs** — For every external script domain that is NOT `cdn.shopify.com/s/files` and NOT `shopifycloud`, extract the domain/path vendor hint and web-search it: `"<vendor-hint>" Shopify app`.
-2. **App block comments** *(primary embed signal)* — `evidenceBundle.aggregated.appBlockComments` contains app slugs extracted from `<!-- BEGIN app block: shopify://apps/<slug>/... -->` HTML comments. These are the most reliable app embed signal on modern Shopify stores. Web-search each slug: `"<slug>" Shopify app`.
-3. **App embed script URLs** — `cdn.shopify.com/extensions/<uuid>/<app-name-slug>/` URLs in script src are also app embed blocks. Extract the app name slug and web-search it.
-4. **Window globals** — Search `"<global-name>" Shopify app` for each non-Shopify global.
-5. **CSS class namespaces** — For hyphenated vendor prefixes (e.g. `jdgm-`, `loox-`, `yotpo-`), web-search `"<prefix>" Shopify app`.
-6. **data-* attributes** — For vendor-looking data attributes, web-search them.
+1. **`aggregated.appBlockComments`** *(highest confidence)* — App slugs from `<!-- BEGIN app block: shopify://apps/<slug>/... -->` comments. Web-search each: `"<slug>" Shopify app`.
+2. **`aggregated.appEmbedScripts`** — `cdn.shopify.com/extensions/<uuid>/<app-slug>/` URLs. Extract the `<app-slug>` segment and web-search it.
+3. **`aggregated.appEmbedCss`** — `cdn.shopify.com/extensions/<uuid>/<app-slug>/assets/*.css` stylesheet links. Same slug extraction as above.
+4. **`aggregated.externalScripts`** — Static `<script src>` from non-Shopify domains. Web-search the domain: `"<domain>" Shopify app`.
+5. **`aggregated.inlineScriptUrls`** *(new — catches dynamic injection)* — Third-party URLs found inside inline `<script>` blocks (e.g. `document.createElement("script"); script.src = "https://client.crisp.chat/l.js"`). Many apps inject themselves this way and are invisible to static script-src scanning. Web-search each domain.
+6. **`aggregated.lazyQueueUrls`** *(new — catches lazy-load queues)* — URLs extracted from `ffLazyQueue`, `LazyQueue`, and similar deferred-load arrays (e.g. Automizely, Square Marketplace). Web-search each domain.
+7. **`aggregated.dnsPrefetch`** *(new — reveals preloaded third-party services)* — Domains from `<link rel="dns-prefetch|preconnect">` tags. Cross-reference with other signals to confirm app identity.
+8. **`aggregated.trackingIds`** *(new — pixel/analytics IDs)* — Extracted `GTM-xxx`, `G-xxx` (GA4), `AW-xxx` (Google Ads), `UA-xxx` IDs. GTM and GA4 are not Shopify apps; note them as "tracking/analytics". Google Ads IDs confirm paid advertising setup.
+9. **`aggregated.windowGlobals`** — Non-Shopify window globals. Key signals: `$crisp`/`CRISP_WEBSITE_ID` → Crisp Chat; `criteo_q` → Criteo; `ARTGO` → ARTGO Pixel; `shoplift` → Shoplift A/B; `AfterShipPersonalization` → AfterShip; `jdgm` → Judge.me; `uetq` → Microsoft Bing Ads; `MetafieldYotpoRating` → Yotpo; `MetafieldLooxRating` → Loox; `okendoProduct` → Okendo.
+10. **`aggregated.appBlockComments` HTML comment clues** — Also check raw `htmlComments` for uninstalled app references (e.g. `"snippets/swymSnippet.liquid" was not rendered, the associated app was uninstalled`) — these reveal recently removed apps.
+11. **`pages[*].metaTags`** *(expanded)* — Now includes `smartbanner:*` meta tags. A `smartbanner:icon-apple` or `smartbanner:icon-google` pointing to a third-party domain (e.g. `app.tapday.com`) identifies a mobile loyalty/app-banner tool.
+12. **CSS class namespaces** — For hyphenated vendor prefixes (e.g. `jdgm-`, `loox-`, `yotpo-`, `transcy-`), web-search `"<prefix>" Shopify app`.
+13. **data-* attributes** — For vendor-looking data attributes, web-search them.
+
+Deduplicate: if multiple signals point to the same vendor, merge them into one result with all evidence listed.
 
 Confidence rules:
 - **HIGH**: Script src domain clearly identifies vendor + web search confirms official Shopify App Store listing.

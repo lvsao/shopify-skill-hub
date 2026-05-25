@@ -142,6 +142,81 @@ function extractScripts(html, baseOrigin) {
   return { external: [...new Set(external)], appEmbeds: [...new Set(appEmbeds)], inline };
 }
 
+function extractInlineScriptUrls(html, storeOrigin) {
+  // Extract URLs from inline script content (dynamic injection patterns)
+  const urls = new Set();
+  const re = /<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+  const urlRe = /https?:\/\/([a-zA-Z0-9][-a-zA-Z0-9.]*\.[a-zA-Z]{2,})(\/[^\s"'`)\]},;]*)?/g;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const body = m[1];
+    let u;
+    while ((u = urlRe.exec(body)) !== null) {
+      const full = u[0].replace(/[.,;)}\]]+$/, '');
+      const host = u[1].toLowerCase();
+      if (/cdn\.shopify\.com|shopifycloud|shopifysvc/.test(host)) continue;
+      if (host === new URL(storeOrigin).hostname) continue;
+      urls.add(full);
+    }
+  }
+  return [...urls];
+}
+
+function extractTrackingIds(html) {
+  const ids = {};
+  const gtm = [...new Set(html.match(/GTM-[A-Z0-9]{4,}/g) || [])];
+  const ga4 = [...new Set((html.match(/\bG-[A-Z0-9]{8,10}\b/g) || []).filter(id => !/^G-[A-Z]{2,}/.test(id)))];
+  const aw  = [...new Set(html.match(/\bAW-\d{9,}\b/g) || [])];
+  const ua  = [...new Set(html.match(/\bUA-\d{5,}-\d+\b/g) || [])];
+  if (gtm.length) ids.gtm = gtm;
+  if (ga4.length) ids.ga4 = ga4;
+  if (aw.length)  ids.googleAds = aw;
+  if (ua.length)  ids.ua = ua;
+  return ids;
+}
+
+function extractLazyQueueUrls(html, storeOrigin) {
+  // Capture src URLs inside lazy-load queue patterns: ffLazyQueue, LazyQueue, lazyLoadScripts, etc.
+  const urls = new Set();
+  const queueRe = /(?:ffLazyQueue|LazyQueue|lazyLoadScripts|_lazyScripts)\s*[=.]*[^;]{0,50}?\[\s*\{[^}]{0,500}\}/gi;
+  const srcRe = /['"](https?:\/\/[^'"]+)['"]/g;
+  let m;
+  while ((m = queueRe.exec(html)) !== null) {
+    const block = m[0];
+    let s;
+    while ((s = srcRe.exec(block)) !== null) {
+      const host = new URL(s[1]).hostname.toLowerCase();
+      if (/cdn\.shopify\.com|shopifycloud/.test(host)) continue;
+      if (host === new URL(storeOrigin).hostname) continue;
+      urls.add(s[1]);
+    }
+  }
+  return [...urls];
+}
+
+function extractLinkTags(html, storeOrigin) {
+  const dnsPrefetch = [];
+  const appEmbedCss = [];
+  const re = /<link\b([^>]*)>/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const attrs = m[1];
+    const rel = (attrs.match(/rel=["']([^"']+)["']/i) || [])[1] || '';
+    const href = (attrs.match(/href=["']([^"']+)["']/i) || [])[1] || '';
+    if (!href) continue;
+    if (/dns-prefetch|preconnect/.test(rel)) {
+      const host = href.replace(/^https?:\/\//, '').split('/')[0];
+      if (host && !/cdn\.shopify\.com|shopifycloud|shopifysvc/.test(host) && host !== new URL(storeOrigin).hostname) {
+        dnsPrefetch.push(href);
+      }
+    }
+    if (/stylesheet/.test(rel) && /cdn\.shopify\.com\/extensions\//.test(href)) {
+      appEmbedCss.push(href);
+    }
+  }
+  return { dnsPrefetch: [...new Set(dnsPrefetch)], appEmbedCss: [...new Set(appEmbedCss)] };
+}
+
 function extractWindowGlobals(html) {
   const globals = new Set();
   const patterns = [
@@ -237,7 +312,7 @@ function extractMetaTags(html) {
     const content = (attrs.match(/content=["']([^"']+)["']/i) || [])[1];
     if (name && content) metas.push({ name, content });
   }
-  return metas.filter(mt => /shopify|theme|generator|platform/i.test(mt.name)).slice(0, 10);
+  return metas.filter(mt => /shopify|theme|generator|platform|smartbanner|apple-itunes-app|google-play-app|app-argument/i.test(mt.name)).slice(0, 20);
 }
 
 function detectPasswordPage(html) {
@@ -280,6 +355,10 @@ async function scanPage(pageUrl, pageType) {
   const shopifyShop = extractShopifyShop(html);
   const htmlNoComments = stripHtmlComments(html);
   const { external, appEmbeds, inline } = extractScripts(htmlNoComments, new URL(effectiveUrl).origin);
+  const inlineScriptUrls = extractInlineScriptUrls(html, new URL(effectiveUrl).origin);
+  const lazyQueueUrls = extractLazyQueueUrls(html, new URL(effectiveUrl).origin);
+  const trackingIds = extractTrackingIds(html);
+  const { dnsPrefetch, appEmbedCss } = extractLinkTags(html, new URL(effectiveUrl).origin);
   const windowGlobals = extractWindowGlobals(html);
   const cssClassNamespaces = extractCssClassNamespaces(html);
   const dataAttributes = extractDataAttributes(html);
@@ -300,7 +379,10 @@ async function scanPage(pageUrl, pageType) {
     favicon,
     shopifyTheme,
     shopifyShop,
-    scripts: { external, appEmbeds, inlineSnippets: inline.slice(0, 5) },
+    scripts: { external, appEmbeds, inlineScriptUrls, lazyQueueUrls, inlineSnippets: inline.slice(0, 5) },
+    trackingIds,
+    dnsPrefetch,
+    appEmbedCss,
     windowGlobals,
     cssClassNamespaces,
     dataAttributes,
@@ -414,10 +496,21 @@ async function main() {
 
   // Aggregate all external scripts and app embeds across pages
   const allExternalScripts = [...new Set(pages.flatMap(p => p.scripts?.external || []))];
+  const allInlineScriptUrls = [...new Set(pages.flatMap(p => p.scripts?.inlineScriptUrls || []))];
+  const allLazyQueueUrls = [...new Set(pages.flatMap(p => p.scripts?.lazyQueueUrls || []))];
   const allAppEmbeds = [...new Set(pages.flatMap(p => p.scripts?.appEmbeds || []))];
+  const allAppEmbedCss = [...new Set(pages.flatMap(p => p.appEmbedCss || []))];
   const allAppBlockComments = [...new Set(pages.flatMap(p => p.appBlockComments || []))];
   const allWindowGlobals = [...new Set(pages.flatMap(p => p.windowGlobals || []))];
+  const allDnsPrefetch = [...new Set(pages.flatMap(p => p.dnsPrefetch || []))];
 
+  // Merge tracking IDs across pages
+  const mergedTrackingIds = {};
+  for (const p of pages) {
+    for (const [k, v] of Object.entries(p.trackingIds || {})) {
+      mergedTrackingIds[k] = [...new Set([...(mergedTrackingIds[k] || []), ...v])];
+    }
+  }
   // Find the best shopifyTheme (prefer product page if available)
   const shopifyTheme = pages.find(p => p.shopifyTheme)?.shopifyTheme || null;
   const shopifyShop = pages.find(p => p.shopifyShop)?.shopifyShop || null;
@@ -436,9 +529,14 @@ async function main() {
     pages,
     aggregated: {
       externalScripts: allExternalScripts,
+      inlineScriptUrls: allInlineScriptUrls,
+      lazyQueueUrls: allLazyQueueUrls,
       appEmbedScripts: allAppEmbeds,
+      appEmbedCss: allAppEmbedCss,
       appBlockComments: allAppBlockComments,
       windowGlobals: allWindowGlobals,
+      dnsPrefetch: allDnsPrefetch,
+      trackingIds: mergedTrackingIds,
     },
     errors: pages.filter(p => p.error).map(p => ({ url: p.url, error: p.error })),
     scannedAt: new Date().toISOString(),
