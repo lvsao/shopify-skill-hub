@@ -1,6 +1,6 @@
 ---
 name: shopify-product-images-downloader
-description: Download all product images from any public Shopify store — no API token required. Triggers on "shopify download images", "back up my store product photos", "download all product pictures from my Shopify store", "save collection images locally", "export product photos from Shopify", "shopify product images downloader", "shopify图片下载", "shopify商品图片备份", "下载shopify商品图片".
+description: Download all product images from any public Shopify store — no API token required. Optionally converts to WebP format and renames gibberish filenames to readable product-handle-N names. Triggers on "shopify download images", "back up my store product photos", "download all product pictures from my Shopify store", "save collection images locally", "export product photos from Shopify", "shopify product images downloader".
 ---
 
 # Shopify Product Images Downloader
