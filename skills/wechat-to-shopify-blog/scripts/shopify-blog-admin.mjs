@@ -96,6 +96,7 @@ SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
+SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
 `;
   } else {
     throw new Error("--method must be admin_custom_app or dev_dashboard_app");

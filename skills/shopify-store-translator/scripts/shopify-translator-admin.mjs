@@ -142,6 +142,7 @@ async function cmdInitEnv() {
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
+SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
 `
     : `# Skill Hub shared Shopify configuration
 # Keep this file private. Do not commit it.
