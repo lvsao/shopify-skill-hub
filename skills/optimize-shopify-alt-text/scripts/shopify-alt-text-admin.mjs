@@ -17,6 +17,19 @@ function fail(message) {
   process.exit(1);
 }
 
+function printUsage() {
+  console.log(`Usage: node shopify-alt-text-admin.mjs <command> [options]
+
+Commands:
+  init-env          --method admin_custom_app|dev_dashboard_app --env skill-hub.env
+  connection-check  --env skill-hub.env
+  target            --env skill-hub.env --product|--collection|--article|--media-id|--url <value> [--download] [--limit 3]
+  scan              --env skill-hub.env [--page-size 50]
+  vision-sample     --env skill-hub.env [--limit 3]
+  apply             --env skill-hub.env --input <file|->
+`);
+}
+
 function parseArgs(argv) {
   const args = { _: [] };
   for (let i = 0; i < argv.length; i += 1) {
@@ -93,6 +106,7 @@ SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
 SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
+SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
 `;
   } else {
     fail("--method must be admin_custom_app or dev_dashboard_app");
@@ -1200,6 +1214,10 @@ async function connectionCheck(args) {
 
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
+  if (!command || command === "--help" || command === "-h" || command === "help") {
+    printUsage();
+    return;
+  }
   const args = parseArgs(rest);
   if (command === "init-env") return initEnv(args);
   if (command === "connection-check") return connectionCheck(args);
@@ -1207,6 +1225,7 @@ async function main() {
   if (command === "scan") return scan(args);
   if (command === "vision-sample") return visionSample(args);
   if (command === "apply") return applyPlan(args);
+  printUsage();
   fail(`Unknown command: ${command || "(missing)"}`);
 }
 

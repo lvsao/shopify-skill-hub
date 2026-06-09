@@ -21,6 +21,22 @@ function fail(message) {
   process.exit(1);
 }
 
+function printUsage() {
+  console.log(`Usage: node shopify-product-serp-admin.mjs <command> [options]
+
+Commands:
+  init-env           --method admin_custom_app|dev_dashboard_app|public_storefront --env skill-hub.env
+  connection-check   --env skill-hub.env
+  product            --env skill-hub.env --handle <handle> | --id <gid>
+  collection-preview --env skill-hub.env --handle <handle>
+  metafield-audit    --env skill-hub.env --handle <handle>
+  scan-products      --env skill-hub.env
+  batch-plan         --env skill-hub.env --batch-size 5
+  report             --input <file|-> --output <report.html>
+  apply              --env skill-hub.env --input <file|->
+`);
+}
+
 function assertReportTemplateCompliance(template, html) {
   const templateChecks = [
     { marker: 'class="export-button"', label: "template export button" },
@@ -114,7 +130,7 @@ async function initEnv(args) {
   
   const templates = {
     admin_custom_app: `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store\nSKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx\n`,
-    dev_dashboard_app: `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store\nSKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id\nSHOPIFY_APP_AUTOMATION_TOKEN=atkn_xxx\n`,
+    dev_dashboard_app: `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store\nSKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id\nSKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token\n`,
     public_storefront: `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=public_storefront\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com\n`,
   };
   
@@ -1824,8 +1840,12 @@ async function applyCommand(args) {
   console.log(JSON.stringify({ ok: true, executed: true, results }, null, 2));
 }
 
-function main() {
+async function main() {
   const [command, ...rest] = process.argv.slice(2);
+  if (!command || command === "--help" || command === "-h" || command === "help") {
+    printUsage();
+    return;
+  }
   const args = parseArgs(rest);
   if (command === "init-env") return initEnv(args);
   if (command === "connection-check") return connectionCheck(args);
@@ -1836,6 +1856,7 @@ function main() {
   if (command === "batch-plan") return batchPlan(args);
   if (command === "report") return reportCommand(args);
   if (command === "apply") return applyCommand(args);
+  printUsage();
   fail(`Unknown command: ${command || "(missing)"}`);
 }
 
