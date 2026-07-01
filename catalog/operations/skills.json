@@ -181,6 +181,109 @@
       "prerequisites": []
     },
     {
+      "name": "shopify-markets-auditor",
+      "displayName": "Shopify Localization & Markets Auditor",
+      "displayName_zh": "Shopify 国际化与 Markets 审计",
+      "path": "../../skills/shopify-markets-auditor",
+      "tags": ["shopify", "markets", "translation", "audit"],
+      "integrations": ["shopify", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Audit Shopify languages, Markets, shipping, SEO basics, and global growth opportunities in one clear report",
+        "zh": "审查 Shopify 多语言、Markets、配送、国际化 SEO 基础与全球增长机会，并输出一份清晰报告"
+      },
+      "longDescription": {
+        "en": "Review your Shopify international setup in one workflow. This skill checks language status and translation completeness, market structure, currency and URL strategy, shipping coverage, and core international SEO signals such as hreflang and canonical tags. It also studies the store's category and storefront context before giving business-facing suggestions for where to expand next. The result is a plain-language HTML report plus an approval-only fix bundle for safe settings updates.",
+        "zh": "用一个流程把 Shopify 国际化配置看清楚。这个 skill 会检查语言状态与翻译完成度、Markets 结构、货币与网址策略、配送覆盖，以及 hreflang、canonical 等国际化 SEO 基础。它也会先理解店铺品类和前台上下文，再给出更偏业务层的全球增长建议。最终输出一份讲人话的 HTML 报告，并准备一份需确认后才能执行的安全修复清单。"
+      },
+      "introduction": {
+        "en": "See what is already working, what is missing, and where your store should expand next across languages, Markets, shipping, and international SEO.",
+        "zh": "快速看清你的店铺在多语言、Markets、配送和国际化 SEO 上哪些已经做到位，哪些还缺，下一步该往哪里扩。"
+      },
+      "features": [
+        {
+          "id": "language-readiness",
+          "title": {
+            "en": "Language audit and translation readiness",
+            "zh": "多语言与翻译完成度审查"
+          },
+          "description": {
+            "en": "Checks how many languages are enabled, whether they are actually published, and how complete each language is based on Shopify translation status and outdated signals.",
+            "zh": "检查店铺开了多少语言、这些语言是否真的已发布，以及每种语言目前翻译到了什么程度，哪些内容已经过时需要补。"
+          },
+          "badge": { "en": "Locale readiness", "zh": "语言完成度" },
+          "icon": "Languages"
+        },
+        {
+          "id": "market-architecture",
+          "title": {
+            "en": "Markets structure, currency, and URL strategy",
+            "zh": "Markets 结构、货币与域名策略"
+          },
+          "description": {
+            "en": "Reviews each market's country grouping, assigned languages, local currency behavior, and URL setup so you can spot messy structures and weak localization paths.",
+            "zh": "逐个审查每个市场的国家组合、语言分配、本地货币表现和网址路径，帮助发现结构混乱或本地化不够深入的地方。"
+          },
+          "badge": { "en": "Structure check", "zh": "结构检查" },
+          "icon": "Globe"
+        },
+        {
+          "id": "shipping-coverage",
+          "title": {
+            "en": "Shipping coverage audit",
+            "zh": "配送范围审查"
+          },
+          "description": {
+            "en": "Compares your market countries with your shipping setup to show whether every active market is actually deliverable.",
+            "zh": "把已开启市场和配送配置对起来，直接看每个市场到底能不能真正完成配送覆盖。"
+          },
+          "badge": { "en": "Coverage check", "zh": "覆盖检查" },
+          "icon": "Truck"
+        },
+        {
+          "id": "seo-basics",
+          "title": {
+            "en": "International SEO basics",
+            "zh": "国际化 SEO 基础审查"
+          },
+          "description": {
+            "en": "Checks core storefront signals such as hreflang, canonical tags, and public policy-page discoverability so search engines and shoppers can find the right localized pages.",
+            "zh": "检查 hreflang、canonical 和政策页可见性等前台基础信号，帮助搜索引擎和顾客找到正确的本地化页面。"
+          },
+          "badge": { "en": "SEO basics", "zh": "SEO 基础" },
+          "icon": "Search"
+        },
+        {
+          "id": "growth-advice",
+          "title": {
+            "en": "Global growth recommendations",
+            "zh": "全球增长业务建议"
+          },
+          "description": {
+            "en": "Uses store context, product category clues, and external market research to suggest where this business should focus next instead of giving generic language advice.",
+            "zh": "结合店铺上下文、商品品类线索和外部市场调研，给出更贴近这家店业务的国际化增长建议，而不是空泛地建议多开语言。"
+          },
+          "badge": { "en": "Business insight", "zh": "业务洞察" },
+          "icon": "TrendingUp"
+        },
+        {
+          "id": "full-report",
+          "title": {
+            "en": "Complete report and safe fix bundle",
+            "zh": "完整报告与安全修复清单"
+          },
+          "description": {
+            "en": "Outputs a full HTML report in plain language and prepares approval-only fixes for supported Shopify settings changes.",
+            "zh": "输出一份完整、易读的 HTML 报告，并为可支持的 Shopify 设置变更准备一份需要确认后才执行的安全修复清单。"
+          },
+          "badge": { "en": "Action-ready", "zh": "可执行" },
+          "icon": "FileCheck"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
       "name": "shopify-product-images-downloader",
       "displayName": "Shopify Product Images Downloader",
       "displayName_zh": "Shopify 商品图片下载器",
