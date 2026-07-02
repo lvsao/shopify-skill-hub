@@ -721,21 +721,36 @@ function inferStoreProfile(data) {
   const productTitles = products.map((item) => item.title).filter(Boolean);
   const productTypes = products.map((item) => item.productType).filter(Boolean);
   const productTags = products.flatMap((item) => Array.isArray(item.tags) ? item.tags : []).filter(Boolean);
-  const evidenceBag = [
+  const evidenceLines = [
     data.shop?.name || "",
     data.shop?.description || "",
     ...collections,
     ...productTitles,
     ...productTypes,
     ...productTags,
-  ].join(" ").toLowerCase();
-  const categoryLabels = [];
+  ].filter(Boolean);
+  const categoryRules = [
+    { key: "winter-sports", pattern: /(ski|skis|skiing|snowboard|winter sports?)/ },
+    { key: "pet", pattern: /(pet|dog|cat|carrier|harness)/ },
+    { key: "beauty", pattern: /(beauty|skincare|cosmetic)/ },
+    { key: "jewelry", pattern: /(jewelry|necklace|ring|bracelet)/ },
+    { key: "home", pattern: /(home|decor|kitchen|bedding|furniture)/ },
+  ];
+  const categoryScores = new Map(categoryRules.map((rule) => [rule.key, 0]));
 
-  if (/(ski|skis|skiing|snowboard|winter sports?)/.test(evidenceBag)) categoryLabels.push("winter-sports");
-  if (/(pet|dog|cat|carrier|harness)/.test(evidenceBag)) categoryLabels.push("pet");
-  if (/(beauty|skincare|cosmetic)/.test(evidenceBag)) categoryLabels.push("beauty");
-  if (/(jewelry|necklace|ring|bracelet)/.test(evidenceBag)) categoryLabels.push("jewelry");
-  if (/(home|decor|kitchen|bedding|furniture)/.test(evidenceBag)) categoryLabels.push("home");
+  for (const line of evidenceLines) {
+    const normalized = line.toLowerCase();
+    for (const rule of categoryRules) {
+      if (rule.pattern.test(normalized)) {
+        categoryScores.set(rule.key, (categoryScores.get(rule.key) || 0) + 1);
+      }
+    }
+  }
+
+  const categoryLabels = [...categoryScores.entries()]
+    .filter(([, score]) => score >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key]) => key);
 
   let summary = "general ecommerce brand";
   if (categoryLabels.includes("winter-sports")) summary = "winter sports and ski gear brand";
@@ -754,6 +769,7 @@ function inferStoreProfile(data) {
       collections,
       productTitles,
       productTypes,
+      categoryScores: Object.fromEntries(categoryScores),
     },
     nextStep: "Complete external market research with at least 3 fresh category-country references before final country recommendations.",
   };
@@ -1171,7 +1187,7 @@ function buildExpansionIdeasFromAudit(audit, zh) {
     });
   }
 
-  return ideas.slice(0, 6);
+  return ideas.slice(0, 8);
 }
 
 function buildReportModel(audit) {
