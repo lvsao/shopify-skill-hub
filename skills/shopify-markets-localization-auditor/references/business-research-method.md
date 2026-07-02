@@ -1,6 +1,6 @@
 # Business Research Method
 
-Use this reference before writing `国际化生意建议`.
+Use this reference before writing international business recommendations.
 
 ## Goal
 
@@ -140,10 +140,10 @@ For dog car products, weigh:
 
 The business suggestion section must include:
 
-1. `店铺画像`
-2. `适合优先做的国家`
-3. `为什么是这些国家`
-4. `对 Markets / 语言 / 定价 / 政策 的具体影响`
+1. `Store profile`
+2. `Priority countries`
+3. `Why these countries fit`
+4. `Practical impact on Markets / languages / pricing / policies`
 
 Use plain language.
 

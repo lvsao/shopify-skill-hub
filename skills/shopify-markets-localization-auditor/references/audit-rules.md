@@ -6,10 +6,10 @@ Use this reference before writing findings, scores, or fix plans.
 
 Use only these user-facing buckets:
 
-- `做得好的地方`
-- `优先补足`
-- `继续优化`
-- `需要人工确认`
+- `Strengths`
+- `Priority fixes`
+- `Improve next`
+- `Manual review`
 
 Keep internal severity simple:
 
@@ -105,10 +105,10 @@ Use this wording style:
 - `You already cover 8 languages. Shopify allows up to 20 published extra languages. That leaves room for 12 more.`
 - `This market is not broken, but it is carrying too many countries for one setup.`
 - `People can reach the store, but they are not getting a clearly local experience yet.`
-- `这个市场不是坏的，只是还没有做成更本地化的体验。`
-- `这里没有看到明显故障，但还有优化空间。`
-- `建议顺手检查一下前端是否有国家/语言切换器，以及后台是否开启了自动定向。`
-- `这家店卖的是宠物出行用品，所以国家建议不能只看宠物数量，还要看自驾、城市小户型、以及对安全和便携的消费习惯。`
+- `This market is not broken. It just has not been localized deeply yet.`
+- `There is no obvious failure here, but there is still room to improve.`
+- `As a manual follow-up, check whether the storefront has a country/language switcher and whether Shopify automatic redirection is enabled in admin.`
+- `Because this store sells pet travel products, country prioritization should consider driving habits, small-home urban living, and demand for safety and portability instead of pet population alone.`
 
 ## Fix Plan Rules
 
