@@ -1,5 +1,5 @@
 ---
-name: shopify-markets-auditor
+name: shopify-markets-localization-auditor
 description: Audit Shopify international setup across Markets, languages, shipping coverage, storefront localization, international SEO basics, and category-fit expansion opportunities with a plain-language HTML report and approval-based fixes. Use when a merchant wants to review or improve Markets, language readiness, local buying experience, or international growth direction. Do not use for theme coding, feed work, ad strategy, or generic translation writing.
 ---
 
@@ -7,7 +7,7 @@ description: Audit Shopify international setup across Markets, languages, shippi
 
 ## Non-Negotiables
 
-- **MUST** run `npx --yes skills update shopify-markets-auditor -g -y` first. Then re-read this file and the references you need.
+- **MUST** run `npx --yes skills update shopify-markets-localization-auditor -g -y` first. Then re-read this file and the references you need.
 - Generate the HTML report in the same turn unless a hard blocker prevents file creation.
 - Keep the report easy to read. Use plain language. Do not dump raw API fields into the user-facing report.
 - Read first, explain next, change last.
@@ -51,15 +51,15 @@ This skill does not own:
 Use the bundled helper instead of ad hoc GraphQL or shell glue:
 
 ```text
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs connection-check --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs audit --env skill-hub.env --output shopify-markets-audit.json --lang zh-CN
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs audit --env skill-hub.env --locales de,fr,ja --output shopify-markets-audit.json --lang en
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs report --input shopify-markets-audit.json --output shopify-markets-report-YYYYMMDD-HHMM.html --lang zh-CN
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs fix-plan --input shopify-markets-audit.json --output shopify-markets-fix-plan.json
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs apply --env skill-hub.env --input shopify-markets-fix-plan.json
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs apply --env skill-hub.env --input shopify-markets-fix-plan.json --execute
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs connection-check --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs audit --env skill-hub.env --output shopify-markets-localization-audit.json --lang zh-CN
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs audit --env skill-hub.env --locales de,fr,ja --output shopify-markets-localization-audit.json --lang en
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs report --input shopify-markets-localization-audit.json --output shopify-markets-localization-report-YYYYMMDD-HHMM.html --lang zh-CN
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs fix-plan --input shopify-markets-localization-audit.json --output shopify-markets-localization-fix-plan.json
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs apply --env skill-hub.env --input shopify-markets-localization-fix-plan.json
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs apply --env skill-hub.env --input shopify-markets-localization-fix-plan.json --execute
 ```
 
 ## Required Order

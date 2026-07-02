@@ -88,7 +88,7 @@ function parseArgs(argv) {
   const valid = ["help", "init-env", "connection-check", "audit", "report", "fix-plan", "apply"];
   if (!valid.includes(args.command)) {
     throw new Error(
-      "Usage: node shopify-markets-auditor.mjs <init-env|connection-check|audit|report|fix-plan|apply> [--env skill-hub.env] [--input file.json] [--output file] [--locales de,fr,ja] [--method admin_custom_app|dev_dashboard_app] [--lang zh-CN|en|auto] [--execute]",
+      "Usage: node shopify-markets-localization-auditor.mjs <init-env|connection-check|audit|report|fix-plan|apply> [--env skill-hub.env] [--input file.json] [--output file] [--locales de,fr,ja] [--method admin_custom_app|dev_dashboard_app] [--lang zh-CN|en|auto] [--execute]",
     );
   }
 
@@ -97,14 +97,14 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log(`Usage:
-  node shopify-markets-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
-  node shopify-markets-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
-  node shopify-markets-auditor.mjs connection-check --env skill-hub.env
-  node shopify-markets-auditor.mjs audit --env skill-hub.env --output shopify-markets-audit.json --lang zh-CN
-  node shopify-markets-auditor.mjs report --input shopify-markets-audit.json --output shopify-markets-report.html --lang zh-CN
-  node shopify-markets-auditor.mjs fix-plan --input shopify-markets-audit.json --output shopify-markets-fix-plan.json
-  node shopify-markets-auditor.mjs apply --env skill-hub.env --input shopify-markets-fix-plan.json
-  node shopify-markets-auditor.mjs apply --env skill-hub.env --input shopify-markets-fix-plan.json --execute
+  node shopify-markets-localization-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
+  node shopify-markets-localization-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
+  node shopify-markets-localization-auditor.mjs connection-check --env skill-hub.env
+  node shopify-markets-localization-auditor.mjs audit --env skill-hub.env --output shopify-markets-localization-audit.json --lang zh-CN
+  node shopify-markets-localization-auditor.mjs report --input shopify-markets-localization-audit.json --output shopify-markets-localization-report.html --lang zh-CN
+  node shopify-markets-localization-auditor.mjs fix-plan --input shopify-markets-localization-audit.json --output shopify-markets-localization-fix-plan.json
+  node shopify-markets-localization-auditor.mjs apply --env skill-hub.env --input shopify-markets-localization-fix-plan.json
+  node shopify-markets-localization-auditor.mjs apply --env skill-hub.env --input shopify-markets-localization-fix-plan.json --execute
 `);
 }
 
@@ -186,7 +186,7 @@ async function resolveStorefrontToMyshopify(host) {
       const response = await fetch(candidate, {
         redirect: "follow",
         headers: {
-          "User-Agent": "Selofy Skill Hub Markets Auditor/1.0",
+          "User-Agent": "Selofy Skill Hub Markets Localization Auditor/1.0",
           "Accept-Language": "en-US,en;q=0.9",
         },
       });
@@ -457,7 +457,7 @@ async function fetchHtml(url, headers = {}) {
   try {
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Selofy Skill Hub Markets Auditor/1.0",
+        "User-Agent": "Selofy Skill Hub Markets Localization Auditor/1.0",
         "Accept-Language": "en-US,en;q=0.9",
         ...headers,
       },
