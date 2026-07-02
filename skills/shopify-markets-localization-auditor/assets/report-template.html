@@ -532,8 +532,13 @@
       `).join("")}</div>`;
     }
 
-    function renderActions(rows) {
-      if (!rows || !rows.length) return `<p class="muted">${isZh ? "这次没有准备好可直接执行的安全修复。说明当前问题更多是结构优化，而不是一键修改。" : "No safe direct fixes were prepared in this run. The remaining work is mostly structural, not one-click changes."}</p>`;
+    function renderActions(rows, emptyNote) {
+      if (!rows || !rows.length) {
+        const fallback = isZh
+          ? "这次没有准备好可直接执行的安全修复。说明当前问题更多是结构优化，而不是一键修改。"
+          : "No safe direct fixes were prepared in this run. The remaining work is mostly structural, not one-click changes.";
+        return `<p class="muted">${esc(emptyNote || fallback)}</p>`;
+      }
       return `<div class="actions">${rows.map((row) => `
         <div class="action-row">
           <div class="card-top">
@@ -768,7 +773,7 @@
               <p class="section-desc">${esc(report.actionsIntro)}</p>
             </div>
           </div>
-          ${renderActions(report.actions)}
+          ${renderActions(report.actions, report.actionsEmptyNote)}
         </div>
       </section>
 

@@ -29,9 +29,9 @@ V1 coverage resource types:
 
 - `PRODUCT`
 - `COLLECTION`
-- `ONLINE_STORE_PAGE`
-- `ONLINE_STORE_BLOG`
-- `ONLINE_STORE_ARTICLE`
+- `PAGE`
+- `BLOG`
+- `ARTICLE`
 - `SHOP`
 - `SHOP_POLICY`
 

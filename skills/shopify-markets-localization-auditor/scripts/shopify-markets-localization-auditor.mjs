@@ -133,6 +133,7 @@ async function ensureGitignoreLine(line) {
 async function initEnv(args) {
   const method = args.method || "admin_custom_app";
   const envFile = args.env || DEFAULT_ENV;
+  let gitignoreCreated = false;
   let body;
   if (method === "admin_custom_app") {
     body = `# Skill Hub shared Shopify configuration
@@ -159,9 +160,30 @@ SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
   if (!alreadyExists) await writeFile(envFile, body, "utf8");
   if (!existsSync(".gitignore")) {
     await writeFile(".gitignore", `${envFile}\n`, "utf8");
+    gitignoreCreated = true;
   }
   const gitignore = await ensureGitignoreLine(envFile);
-  console.log(JSON.stringify({ ok: true, envFile, created: !alreadyExists, gitignore, requiredScopes: REQUIRED_SCOPES }, null, 2));
+  const currentEnv = parseEnv(await readFile(envFile, "utf8"));
+  const placeholderDetected = Object.values(currentEnv).some((value) =>
+    typeof value === "string" && (
+      value.includes("your-store") ||
+      value.includes("your-client-id") ||
+      value.includes("shpat_xxx") ||
+      value.includes("atkn_your-token")
+    ));
+  console.log(JSON.stringify({
+    ok: true,
+    envFile,
+    created: !alreadyExists,
+    gitignore: gitignoreCreated && gitignore.reason === "already ignored"
+      ? { updated: false, reason: "created with env file entry" }
+      : gitignore,
+    placeholderDetected,
+    warning: placeholderDetected
+      ? "The env file still contains placeholder values. Replace them with real store credentials before connection-check."
+      : null,
+    requiredScopes: REQUIRED_SCOPES,
+  }, null, 2));
 }
 
 function normalizeDomain(value) {
@@ -521,6 +543,20 @@ query MarketsAuditOverview {
       body
     }
   }
+  collections(first: 12, sortKey: UPDATED_AT) {
+    nodes {
+      title
+      handle
+    }
+  }
+  products(first: 12, sortKey: UPDATED_AT) {
+    nodes {
+      title
+      handle
+      productType
+      tags
+    }
+  }
   shopLocales {
     name
     locale
@@ -679,6 +715,50 @@ async function computeLocaleCoverage(env, locale, resourceTypes) {
   return totals;
 }
 
+function inferStoreProfile(data) {
+  const collections = (data.collections?.nodes || []).map((item) => item.title).filter(Boolean);
+  const products = (data.products?.nodes || []).filter(Boolean);
+  const productTitles = products.map((item) => item.title).filter(Boolean);
+  const productTypes = products.map((item) => item.productType).filter(Boolean);
+  const productTags = products.flatMap((item) => Array.isArray(item.tags) ? item.tags : []).filter(Boolean);
+  const evidenceBag = [
+    data.shop?.name || "",
+    data.shop?.description || "",
+    ...collections,
+    ...productTitles,
+    ...productTypes,
+    ...productTags,
+  ].join(" ").toLowerCase();
+  const categoryLabels = [];
+
+  if (/(ski|skis|skiing|snowboard|winter sports?)/.test(evidenceBag)) categoryLabels.push("winter-sports");
+  if (/(pet|dog|cat|carrier|harness)/.test(evidenceBag)) categoryLabels.push("pet");
+  if (/(beauty|skincare|cosmetic)/.test(evidenceBag)) categoryLabels.push("beauty");
+  if (/(jewelry|necklace|ring|bracelet)/.test(evidenceBag)) categoryLabels.push("jewelry");
+  if (/(home|decor|kitchen|bedding|furniture)/.test(evidenceBag)) categoryLabels.push("home");
+
+  let summary = "general ecommerce brand";
+  if (categoryLabels.includes("winter-sports")) summary = "winter sports and ski gear brand";
+  else if (categoryLabels.includes("pet")) summary = "pet-focused brand";
+  else if (categoryLabels.includes("beauty")) summary = "beauty-focused brand";
+  else if (categoryLabels.includes("jewelry")) summary = "jewelry-focused brand";
+  else if (categoryLabels.includes("home")) summary = "home-focused brand";
+
+  return {
+    status: "store_profile_only",
+    summary,
+    categoryLabels,
+    evidence: {
+      shopName: data.shop?.name || "",
+      shopDescription: data.shop?.description || "",
+      collections,
+      productTitles,
+      productTypes,
+    },
+    nextStep: "Complete external market research with at least 3 fresh category-country references before final country recommendations.",
+  };
+}
+
 function normalizeOverview(data) {
   const localeMap = new Map((data.shopLocales || []).map((locale) => [locale.locale, locale]));
   const markets = (data.markets?.nodes || []).map((market) => {
@@ -730,6 +810,7 @@ function normalizeOverview(data) {
 
   return {
     shop: data.shop,
+    storeProfile: inferStoreProfile(data),
     shopLocales: data.shopLocales || [],
     localeMap,
     markets,
@@ -904,7 +985,7 @@ function buildFixPlan(overview, coverageByLocale) {
   const actions = [];
   const actionIds = new Set();
   const localeMap = overview.localeMap;
-  void coverageByLocale;
+  const weakLocales = coverageByLocale.filter((item) => item.readinessPct < 70);
 
   function pushAction(action) {
     if (actionIds.has(action.id)) return;
@@ -954,7 +1035,12 @@ function buildFixPlan(overview, coverageByLocale) {
     }
   }
 
-  return actions;
+  return {
+    actions,
+    explanation: actions.length === 0 && weakLocales.length
+      ? `The main gaps are translation-readiness issues in ${weakLocales.map((item) => item.locale).join(", ")}. V1 does not auto-write translations, so these need manual translation work or a translation app instead of a direct Admin API fix.`
+      : "",
+  };
 }
 
 function groupFindings(findings, bucket) {
@@ -1006,13 +1092,36 @@ function buildExpansionIdeasFromAudit(audit, zh) {
   const sharedUrlMarkets = audit.markets.filter((market) => !market.webPresenceId);
   const sharedCurrencyMarkets = audit.markets.filter((market) => !market.localCurrencies && market.countryCodes.length > 1);
   const multilingualMarkets = audit.markets.filter((market) => market.allLocales.length > 1);
-  const ideas = [
-    {
-      title: zh ? `还可以再增加 ${remainingSlots} 个已发布语言` : `You still have room for ${remainingSlots} more published language${remainingSlots === 1 ? "" : "s"}`,
-      summary: zh ? "Shopify 最多还能继续增加语言，但剩余名额更适合留给真正有转化潜力的国家。" : "There is still room to add languages, but the remaining slots should go to the markets that can really convert.",
-      nextStep: zh ? "不要平均铺开，优先给最值得做深的国家和语言。" : "Do not spread evenly. Prioritize the countries and languages worth going deeper on.",
-    },
-  ];
+  const profile = audit.storeProfile || null;
+  const ideas = [];
+
+  if (profile) {
+    ideas.push({
+      title: zh ? "店铺画像" : "Store profile",
+      summary: zh
+        ? `基于店名、描述、系列和商品标题，这家店当前更像是 ${profile.summary}。`
+        : `Based on the shop name, description, collections, and product titles, this store currently looks like a ${profile.summary}.`,
+      nextStep: zh
+        ? "这一步只是店铺画像，不等于最终国家建议。真正的市场建议还需要补外部行业研究。"
+        : "This is only the store profile, not the final country recommendation. External market research is still required.",
+    });
+  }
+
+  ideas.push({
+    title: zh ? "先补外部研究，再给国家建议" : "Finish external research before country advice",
+    summary: zh
+      ? "当前脚本只完成了店铺画像，还没有完成至少 3 份外部行业资料交叉验证，所以这里不直接输出硬性的国家结论。"
+      : "This script completes the store profile, but it does not complete the required 3-source external research step, so it should not output hard country conclusions yet.",
+    nextStep: zh
+      ? "下一步请围绕这个品类补至少 3 份最新可信资料，再决定优先国家。"
+      : "Next, gather at least 3 fresh category-country references before finalizing priority countries.",
+  });
+
+  ideas.push({
+    title: zh ? `还可以再增加 ${remainingSlots} 个已发布语言` : `You still have room for ${remainingSlots} more published language${remainingSlots === 1 ? "" : "s"}`,
+    summary: zh ? "Shopify 最多还能继续增加语言，但剩余名额更适合留给真正有转化潜力的国家。" : "There is still room to add languages, but the remaining slots should go to the markets that can really convert.",
+    nextStep: zh ? "不要平均铺开，优先给最值得做深的国家和语言。" : "Do not spread evenly. Prioritize the countries and languages worth going deeper on.",
+  });
 
   if (weakLocales.length) {
     ideas.push({
@@ -1065,84 +1174,10 @@ function buildExpansionIdeasFromAudit(audit, zh) {
   return ideas.slice(0, 6);
 }
 
-function buildExpansionIdeas(overview, coverageByLocale) {
-  const zh = (overview.reportLang || "zh-CN").toLowerCase().startsWith("zh");
-  const publishedCount = overview.shopLocales.filter((item) => item.published && !item.primary).length;
-  const remainingSlots = Math.max(0, 20 - publishedCount);
-  const weakLocales = coverageByLocale.filter((item) => item.readinessPct < 65);
-  const localeSet = new Set(overview.shopLocales.map((item) => item.locale));
-  const marketNames = overview.markets.map((market) => market.name);
-  const sharedUrlMarkets = overview.markets.filter((market) => !market.webPresenceId);
-  const sharedCurrencyMarkets = overview.markets.filter((market) => !market.localCurrencies && market.countryCodes.length > 1);
-  const multilingualMarkets = overview.markets.filter((market) => market.allLocales.length > 1);
-  const ideas = [
-    {
-      title: zh ? `还可以再增加 ${remainingSlots} 个已发布语言` : `You still have room for ${remainingSlots} more published language${remainingSlots === 1 ? "" : "s"}`,
-      summary: zh ? "Shopify 允许最多 20 个额外已发布语言，剩余名额要尽量留给更值得做的市场。" : "Shopify allows up to 20 extra published languages. Use the remaining room carefully.",
-      nextStep: zh ? "优先给最有机会转化的国家和语言，而不是平均铺开。" : "Add new languages only where the store can support a full buying experience.",
-    },
-  ];
-
-  if (weakLocales.length) {
-    ideas.push({
-      title: zh ? "有些现有语言还没做扎实，先补强会更划算" : "Some current languages need work before adding too many more",
-      summary: zh ? `${weakLocales.map((item) => item.locale).join("、")} 还有明显缺口。` : `${weakLocales.map((item) => item.locale).join(", ")} still have large gaps.`,
-      nextStep: zh ? "先把这些语言做完整，再继续铺更多市场，整体体验会更稳。" : "It may be smarter to strengthen these first before expanding further.",
-    });
-  }
-
-  if (overview.markets.some((market) => market.countryCodes.length > 6)) {
-    ideas.push({
-      title: zh ? "有些市场承载的国家太多，后续可能不好做细" : "One or more markets may be carrying too many countries",
-      summary: zh ? "国家混得太多时，语言、网址和定价策略通常更难做清楚。" : "Large mixed markets are often harder to localize well.",
-      nextStep: zh ? "以后可以考虑把重点国家独立出来，不重要的小市场再合并。" : "Consider whether some countries deserve their own market later.",
-    });
-  }
-
-  if (sharedUrlMarkets.length >= 4) {
-    ideas.push({
-      title: zh ? "优先把重点国家做成真正的本地入口" : "Give top markets their own local entry points",
-      summary: zh ? `${takeLabels(sharedUrlMarkets.map((market) => market.name), 4).join("、")} 这类市场现在更多还是依赖主站入口。` : `${takeLabels(sharedUrlMarkets.map((market) => market.name), 4).join(", ")} still rely on the shared storefront entry.`,
-      nextStep: zh ? "先挑转化高、搜索量高的国家做子目录或独立域名，SEO 和本地信任感都会更强。" : "Start with the markets that deserve stronger local SEO and buyer trust signals.",
-    });
-  }
-
-  if (sharedCurrencyMarkets.length) {
-    ideas.push({
-      title: zh ? "多国混合市场要同时看定价和货币体验" : "Mixed-country markets need extra pricing attention",
-      summary: zh ? "当一个市场覆盖多个国家时，即使能卖，也不一定是最顺手的本地购买体验。" : "A market can still work operationally while feeling less local to buyers.",
-      nextStep: zh ? "可以优先把高价值国家拆出来，给它们更单独的币种、语言和网址策略。" : "Consider splitting out the countries that deserve their own pricing and language setup.",
-    });
-  }
-
-  if (multilingualMarkets.length) {
-    ideas.push({
-      title: zh ? "多语言国家更适合做默认语言优化" : "Multilingual markets deserve sharper default-language choices",
-      summary: zh ? "像加拿大、比利时这类市场，不只是“有语言”就够了，默认语言顺序也会影响体验和 SEO。" : "In multilingual countries, the default language choice can materially affect clarity and SEO.",
-      nextStep: zh ? "把默认语言优先给最主流客群，再把其他语言作为补充入口。" : "Use the dominant buyer language as the default and keep the rest as supporting paths.",
-    });
-  }
-
-  if (localeSet.has("de") || localeSet.has("fr") || localeSet.has("it") || localeSet.has("es") || localeSet.has("nl")) {
-    ideas.push({
-      title: zh ? "欧洲市场更适合做深，不只是做广" : "Europe often rewards depth, not just breadth",
-      summary: zh ? "如果已经覆盖多种欧洲语言，更值得继续把退货、配送时效、税费说明和本地语气补齐。" : "If the store already covers several European languages, deeper operational localization usually matters more than adding one more country quickly.",
-      nextStep: zh ? "先把几个核心欧洲市场的政策、交付承诺和本地入口做扎实，再决定是否继续扩更多小国。" : "Deepen the strongest European markets before spreading into too many smaller ones.",
-    });
-  }
-
-  if (localeSet.has("ja") || localeSet.has("ko")) {
-    ideas.push({
-      title: zh ? "东亚市场更看重完整度和信任感" : "East Asia usually rewards polish and trust signals",
-      summary: zh ? "日语、韩语市场不是只把商品页翻出来就够，配送、退货、客服承诺和货币体验会更影响转化。" : "For Japanese and Korean markets, the non-product parts of the journey often matter just as much as the product copy.",
-      nextStep: zh ? "优先检查当地语言政策页、配送承诺、币种显示和移动端路径是否顺手。" : "Review policy language, shipping promises, currency display, and mobile navigation first.",
-    });
-  }
-
-  return ideas.slice(0, 6);
-}
-
 function buildReportModel(audit) {
+  const fixPlan = Array.isArray(audit.fixPlan)
+    ? { actions: audit.fixPlan, explanation: "" }
+    : (audit.fixPlan || { actions: [], explanation: "" });
   const fixNow = groupFindings(audit.findings, "fix-now");
   const tidyNext = groupFindings(audit.findings, "tidy-next");
   const manualChecks = groupFindings(audit.findings, "manual");
@@ -1364,7 +1399,7 @@ function buildReportModel(audit) {
     languageCountText: zh ? "本次检查的语言数" : "Checked in this run",
     marketCount: audit.markets.length,
     marketCountText: zh ? "本次检查的市场数" : "Active market structures reviewed",
-    fixCount: audit.fixPlan.length,
+    fixCount: (fixPlan.actions || []).length,
     fixCountText: zh ? "可预览的安全修复" : "Safe approval-based fixes ready",
     bigPicture: zh
       ? (fixNow.length ? "这家店已经有比较完整的国际化底子，但现在的短板主要集中在翻译扎实度、部分市场入口策略，以及少数市场的配置细节。" : "这家店的国际化基础已经搭起来了，剩下主要是把重点市场做得更本地、更清楚。")
@@ -1436,7 +1471,8 @@ function buildReportModel(audit) {
     expansionIntro: zh ? "这部分不是在找 bug，而是在给国际化经营上的建议。" : "These are growth ideas, not bugs.",
     expansionIdeas: buildExpansionIdeasFromAudit(audit, zh),
     actionsIntro: zh ? "这些动作可以先预览，确认后再执行。" : "These fixes are safe to preview now and execute later only after approval.",
-    actions: audit.fixPlan,
+    actions: fixPlan.actions || [],
+    actionsEmptyNote: fixPlan.explanation || "",
     storefrontReminders,
     footerNote: zh
       ? "前端切换器和自动定向这两项不再计分，只作为低优先级人工提醒。"
@@ -1454,13 +1490,13 @@ async function cmdAudit(args) {
 
   const localeCoverage = [];
   for (const locale of localesToAudit) {
+    console.error(`[audit] Computing locale readiness for ${locale}...`);
     localeCoverage.push(await computeLocaleCoverage(env, locale, DEFAULT_RESOURCE_TYPES));
   }
 
   const storefront = await crawlStorefront(overview.shop);
   const { findings, workingWell } = buildFindings(overview, localeCoverage, storefront);
   overview.reportLang = args.lang === "auto" ? "zh-CN" : args.lang;
-  const expansionIdeas = buildExpansionIdeas(overview, localeCoverage);
   const fixPlan = buildFixPlan(overview, localeCoverage);
 
   const audit = {
@@ -1471,10 +1507,10 @@ async function cmdAudit(args) {
     deliveryProfiles: overview.deliveryProfiles,
     shippingCountryCodes: overview.shippingCountryCodes,
     storefront,
+    storeProfile: overview.storeProfile,
     localeCoverage,
     findings,
     workingWell,
-    expansionIdeas,
     fixPlan,
     reportLang: args.lang === "auto" ? "zh-CN" : args.lang,
   };
@@ -1505,7 +1541,7 @@ async function cmdReport(args) {
 async function cmdFixPlan(args) {
   if (!args.input) throw new Error("--input is required");
   const audit = JSON.parse(await readFile(args.input, "utf8"));
-  await writeJsonOutput(audit.fixPlan || [], args.output);
+  await writeJsonOutput(audit.fixPlan?.actions || [], args.output);
 }
 
 async function applyAction(env, action) {
@@ -1548,7 +1584,8 @@ async function applyAction(env, action) {
 
 async function cmdApply(args) {
   if (!args.input) throw new Error("--input is required");
-  const actions = JSON.parse(await readFile(args.input, "utf8"));
+  const parsed = JSON.parse(await readFile(args.input, "utf8"));
+  const actions = Array.isArray(parsed) ? parsed : (parsed.actions || []);
   if (!args.execute) {
     console.log(JSON.stringify({
       mode: "preview",
@@ -1579,7 +1616,13 @@ async function cmdApply(args) {
   console.log(JSON.stringify({ mode: "execute", results }, null, 2));
 }
 
-const args = parseArgs(process.argv.slice(2));
+let args;
+try {
+  args = parseArgs(process.argv.slice(2));
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 const commands = {
   "help": () => printHelp(),
   "init-env": () => initEnv(args),
