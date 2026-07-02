@@ -23,7 +23,7 @@ description: Audit Shopify international setup across Markets, languages, shippi
 - `references/onboarding-guide.md` before any Shopify connection flow
 - `references/api-surfaces.md` before interpreting Markets, locales, translations, shipping, and storefront checks
 - `references/audit-rules.md` before scoring findings or building fix plans
-- `references/business-research-method.md` before writing any `国际化生意建议`
+- `references/business-research-method.md` before writing any international business recommendation
 
 ## Scope
 
@@ -69,7 +69,7 @@ node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs a
 3. Gather admin evidence first.
 4. Compute locale readiness for each requested locale. If the user did not name locales, use all published non-primary locales and any market default or alternate locale not yet covered.
 5. Crawl the storefront homepage for public SEO and policy signals.
-6. If the report will include `国际化生意建议`, first identify the store's business type using API data and storefront-visible evidence such as `shop.name`, `shop.description`, collections, products, and at least one product-detail page when possible.
+6. If the report will include international business recommendations, first identify the store's business type using API data and storefront-visible evidence such as `shop.name`, `shop.description`, collections, products, and at least one product-detail page when possible.
 7. Then run external market research for the store's actual category before writing any business advice. Prefer the newest credible sources and use the method and constraints in `references/business-research-method.md`.
 8. Build the plain-language HTML report in the current working directory.
 9. If the store uses Path A or B, prepare one preview fix bundle.
@@ -112,17 +112,18 @@ Important:
 ## Report Rules
 
 - Keep the report sections short and obvious.
-- Use these section names:
-  - `整体表现`
-  - `做得好的地方`
-  - `优先补足`
-  - `继续优化`
+- Use these section names conceptually:
+  - `Overall view`
+  - `Strengths`
+  - `Priority fixes`
+  - `Improve next`
   - `Languages`
   - `Markets`
   - `Shipping`
   - `Storefront`
-  - `国际化生意建议`
+  - `International growth ideas`
   - `Approval-only fixes`
+- Render the final report in the user's current conversation language. Do not hardcode one output language in the skill rules.
 - Every issue must answer:
   - what is wrong
   - why it matters
@@ -133,7 +134,7 @@ Important:
   - subfolder
   - separate domain or subdomain
 - Do not claim a precise result for storefront selector visibility or Shopify automatic redirection in this skill. Mention them only as low-priority reminders for manual review.
-- Do not write generic market advice. `国际化生意建议` must be tied to the store's actual category, product use case, and buying context.
+- Do not write generic market advice. International growth ideas must be tied to the store's actual category, product use case, and buying context.
 - Separate `evidence` from `inference` when the category advice depends on external research.
 
 ## Supported Fixes

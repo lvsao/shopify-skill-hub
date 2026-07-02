@@ -1073,31 +1073,31 @@ function takeLabels(values, limit = 6) {
 }
 
 function buildLocaleStatusLabel(locale, zh) {
-  if (locale.primary) return zh ? "主语言" : "Primary";
-  if (locale.published) return zh ? "已发布" : "Published";
-  return zh ? "已添加未发布" : "Enabled, not published";
+  if (locale.primary) return zh ? "\u4e3b\u8bed\u8a00" : "Primary";
+  if (locale.published) return zh ? "\u5df2\u53d1\u5e03" : "Published";
+  return zh ? "\u5df2\u6dfb\u52a0\u672a\u53d1\u5e03" : "Enabled, not published";
 }
 
 function buildMarketCurrencyLabel(market, zh) {
-  const base = market.baseCurrencyCode || (zh ? "店铺基础币种" : "shop base currency");
+  const base = market.baseCurrencyCode || (zh ? "\u5e97\u94fa\u57fa\u7840\u5e01\u79cd" : "shop base currency");
   if (market.localCurrencies) {
-    return zh ? "自动按国家显示本地货币" : "Auto local currencies by country";
+    return zh ? "\u81ea\u52a8\u6309\u56fd\u5bb6\u663e\u793a\u672c\u5730\u8d27\u5e01" : "Auto local currencies by country";
   }
   if (market.countryCodes.length <= 1) {
-    return zh ? `固定为 ${base}` : `Fixed to ${base}`;
+    return zh ? `\u56fa\u5b9a\u4e3a ${base}` : `Fixed to ${base}`;
   }
-  return zh ? `多个国家共用 ${base}` : `Shared ${base} across countries`;
+  return zh ? `\u591a\u4e2a\u56fd\u5bb6\u5171\u7528 ${base}` : `Shared ${base} across countries`;
 }
 
 function buildMarketUrlLabel(market, zh) {
   if (market.webPresenceId && market.subfolderSuffix) {
-    return zh ? `子目录 /${market.subfolderSuffix}/` : `Subfolder /${market.subfolderSuffix}/`;
+    return zh ? `\u5b50\u76ee\u5f55 /${market.subfolderSuffix}/` : `Subfolder /${market.subfolderSuffix}/`;
   }
   if (market.webPresenceId && market.rootUrls.length) {
     const root = market.rootUrls[0]?.url || "";
-    return zh ? `独立入口 ${root}` : `Dedicated URL ${root}`;
+    return zh ? `\u72ec\u7acb\u5165\u53e3 ${root}` : `Dedicated URL ${root}`;
   }
-  return zh ? "跟随主站入口" : "Shared main storefront entry";
+  return zh ? "\u8ddf\u968f\u4e3b\u7ad9\u5165\u53e3" : "Shared main storefront entry";
 }
 
 function buildExpansionIdeasFromAudit(audit, zh) {
@@ -1113,77 +1113,77 @@ function buildExpansionIdeasFromAudit(audit, zh) {
 
   if (profile) {
     ideas.push({
-      title: zh ? "店铺画像" : "Store profile",
+      title: zh ? "\u5e97\u94fa\u753b\u50cf" : "Store profile",
       summary: zh
-        ? `基于店名、描述、系列和商品标题，这家店当前更像是 ${profile.summary}。`
+        ? `\u57fa\u4e8e\u5e97\u540d\u3001\u63cf\u8ff0\u3001\u7cfb\u5217\u548c\u5546\u54c1\u6807\u9898\uff0c\u8fd9\u5bb6\u5e97\u5f53\u524d\u66f4\u50cf\u662f ${profile.summary}\u3002`
         : `Based on the shop name, description, collections, and product titles, this store currently looks like a ${profile.summary}.`,
       nextStep: zh
-        ? "这一步只是店铺画像，不等于最终国家建议。真正的市场建议还需要补外部行业研究。"
+        ? "\u8fd9\u4e00\u6b65\u53ea\u662f\u5e97\u94fa\u753b\u50cf\uff0c\u4e0d\u7b49\u4e8e\u6700\u7ec8\u56fd\u5bb6\u5efa\u8bae\u3002\u771f\u6b63\u7684\u5e02\u573a\u5efa\u8bae\u8fd8\u9700\u8981\u8865\u5916\u90e8\u884c\u4e1a\u7814\u7a76\u3002"
         : "This is only the store profile, not the final country recommendation. External market research is still required.",
     });
   }
 
   ideas.push({
-    title: zh ? "先补外部研究，再给国家建议" : "Finish external research before country advice",
+    title: zh ? "\u5148\u8865\u5916\u90e8\u7814\u7a76\uff0c\u518d\u7ed9\u56fd\u5bb6\u5efa\u8bae" : "Finish external research before country advice",
     summary: zh
-      ? "当前脚本只完成了店铺画像，还没有完成至少 3 份外部行业资料交叉验证，所以这里不直接输出硬性的国家结论。"
+      ? "\u5f53\u524d\u811a\u672c\u53ea\u5b8c\u6210\u4e86\u5e97\u94fa\u753b\u50cf\uff0c\u8fd8\u6ca1\u6709\u5b8c\u6210\u81f3\u5c11 3 \u4efd\u5916\u90e8\u884c\u4e1a\u8d44\u6599\u4ea4\u53c9\u9a8c\u8bc1\uff0c\u6240\u4ee5\u8fd9\u91cc\u4e0d\u76f4\u63a5\u8f93\u51fa\u786c\u6027\u7684\u56fd\u5bb6\u7ed3\u8bba\u3002"
       : "This script completes the store profile, but it does not complete the required 3-source external research step, so it should not output hard country conclusions yet.",
     nextStep: zh
-      ? "下一步请围绕这个品类补至少 3 份最新可信资料，再决定优先国家。"
+      ? "\u4e0b\u4e00\u6b65\u8bf7\u56f4\u7ed5\u8fd9\u4e2a\u54c1\u7c7b\u8865\u81f3\u5c11 3 \u4efd\u6700\u65b0\u53ef\u4fe1\u8d44\u6599\uff0c\u518d\u51b3\u5b9a\u4f18\u5148\u56fd\u5bb6\u3002"
       : "Next, gather at least 3 fresh category-country references before finalizing priority countries.",
   });
 
   ideas.push({
-    title: zh ? `还可以再增加 ${remainingSlots} 个已发布语言` : `You still have room for ${remainingSlots} more published language${remainingSlots === 1 ? "" : "s"}`,
-    summary: zh ? "Shopify 最多还能继续增加语言，但剩余名额更适合留给真正有转化潜力的国家。" : "There is still room to add languages, but the remaining slots should go to the markets that can really convert.",
-    nextStep: zh ? "不要平均铺开，优先给最值得做深的国家和语言。" : "Do not spread evenly. Prioritize the countries and languages worth going deeper on.",
+    title: zh ? `\u8fd8\u53ef\u4ee5\u518d\u589e\u52a0 ${remainingSlots} \u4e2a\u5df2\u53d1\u5e03\u8bed\u8a00` : `You still have room for ${remainingSlots} more published language${remainingSlots === 1 ? "" : "s"}`,
+    summary: zh ? "Shopify \u6700\u591a\u8fd8\u80fd\u7ee7\u7eed\u589e\u52a0\u8bed\u8a00\uff0c\u4f46\u5269\u4f59\u540d\u989d\u66f4\u9002\u5408\u7559\u7ed9\u771f\u6b63\u6709\u8f6c\u5316\u6f5c\u529b\u7684\u56fd\u5bb6\u3002" : "There is still room to add languages, but the remaining slots should go to the markets that can really convert.",
+    nextStep: zh ? "\u4e0d\u8981\u5e73\u5747\u94fa\u5f00\uff0c\u4f18\u5148\u7ed9\u6700\u503c\u5f97\u505a\u6df1\u7684\u56fd\u5bb6\u548c\u8bed\u8a00\u3002" : "Do not spread evenly. Prioritize the countries and languages worth going deeper on.",
   });
 
   if (weakLocales.length) {
     ideas.push({
-      title: zh ? "先补强已有语言，通常比继续扩新市场更划算" : "Strengthening current languages may beat adding new markets",
-      summary: zh ? `${weakLocales.map((item) => item.locale).join("、")} 这类语言还没有真正站稳。` : `${weakLocales.map((item) => item.locale).join(", ")} still look too weak to treat as complete.`,
-      nextStep: zh ? "先把这些语言做完整，再继续扩，会更稳也更省心。" : "Finish these languages first before pushing broader expansion.",
+      title: zh ? "\u5148\u8865\u5f3a\u5df2\u6709\u8bed\u8a00\uff0c\u901a\u5e38\u6bd4\u7ee7\u7eed\u6269\u65b0\u5e02\u573a\u66f4\u5212\u7b97" : "Strengthening current languages may beat adding new markets",
+      summary: zh ? `${weakLocales.map((item) => item.locale).join("\u3001")} \u8fd9\u7c7b\u8bed\u8a00\u8fd8\u6ca1\u6709\u771f\u6b63\u7ad9\u7a33\u3002` : `${weakLocales.map((item) => item.locale).join(", ")} still look too weak to treat as complete.`,
+      nextStep: zh ? "\u5148\u628a\u8fd9\u4e9b\u8bed\u8a00\u505a\u5b8c\u6574\uff0c\u518d\u7ee7\u7eed\u6269\uff0c\u4f1a\u66f4\u7a33\u4e5f\u66f4\u7701\u5fc3\u3002" : "Finish these languages first before pushing broader expansion.",
     });
   }
 
   if (sharedUrlMarkets.length >= 4) {
     ideas.push({
-      title: zh ? "重点国家更适合有自己的入口" : "Top markets deserve their own entry points",
-      summary: zh ? "现在仍有不少市场在跟随主站入口，这会影响本地感和国际 SEO 的放大效果。" : "A large share of markets still rely on the main storefront entry, which can limit local feel and SEO lift.",
-      nextStep: zh ? "先挑转化高或搜索量高的国家做子目录或独立域名。" : "Start by giving the highest-opportunity markets their own subfolder or dedicated domain path.",
+      title: zh ? "\u91cd\u70b9\u56fd\u5bb6\u66f4\u9002\u5408\u6709\u81ea\u5df1\u7684\u5165\u53e3" : "Top markets deserve their own entry points",
+      summary: zh ? "\u73b0\u5728\u4ecd\u6709\u4e0d\u5c11\u5e02\u573a\u5728\u8ddf\u968f\u4e3b\u7ad9\u5165\u53e3\uff0c\u8fd9\u4f1a\u5f71\u54cd\u672c\u5730\u611f\u548c\u56fd\u9645 SEO \u7684\u653e\u5927\u6548\u679c\u3002" : "A large share of markets still rely on the main storefront entry, which can limit local feel and SEO lift.",
+      nextStep: zh ? "\u5148\u6311\u8f6c\u5316\u9ad8\u6216\u641c\u7d22\u91cf\u9ad8\u7684\u56fd\u5bb6\u505a\u5b50\u76ee\u5f55\u6216\u72ec\u7acb\u57df\u540d\u3002" : "Start by giving the highest-opportunity markets their own subfolder or dedicated domain path.",
     });
   }
 
   if (sharedCurrencyMarkets.length) {
     ideas.push({
-      title: zh ? "多国市场要同时看语言、货币和定价" : "Mixed-country markets need language, currency, and pricing together",
-      summary: zh ? "多国共用一个市场时，运营上省事，但顾客体验不一定足够本地。" : "Operationally, one market can be easier to manage, but it can feel less local to buyers.",
-      nextStep: zh ? "把高价值国家优先拆出来，给更清晰的货币和网址策略。" : "Split out the highest-value countries first for clearer pricing and local experience.",
+      title: zh ? "\u591a\u56fd\u5e02\u573a\u8981\u540c\u65f6\u770b\u8bed\u8a00\u3001\u8d27\u5e01\u548c\u5b9a\u4ef7" : "Mixed-country markets need language, currency, and pricing together",
+      summary: zh ? "\u591a\u56fd\u5171\u7528\u4e00\u4e2a\u5e02\u573a\u65f6\uff0c\u8fd0\u8425\u4e0a\u7701\u4e8b\uff0c\u4f46\u987e\u5ba2\u4f53\u9a8c\u4e0d\u4e00\u5b9a\u8db3\u591f\u672c\u5730\u3002" : "Operationally, one market can be easier to manage, but it can feel less local to buyers.",
+      nextStep: zh ? "\u628a\u9ad8\u4ef7\u503c\u56fd\u5bb6\u4f18\u5148\u62c6\u51fa\u6765\uff0c\u7ed9\u66f4\u6e05\u6670\u7684\u8d27\u5e01\u548c\u7f51\u5740\u7b56\u7565\u3002" : "Split out the highest-value countries first for clearer pricing and local experience.",
     });
   }
 
   if (multilingualMarkets.length) {
     ideas.push({
-      title: zh ? "多语言国家更要重视默认语言" : "Multilingual countries need sharper default-language choices",
-      summary: zh ? "像加拿大、比利时这类市场，默认语言顺序会直接影响顾客第一眼体验和搜索表现。" : "In multilingual countries, the default language choice influences both buyer clarity and SEO.",
-      nextStep: zh ? "默认语言先给主流客群，其他语言作为补充入口。" : "Use the dominant buyer language as default and keep the others as supporting paths.",
+      title: zh ? "\u591a\u8bed\u8a00\u56fd\u5bb6\u66f4\u8981\u91cd\u89c6\u9ed8\u8ba4\u8bed\u8a00" : "Multilingual countries need sharper default-language choices",
+      summary: zh ? "\u50cf\u52a0\u62ff\u5927\u3001\u6bd4\u5229\u65f6\u8fd9\u7c7b\u5e02\u573a\uff0c\u9ed8\u8ba4\u8bed\u8a00\u987a\u5e8f\u4f1a\u76f4\u63a5\u5f71\u54cd\u987e\u5ba2\u7b2c\u4e00\u773c\u4f53\u9a8c\u548c\u641c\u7d22\u8868\u73b0\u3002" : "In multilingual countries, the default language choice influences both buyer clarity and SEO.",
+      nextStep: zh ? "\u9ed8\u8ba4\u8bed\u8a00\u5148\u7ed9\u4e3b\u6d41\u5ba2\u7fa4\uff0c\u5176\u4ed6\u8bed\u8a00\u4f5c\u4e3a\u8865\u5145\u5165\u53e3\u3002" : "Use the dominant buyer language as default and keep the others as supporting paths.",
     });
   }
 
   if (localeSet.has("de") || localeSet.has("fr") || localeSet.has("it") || localeSet.has("es") || localeSet.has("nl")) {
     ideas.push({
-      title: zh ? "欧洲市场更适合继续做深" : "Europe usually rewards deeper localization",
-      summary: zh ? "既然已经覆盖多种欧洲语言，接下来更值得补的是政策、退货承诺、配送时效和本地入口，而不只是继续加更多国家。" : "Once several European languages are live, the next gains often come from policies, returns, delivery promises, and stronger local entry points rather than just adding more countries.",
-      nextStep: zh ? "先把几个核心欧洲市场做扎实，再考虑继续外扩。" : "Deepen the strongest European markets before adding more edge cases.",
+      title: zh ? "\u6b27\u6d32\u5e02\u573a\u66f4\u9002\u5408\u7ee7\u7eed\u505a\u6df1" : "Europe usually rewards deeper localization",
+      summary: zh ? "\u65e2\u7136\u5df2\u7ecf\u8986\u76d6\u591a\u79cd\u6b27\u6d32\u8bed\u8a00\uff0c\u63a5\u4e0b\u6765\u66f4\u503c\u5f97\u8865\u7684\u662f\u653f\u7b56\u3001\u9000\u8d27\u627f\u8bfa\u3001\u914d\u9001\u65f6\u6548\u548c\u672c\u5730\u5165\u53e3\uff0c\u800c\u4e0d\u53ea\u662f\u7ee7\u7eed\u52a0\u66f4\u591a\u56fd\u5bb6\u3002" : "Once several European languages are live, the next gains often come from policies, returns, delivery promises, and stronger local entry points rather than just adding more countries.",
+      nextStep: zh ? "\u5148\u628a\u51e0\u4e2a\u6838\u5fc3\u6b27\u6d32\u5e02\u573a\u505a\u624e\u5b9e\uff0c\u518d\u8003\u8651\u7ee7\u7eed\u5916\u6269\u3002" : "Deepen the strongest European markets before adding more edge cases.",
     });
   }
 
   if (localeSet.has("ja") || localeSet.has("ko")) {
     ideas.push({
-      title: zh ? "东亚市场更吃完整度和信任感" : "East Asia usually rewards polish and trust signals",
-      summary: zh ? "日语、韩语市场往往不只是商品页翻译，配送、退货、客服承诺和币种体验也很关键。" : "For Japanese and Korean markets, policy clarity and checkout confidence often matter as much as product translation.",
-      nextStep: zh ? "优先补当地语言政策页、配送承诺和移动端路径。" : "Prioritize local-language policies, delivery promises, and mobile navigation.",
+      title: zh ? "\u4e1c\u4e9a\u5e02\u573a\u66f4\u5403\u5b8c\u6574\u5ea6\u548c\u4fe1\u4efb\u611f" : "East Asia usually rewards polish and trust signals",
+      summary: zh ? "\u65e5\u8bed\u3001\u97e9\u8bed\u5e02\u573a\u5f80\u5f80\u4e0d\u53ea\u662f\u5546\u54c1\u9875\u7ffb\u8bd1\uff0c\u914d\u9001\u3001\u9000\u8d27\u3001\u5ba2\u670d\u627f\u8bfa\u548c\u5e01\u79cd\u4f53\u9a8c\u4e5f\u5f88\u5173\u952e\u3002" : "For Japanese and Korean markets, policy clarity and checkout confidence often matter as much as product translation.",
+      nextStep: zh ? "\u4f18\u5148\u8865\u5f53\u5730\u8bed\u8a00\u653f\u7b56\u9875\u3001\u914d\u9001\u627f\u8bfa\u548c\u79fb\u52a8\u7aef\u8def\u5f84\u3002" : "Prioritize local-language policies, delivery promises, and mobile navigation.",
     });
   }
 
@@ -1235,45 +1235,45 @@ function buildReportModel(audit) {
   const strengthCards = [
     {
       tone: "good",
-      title: zh ? "配送覆盖" : "Shipping coverage",
+      title: zh ? "\u914d\u9001\u8986\u76d6" : "Shipping coverage",
       value: `${coveredMarkets}/${marketsWithCountries.length || 0}`,
-      detail: zh ? "市场里的国家是否都在配送覆盖内" : "Markets whose countries are covered by shipping",
+      detail: zh ? "\u5e02\u573a\u91cc\u7684\u56fd\u5bb6\u662f\u5426\u90fd\u5728\u914d\u9001\u8986\u76d6\u5185" : "Markets whose countries are covered by shipping",
       note: shippingGapMarkets.length
-        ? (zh ? `${shippingGapMarkets.length} 个市场还有配送缺口` : `${shippingGapMarkets.length} markets still have shipping gaps`)
-        : (zh ? "目前没有明显配送缺口" : "No obvious shipping gaps found"),
+        ? (zh ? `${shippingGapMarkets.length} \u4e2a\u5e02\u573a\u8fd8\u6709\u914d\u9001\u7f3a\u53e3` : `${shippingGapMarkets.length} markets still have shipping gaps`)
+        : (zh ? "\u76ee\u524d\u6ca1\u6709\u660e\u663e\u914d\u9001\u7f3a\u53e3" : "No obvious shipping gaps found"),
       chips: shippingGapMarkets.length ? takeLabels(shippingGapMarkets.map((market) => market.name)) : [],
     },
     {
       tone: "good",
-      title: zh ? "语言上线情况" : "Published languages",
+      title: zh ? "\u8bed\u8a00\u4e0a\u7ebf\u60c5\u51b5" : "Published languages",
       value: `${audit.shopLocales.filter((item) => item.published).length}/${audit.shopLocales.length || 0}`,
-      detail: zh ? "已发布并对顾客可见的语言数" : "Languages visible to buyers",
+      detail: zh ? "\u5df2\u53d1\u5e03\u5e76\u5bf9\u987e\u5ba2\u53ef\u89c1\u7684\u8bed\u8a00\u6570" : "Languages visible to buyers",
       note: weakLocales.length
-        ? (zh ? `${weakLocales.length} 个语言还没准备好` : `${weakLocales.length} languages still look weak`)
-        : (zh ? "大部分语言已经对外可用" : "Most languages are already live"),
+        ? (zh ? `${weakLocales.length} \u4e2a\u8bed\u8a00\u8fd8\u6ca1\u51c6\u5907\u597d` : `${weakLocales.length} languages still look weak`)
+        : (zh ? "\u5927\u90e8\u5206\u8bed\u8a00\u5df2\u7ecf\u5bf9\u5916\u53ef\u7528" : "Most languages are already live"),
       chips: takeLabels(audit.shopLocales.filter((item) => item.published).map((item) => item.locale)),
     },
     {
       tone: "good",
-      title: zh ? "网址本地化" : "Localized URLs",
+      title: zh ? "\u7f51\u5740\u672c\u5730\u5316" : "Localized URLs",
       value: `${marketsWithDedicatedWeb.length}/${audit.markets.length || 0}`,
-      detail: zh ? "有单独入口的市场数" : "Markets with dedicated URL entry points",
+      detail: zh ? "\u6709\u5355\u72ec\u5165\u53e3\u7684\u5e02\u573a\u6570" : "Markets with dedicated URL entry points",
       note: marketsMissingWebPresence.length
-        ? (zh ? `${marketsMissingWebPresence.length} 个市场仍跟随主站入口` : `${marketsMissingWebPresence.length} markets still share the main storefront entry`)
-        : (zh ? "重点市场已经有自己的入口" : "Key markets already have their own entry points"),
+        ? (zh ? `${marketsMissingWebPresence.length} \u4e2a\u5e02\u573a\u4ecd\u8ddf\u968f\u4e3b\u7ad9\u5165\u53e3` : `${marketsMissingWebPresence.length} markets still share the main storefront entry`)
+        : (zh ? "\u91cd\u70b9\u5e02\u573a\u5df2\u7ecf\u6709\u81ea\u5df1\u7684\u5165\u53e3" : "Key markets already have their own entry points"),
       chips: takeLabels(marketsWithDedicatedWeb.map((market) => market.name)),
     },
     {
       tone: "good",
-      title: zh ? "搜索引擎识别" : "Search signals",
+      title: zh ? "\u641c\u7d22\u5f15\u64ce\u8bc6\u522b" : "Search signals",
       value: `${audit.storefront.canonical ? 1 : 0}/${audit.localeCoverage.length > 0 ? 2 : 1}`,
-      detail: zh ? "canonical 和 hreflang 基础信号" : "Canonical and hreflang basics",
+      detail: zh ? "canonical \u548c hreflang \u57fa\u7840\u4fe1\u53f7" : "Canonical and hreflang basics",
       note: audit.storefront.canonical
         ? (audit.storefront.hreflangCount > 0 || audit.localeCoverage.length === 0
-          ? (zh ? "主页关键 SEO 信号基本齐了" : "The homepage exposes the main localization signals")
-          : (zh ? "canonical 有了，但 hreflang 还没补齐" : "Canonical is present, but hreflang still needs work"))
-        : (zh ? "主页还缺少关键 SEO 信号" : "The homepage is still missing a key SEO signal"),
-      chips: audit.storefront.hreflangCount ? [zh ? `${audit.storefront.hreflangCount} 条 hreflang` : `${audit.storefront.hreflangCount} hreflang links`] : [],
+          ? (zh ? "\u4e3b\u9875\u5173\u952e SEO \u4fe1\u53f7\u57fa\u672c\u9f50\u4e86" : "The homepage exposes the main localization signals")
+          : (zh ? "canonical \u6709\u4e86\uff0c\u4f46 hreflang \u8fd8\u6ca1\u8865\u9f50" : "Canonical is present, but hreflang still needs work"))
+        : (zh ? "\u4e3b\u9875\u8fd8\u7f3a\u5c11\u5173\u952e SEO \u4fe1\u53f7" : "The homepage is still missing a key SEO signal"),
+      chips: audit.storefront.hreflangCount ? [zh ? `${audit.storefront.hreflangCount} \u6761 hreflang` : `${audit.storefront.hreflangCount} hreflang links`] : [],
     },
   ];
 
@@ -1286,39 +1286,39 @@ function buildReportModel(audit) {
     if (key === "weak-locales") {
       return {
         tone: "bad",
-        title: zh ? "翻译准备度偏低" : "Translation readiness is too low",
+        title: zh ? "\u7ffb\u8bd1\u51c6\u5907\u5ea6\u504f\u4f4e" : "Translation readiness is too low",
         value: `${weakLocales.length}`,
-        detail: zh ? "这些语言现在还不适合当成已完成市场" : "These languages are not ready to be treated as complete",
-        note: zh ? "先补这些语言，再谈继续扩新市场会更稳。" : "Strengthen these languages before expanding further.",
+        detail: zh ? "\u8fd9\u4e9b\u8bed\u8a00\u73b0\u5728\u8fd8\u4e0d\u9002\u5408\u5f53\u6210\u5df2\u5b8c\u6210\u5e02\u573a" : "These languages are not ready to be treated as complete",
+        note: zh ? "\u5148\u8865\u8fd9\u4e9b\u8bed\u8a00\uff0c\u518d\u8c08\u7ee7\u7eed\u6269\u65b0\u5e02\u573a\u4f1a\u66f4\u7a33\u3002" : "Strengthen these languages before expanding further.",
         chips: takeLabels(weakLocales.map((entry) => entry.locale)),
       };
     }
     if (key === "shipping-gaps") {
       return {
         tone: "bad",
-        title: zh ? "有市场缺配送覆盖" : "Some markets lack shipping coverage",
+        title: zh ? "\u6709\u5e02\u573a\u7f3a\u914d\u9001\u8986\u76d6" : "Some markets lack shipping coverage",
         value: `${shippingGapMarkets.length}`,
-        detail: zh ? "市场已开，但国家还没完全落到配送区" : "The market exists, but some countries still lack shipping-zone coverage",
-        note: zh ? "这类问题会直接影响顾客下单体验。" : "This directly affects whether people can buy smoothly.",
+        detail: zh ? "\u5e02\u573a\u5df2\u5f00\uff0c\u4f46\u56fd\u5bb6\u8fd8\u6ca1\u5b8c\u5168\u843d\u5230\u914d\u9001\u533a" : "The market exists, but some countries still lack shipping-zone coverage",
+        note: zh ? "\u8fd9\u7c7b\u95ee\u9898\u4f1a\u76f4\u63a5\u5f71\u54cd\u987e\u5ba2\u4e0b\u5355\u4f53\u9a8c\u3002" : "This directly affects whether people can buy smoothly.",
         chips: takeLabels(shippingGapMarkets.map((market) => market.name)),
       };
     }
     if (key === "hidden-locales") {
       return {
         tone: "bad",
-        title: zh ? "市场挂了还没公开的语言" : "A market points to a hidden language",
+        title: zh ? "\u5e02\u573a\u6302\u4e86\u8fd8\u6ca1\u516c\u5f00\u7684\u8bed\u8a00" : "A market points to a hidden language",
         value: `${hiddenLocaleIssues.length}`,
-        detail: zh ? "语言存在，但顾客还看不到，或者语言还没真的启用" : "The language exists on paper but is not fully live for buyers",
-        note: zh ? "先把语言启用并发布，再继续调整市场。" : "Enable and publish the language before refining the market.",
-        chips: takeLabels(hiddenLocaleIssues.map((entry) => `${entry.market} · ${entry.localeCode}`)),
+        detail: zh ? "\u8bed\u8a00\u5b58\u5728\uff0c\u4f46\u987e\u5ba2\u8fd8\u770b\u4e0d\u5230\uff0c\u6216\u8005\u8bed\u8a00\u8fd8\u6ca1\u771f\u7684\u542f\u7528" : "The language exists on paper but is not fully live for buyers",
+        note: zh ? "\u5148\u628a\u8bed\u8a00\u542f\u7528\u5e76\u53d1\u5e03\uff0c\u518d\u7ee7\u7eed\u8c03\u6574\u5e02\u573a\u3002" : "Enable and publish the language before refining the market.",
+        chips: takeLabels(hiddenLocaleIssues.map((entry) => `${entry.market} \u00b7 ${entry.localeCode}`)),
       };
     }
     return {
       tone: "bad",
-      title: zh ? "搜索信号还没补齐" : "Storefront search signals need work",
+      title: zh ? "\u641c\u7d22\u4fe1\u53f7\u8fd8\u6ca1\u8865\u9f50" : "Storefront search signals need work",
       value: `${Number(!audit.storefront.canonical) + Number(audit.localeCoverage.length > 0 && audit.storefront.hreflangCount === 0)}`,
-      detail: zh ? "这会影响搜索引擎识别不同语言页面" : "Search engines may not understand the localized storefront cleanly",
-      note: zh ? "先补 canonical 和 hreflang，再谈国际 SEO 放大。" : "Fix canonical and hreflang before pushing harder on international SEO.",
+      detail: zh ? "\u8fd9\u4f1a\u5f71\u54cd\u641c\u7d22\u5f15\u64ce\u8bc6\u522b\u4e0d\u540c\u8bed\u8a00\u9875\u9762" : "Search engines may not understand the localized storefront cleanly",
+      note: zh ? "\u5148\u8865 canonical \u548c hreflang\uff0c\u518d\u8c08\u56fd\u9645 SEO \u653e\u5927\u3002" : "Fix canonical and hreflang before pushing harder on international SEO.",
       chips: uniqueStrings([
         !audit.storefront.canonical ? "canonical" : "",
         audit.localeCoverage.length > 0 && audit.storefront.hreflangCount === 0 ? "hreflang" : "",
@@ -1329,60 +1329,60 @@ function buildReportModel(audit) {
   const improveCards = [
     {
       tone: "warn",
-      title: zh ? "还没做独立入口的市场" : "Markets still sharing the main storefront",
+      title: zh ? "\u8fd8\u6ca1\u505a\u72ec\u7acb\u5165\u53e3\u7684\u5e02\u573a" : "Markets still sharing the main storefront",
       value: `${marketsMissingWebPresence.length}`,
-      detail: zh ? "不是错误，但本地感和 SEO 往往会弱一些" : "Not always wrong, but usually less local and weaker for SEO",
-      note: zh ? "优先把重点国家做成子目录或独立域名入口。" : "Give the highest-value markets their own URL path first.",
+      detail: zh ? "\u4e0d\u662f\u9519\u8bef\uff0c\u4f46\u672c\u5730\u611f\u548c SEO \u5f80\u5f80\u4f1a\u5f31\u4e00\u4e9b" : "Not always wrong, but usually less local and weaker for SEO",
+      note: zh ? "\u4f18\u5148\u628a\u91cd\u70b9\u56fd\u5bb6\u505a\u6210\u5b50\u76ee\u5f55\u6216\u72ec\u7acb\u57df\u540d\u5165\u53e3\u3002" : "Give the highest-value markets their own URL path first.",
       chips: takeLabels(marketsMissingWebPresence.map((market) => market.name)),
     },
     {
       tone: "warn",
-      title: zh ? "多国共用单一币种" : "Several countries share one fixed currency",
+      title: zh ? "\u591a\u56fd\u5171\u7528\u5355\u4e00\u5e01\u79cd" : "Several countries share one fixed currency",
       value: `${sharedCurrencyMarkets.length}`,
-      detail: zh ? "这会让价格体验没那么本地化" : "This can make pricing feel less local",
-      note: zh ? "重点看多国市场，不要只盯单国市场。" : "Prioritize the multi-country markets here.",
+      detail: zh ? "\u8fd9\u4f1a\u8ba9\u4ef7\u683c\u4f53\u9a8c\u6ca1\u90a3\u4e48\u672c\u5730\u5316" : "This can make pricing feel less local",
+      note: zh ? "\u91cd\u70b9\u770b\u591a\u56fd\u5e02\u573a\uff0c\u4e0d\u8981\u53ea\u76ef\u5355\u56fd\u5e02\u573a\u3002" : "Prioritize the multi-country markets here.",
       chips: takeLabels(sharedCurrencyMarkets.map((market) => market.name)),
     },
     {
       tone: "warn",
-      title: zh ? "语言还要补细节" : "Some languages still need cleanup",
+      title: zh ? "\u8bed\u8a00\u8fd8\u8981\u8865\u7ec6\u8282" : "Some languages still need cleanup",
       value: `${cleanupLocales.length}`,
-      detail: zh ? "不是不能上线，而是还不够完整" : "These are usable, but not polished yet",
-      note: zh ? "把剩余缺口补齐，顾客体验会更统一。" : "Closing the remaining gaps will make the store feel more complete.",
+      detail: zh ? "\u4e0d\u662f\u4e0d\u80fd\u4e0a\u7ebf\uff0c\u800c\u662f\u8fd8\u4e0d\u591f\u5b8c\u6574" : "These are usable, but not polished yet",
+      note: zh ? "\u628a\u5269\u4f59\u7f3a\u53e3\u8865\u9f50\uff0c\u987e\u5ba2\u4f53\u9a8c\u4f1a\u66f4\u7edf\u4e00\u3002" : "Closing the remaining gaps will make the store feel more complete.",
       chips: takeLabels(cleanupLocales.map((entry) => entry.locale)),
     },
     {
       tone: "warn",
-      title: zh ? "政策页入口还可以更明显" : "Policy visibility can still improve",
+      title: zh ? "\u653f\u7b56\u9875\u5165\u53e3\u8fd8\u53ef\u4ee5\u66f4\u660e\u663e" : "Policy visibility can still improve",
       value: `${audit.storefront.policyLinks.length > 0 ? 0 : 1}`,
-      detail: zh ? "前端是否能轻松找到配送、退货、隐私说明" : "Whether shoppers can clearly reach shipping, returns, and privacy information",
+      detail: zh ? "\u524d\u7aef\u662f\u5426\u80fd\u8f7b\u677e\u627e\u5230\u914d\u9001\u3001\u9000\u8d27\u3001\u9690\u79c1\u8bf4\u660e" : "Whether shoppers can clearly reach shipping, returns, and privacy information",
       note: audit.storefront.policyLinks.length > 0
-        ? (zh ? "首页已经能看到一些政策入口。" : "The homepage already exposes some policy links.")
-        : (zh ? "建议把政策入口固定放在 footer。" : "A fixed footer policy area would be safer."),
+        ? (zh ? "\u9996\u9875\u5df2\u7ecf\u80fd\u770b\u5230\u4e00\u4e9b\u653f\u7b56\u5165\u53e3\u3002" : "The homepage already exposes some policy links.")
+        : (zh ? "\u5efa\u8bae\u628a\u653f\u7b56\u5165\u53e3\u56fa\u5b9a\u653e\u5728 footer\u3002" : "A fixed footer policy area would be safer."),
       chips: audit.storefront.policyLinks.length ? takeLabels(audit.storefront.policyLinks, 2) : [],
     },
   ].filter((card) => card.value !== "0" || card.chips.length);
 
   const marketRows = audit.markets.map((market) => ({
     name: market.name,
-    countriesLabel: zh ? `${market.countryCodes.length} 个国家` : `${market.countryCodes.length} countries`,
+    countriesLabel: zh ? `${market.countryCodes.length} \u4e2a\u56fd\u5bb6` : `${market.countryCodes.length} countries`,
     languageLabel: market.allLocales.length
       ? market.allLocales.join(", ")
-      : (zh ? "跟随主站默认语言" : "Uses the main storefront language"),
+      : (zh ? "\u8ddf\u968f\u4e3b\u7ad9\u9ed8\u8ba4\u8bed\u8a00" : "Uses the main storefront language"),
     currencyLabel: buildMarketCurrencyLabel(market, zh),
     webLabel: buildMarketUrlLabel(market, zh),
   }));
 
   const storefrontReminders = zh ? [
     {
-      title: "顺手检查前端是否有国家/语言切换器",
-      summary: "这项在不同主题里差异很大，这份报告不再给它做自动判定。",
-      nextStep: "打开首页和移动端菜单，确认顾客能方便切换国家和语言。"
+      title: "\u987a\u624b\u68c0\u67e5\u524d\u7aef\u662f\u5426\u6709\u56fd\u5bb6/\u8bed\u8a00\u5207\u6362\u5668",
+      summary: "\u8fd9\u9879\u5728\u4e0d\u540c\u4e3b\u9898\u91cc\u5dee\u5f02\u5f88\u5927\uff0c\u8fd9\u4efd\u62a5\u544a\u4e0d\u518d\u7ed9\u5b83\u505a\u81ea\u52a8\u5224\u5b9a\u3002",
+      nextStep: "\u6253\u5f00\u9996\u9875\u548c\u79fb\u52a8\u7aef\u83dc\u5355\uff0c\u786e\u8ba4\u987e\u5ba2\u80fd\u65b9\u4fbf\u5207\u6362\u56fd\u5bb6\u548c\u8bed\u8a00\u3002"
     },
     {
-      title: "顺手检查后台是否开启自动定向",
-      summary: "这项在 Shopify 后台里管理，这份报告不再把它当成可精准读取的配置项。",
-      nextStep: "到 Online Store > Preferences 里确认自动定向设置。"
+      title: "\u987a\u624b\u68c0\u67e5\u540e\u53f0\u662f\u5426\u5f00\u542f\u81ea\u52a8\u5b9a\u5411",
+      summary: "\u8fd9\u9879\u5728 Shopify \u540e\u53f0\u91cc\u7ba1\u7406\uff0c\u8fd9\u4efd\u62a5\u544a\u4e0d\u518d\u628a\u5b83\u5f53\u6210\u53ef\u7cbe\u51c6\u8bfb\u53d6\u7684\u914d\u7f6e\u9879\u3002",
+      nextStep: "\u5230 Online Store > Preferences \u91cc\u786e\u8ba4\u81ea\u52a8\u5b9a\u5411\u8bbe\u7f6e\u3002"
     }
   ] : [
     {
@@ -1398,9 +1398,9 @@ function buildReportModel(audit) {
   ];
 
   return {
-    title: zh ? `${audit.shop.name} 国际化审计报告` : `Markets and language audit for ${audit.shop.name}`,
+    title: zh ? `${audit.shop.name} \u56fd\u9645\u5316\u5ba1\u8ba1\u62a5\u544a` : `Markets and language audit for ${audit.shop.name}`,
     summaryText: zh
-      ? "这份报告重点看语言、市场、配送、网址策略和国际 SEO 基础有没有真正落地。"
+      ? "\u8fd9\u4efd\u62a5\u544a\u91cd\u70b9\u770b\u8bed\u8a00\u3001\u5e02\u573a\u3001\u914d\u9001\u3001\u7f51\u5740\u7b56\u7565\u548c\u56fd\u9645 SEO \u57fa\u7840\u6709\u6ca1\u6709\u771f\u6b63\u843d\u5730\u3002"
       : "This report checks whether shoppers are getting the right language, the right market setup, and a clear local buying experience.",
     shop: {
       name: audit.shop.name,
@@ -1409,16 +1409,16 @@ function buildReportModel(audit) {
     generatedAtLabel: new Date(audit.generatedAt).toLocaleString(zh ? "zh-CN" : "en-US", { dateStyle: "medium", timeStyle: "short" }),
     score,
     scoreText: zh
-      ? (score >= 85 ? "整体基础不错，剩下主要是补细节。" : score >= 65 ? "整体可用，但还有几块需要补齐。" : "国际化基础还不够稳，建议先补核心短板。")
+      ? (score >= 85 ? "\u6574\u4f53\u57fa\u7840\u4e0d\u9519\uff0c\u5269\u4e0b\u4e3b\u8981\u662f\u8865\u7ec6\u8282\u3002" : score >= 65 ? "\u6574\u4f53\u53ef\u7528\uff0c\u4f46\u8fd8\u6709\u51e0\u5757\u9700\u8981\u8865\u9f50\u3002" : "\u56fd\u9645\u5316\u57fa\u7840\u8fd8\u4e0d\u591f\u7a33\uff0c\u5efa\u8bae\u5148\u8865\u6838\u5fc3\u77ed\u677f\u3002")
       : (score >= 85 ? "The setup is in good shape, with a few improvements left." : score >= 65 ? "The store is workable, but several areas need attention." : "The store needs cleanup before the international setup feels reliable."),
     languageCount: audit.localeCoverage.length,
-    languageCountText: zh ? "本次检查的语言数" : "Checked in this run",
+    languageCountText: zh ? "\u672c\u6b21\u68c0\u67e5\u7684\u8bed\u8a00\u6570" : "Checked in this run",
     marketCount: audit.markets.length,
-    marketCountText: zh ? "本次检查的市场数" : "Active market structures reviewed",
+    marketCountText: zh ? "\u672c\u6b21\u68c0\u67e5\u7684\u5e02\u573a\u6570" : "Active market structures reviewed",
     fixCount: (fixPlan.actions || []).length,
-    fixCountText: zh ? "可预览的安全修复" : "Safe approval-based fixes ready",
+    fixCountText: zh ? "\u53ef\u9884\u89c8\u7684\u5b89\u5168\u4fee\u590d" : "Safe approval-based fixes ready",
     bigPicture: zh
-      ? (fixNow.length ? "这家店已经有比较完整的国际化底子，但现在的短板主要集中在翻译扎实度、部分市场入口策略，以及少数市场的配置细节。" : "这家店的国际化基础已经搭起来了，剩下主要是把重点市场做得更本地、更清楚。")
+      ? (fixNow.length ? "\u8fd9\u5bb6\u5e97\u5df2\u7ecf\u6709\u6bd4\u8f83\u5b8c\u6574\u7684\u56fd\u9645\u5316\u5e95\u5b50\uff0c\u4f46\u73b0\u5728\u7684\u77ed\u677f\u4e3b\u8981\u96c6\u4e2d\u5728\u7ffb\u8bd1\u624e\u5b9e\u5ea6\u3001\u90e8\u5206\u5e02\u573a\u5165\u53e3\u7b56\u7565\uff0c\u4ee5\u53ca\u5c11\u6570\u5e02\u573a\u7684\u914d\u7f6e\u7ec6\u8282\u3002" : "\u8fd9\u5bb6\u5e97\u7684\u56fd\u9645\u5316\u57fa\u7840\u5df2\u7ecf\u642d\u8d77\u6765\u4e86\uff0c\u5269\u4e0b\u4e3b\u8981\u662f\u628a\u91cd\u70b9\u5e02\u573a\u505a\u5f97\u66f4\u672c\u5730\u3001\u66f4\u6e05\u695a\u3002")
       : (fixNow.length ? "The store already has the building blocks for selling internationally, but some important gaps are still blocking a clean local experience." : "The foundation is solid. Most of the work left is polish and structure cleanup."),
     goodCount: strengthCards.filter((card) => Number.parseInt(card.value, 10) !== 0 || card.chips.length).length,
     fixNowCount: priorityCards.length,
@@ -1427,71 +1427,71 @@ function buildReportModel(audit) {
     priorityCards,
     improveCards,
     manualCards: storefrontReminders,
-    languagesIntro: zh ? "这里不再展开几百条文字明细，而是给每个语言一个整体准备度。这个值基于本次纳入检查的资源计算。" : "Each language gets one readiness score based on the resources included in this audit run.",
+    languagesIntro: zh ? "\u8fd9\u91cc\u4e0d\u518d\u5c55\u5f00\u51e0\u767e\u6761\u6587\u5b57\u660e\u7ec6\uff0c\u800c\u662f\u7ed9\u6bcf\u4e2a\u8bed\u8a00\u4e00\u4e2a\u6574\u4f53\u51c6\u5907\u5ea6\u3002\u8fd9\u4e2a\u503c\u57fa\u4e8e\u672c\u6b21\u7eb3\u5165\u68c0\u67e5\u7684\u8d44\u6e90\u8ba1\u7b97\u3002" : "Each language gets one readiness score based on the resources included in this audit run.",
     localeRows: audit.localeCoverage.map((entry) => ({
       locale: entry.locale,
       statusLabel: buildLocaleStatusLabel(audit.shopLocales.find((item) => item.locale === entry.locale) || { primary: false, published: false }, zh),
-      readinessLabel: zh ? `${entry.readinessPct}% 准备度` : `${entry.readinessPct}% readiness`,
+      readinessLabel: zh ? `${entry.readinessPct}% \u51c6\u5907\u5ea6` : `${entry.readinessPct}% readiness`,
       assignedMarketsLabel: localeAssignments.has(entry.locale)
         ? localeAssignments.get(entry.locale).join(" / ")
-        : (zh ? "还没分配到市场" : "Not attached to a market yet"),
+        : (zh ? "\u8fd8\u6ca1\u5206\u914d\u5230\u5e02\u573a" : "Not attached to a market yet"),
     })),
-    marketsIntro: zh ? "这里会看每个市场的国家分组、语言、货币和网址策略。" : "Markets are reviewed for language setup, country grouping, money setup, and URL strategy.",
+    marketsIntro: zh ? "\u8fd9\u91cc\u4f1a\u770b\u6bcf\u4e2a\u5e02\u573a\u7684\u56fd\u5bb6\u5206\u7ec4\u3001\u8bed\u8a00\u3001\u8d27\u5e01\u548c\u7f51\u5740\u7b56\u7565\u3002" : "Markets are reviewed for language setup, country grouping, money setup, and URL strategy.",
     marketRows,
-    shippingIntro: zh ? "配送这里不列碎项，直接看市场覆盖结果。" : "Shipping is summarized at the market level instead of listing every small finding.",
+    shippingIntro: zh ? "\u914d\u9001\u8fd9\u91cc\u4e0d\u5217\u788e\u9879\uff0c\u76f4\u63a5\u770b\u5e02\u573a\u8986\u76d6\u7ed3\u679c\u3002" : "Shipping is summarized at the market level instead of listing every small finding.",
     shippingCards: [
       {
         tone: shippingGapMarkets.length ? "bad" : "good",
-        title: zh ? "市场配送覆盖" : "Market shipping coverage",
+        title: zh ? "\u5e02\u573a\u914d\u9001\u8986\u76d6" : "Market shipping coverage",
         value: `${coveredMarkets}/${marketsWithCountries.length || 0}`,
-        detail: zh ? "已经完全覆盖配送的市场数" : "Markets fully covered by shipping",
+        detail: zh ? "\u5df2\u7ecf\u5b8c\u5168\u8986\u76d6\u914d\u9001\u7684\u5e02\u573a\u6570" : "Markets fully covered by shipping",
         note: shippingGapMarkets.length
-          ? (zh ? "这些市场需要补配送覆盖或调整国家范围。" : "These markets need shipping coverage or a tighter country list.")
-          : (zh ? "这块目前没有明显问题。" : "No obvious issue here."),
+          ? (zh ? "\u8fd9\u4e9b\u5e02\u573a\u9700\u8981\u8865\u914d\u9001\u8986\u76d6\u6216\u8c03\u6574\u56fd\u5bb6\u8303\u56f4\u3002" : "These markets need shipping coverage or a tighter country list.")
+          : (zh ? "\u8fd9\u5757\u76ee\u524d\u6ca1\u6709\u660e\u663e\u95ee\u9898\u3002" : "No obvious issue here."),
         chips: shippingGapMarkets.length ? takeLabels(shippingGapMarkets.map((market) => market.name)) : [],
       },
     ],
-    storefrontIntro: zh ? "这里看的是顾客真实会看到的入口和搜索信号。" : "These checks focus on what buyers and search engines can actually see.",
+    storefrontIntro: zh ? "\u8fd9\u91cc\u770b\u7684\u662f\u987e\u5ba2\u771f\u5b9e\u4f1a\u770b\u5230\u7684\u5165\u53e3\u548c\u641c\u7d22\u4fe1\u53f7\u3002" : "These checks focus on what buyers and search engines can actually see.",
     storefrontCards: [
       {
         tone: audit.storefront.canonical ? "good" : "bad",
         title: zh ? "Canonical" : "Canonical",
-        value: audit.storefront.canonical ? (zh ? "已发现" : "Found") : (zh ? "缺失" : "Missing"),
-        detail: zh ? "主页主链接信号" : "Homepage canonical signal",
+        value: audit.storefront.canonical ? (zh ? "\u5df2\u53d1\u73b0" : "Found") : (zh ? "\u7f3a\u5931" : "Missing"),
+        detail: zh ? "\u4e3b\u9875\u4e3b\u94fe\u63a5\u4fe1\u53f7" : "Homepage canonical signal",
         note: audit.storefront.canonical
-          ? (zh ? "主页有 canonical。" : "The homepage exposes a canonical link.")
-          : (zh ? "主页没看到 canonical。" : "No canonical link was found on the homepage."),
+          ? (zh ? "\u4e3b\u9875\u6709 canonical\u3002" : "The homepage exposes a canonical link.")
+          : (zh ? "\u4e3b\u9875\u6ca1\u770b\u5230 canonical\u3002" : "No canonical link was found on the homepage."),
         chips: audit.storefront.canonical ? [audit.storefront.canonical] : [],
       },
       {
         tone: audit.storefront.hreflangCount > 0 || audit.localeCoverage.length === 0 ? "good" : "bad",
         title: zh ? "Hreflang" : "Hreflang",
         value: `${audit.storefront.hreflangCount || 0}`,
-        detail: zh ? "主页暴露给搜索引擎的语言链接数" : "Homepage alternate-language links",
+        detail: zh ? "\u4e3b\u9875\u66b4\u9732\u7ed9\u641c\u7d22\u5f15\u64ce\u7684\u8bed\u8a00\u94fe\u63a5\u6570" : "Homepage alternate-language links",
         note: audit.storefront.hreflangCount > 0
-          ? (zh ? "搜索引擎已经能看到多语言入口。" : "Search engines can already see alternate language paths.")
-          : (zh ? "主页还没暴露多语言入口。" : "The homepage is not exposing alternate language paths yet."),
+          ? (zh ? "\u641c\u7d22\u5f15\u64ce\u5df2\u7ecf\u80fd\u770b\u5230\u591a\u8bed\u8a00\u5165\u53e3\u3002" : "Search engines can already see alternate language paths.")
+          : (zh ? "\u4e3b\u9875\u8fd8\u6ca1\u66b4\u9732\u591a\u8bed\u8a00\u5165\u53e3\u3002" : "The homepage is not exposing alternate language paths yet."),
         chips: takeLabels((audit.storefront.hreflangs || []).map((entry) => entry.locale), 8),
       },
       {
         tone: audit.storefront.policyLinks.length > 0 ? "good" : "warn",
-        title: zh ? "政策页入口" : "Policy links",
+        title: zh ? "\u653f\u7b56\u9875\u5165\u53e3" : "Policy links",
         value: `${audit.storefront.policyLinks.length || 0}`,
-        detail: zh ? "首页可见的政策相关入口" : "Policy-related homepage links",
+        detail: zh ? "\u9996\u9875\u53ef\u89c1\u7684\u653f\u7b56\u76f8\u5173\u5165\u53e3" : "Policy-related homepage links",
         note: audit.storefront.policyLinks.length > 0
-          ? (zh ? "顾客已经能从前端找到一些政策内容。" : "Some policy links are visible on the storefront.")
-          : (zh ? "建议让配送、退货、隐私入口更明显。" : "Policy visibility could be clearer from the storefront."),
+          ? (zh ? "\u987e\u5ba2\u5df2\u7ecf\u80fd\u4ece\u524d\u7aef\u627e\u5230\u4e00\u4e9b\u653f\u7b56\u5185\u5bb9\u3002" : "Some policy links are visible on the storefront.")
+          : (zh ? "\u5efa\u8bae\u8ba9\u914d\u9001\u3001\u9000\u8d27\u3001\u9690\u79c1\u5165\u53e3\u66f4\u660e\u663e\u3002" : "Policy visibility could be clearer from the storefront."),
         chips: takeLabels(audit.storefront.policyLinks, 3),
       },
     ],
-    expansionIntro: zh ? "这部分不是在找 bug，而是在给国际化经营上的建议。" : "These are growth ideas, not bugs.",
+    expansionIntro: zh ? "\u8fd9\u90e8\u5206\u4e0d\u662f\u5728\u627e bug\uff0c\u800c\u662f\u5728\u7ed9\u56fd\u9645\u5316\u7ecf\u8425\u4e0a\u7684\u5efa\u8bae\u3002" : "These are growth ideas, not bugs.",
     expansionIdeas: buildExpansionIdeasFromAudit(audit, zh),
-    actionsIntro: zh ? "这些动作可以先预览，确认后再执行。" : "These fixes are safe to preview now and execute later only after approval.",
+    actionsIntro: zh ? "\u8fd9\u4e9b\u52a8\u4f5c\u53ef\u4ee5\u5148\u9884\u89c8\uff0c\u786e\u8ba4\u540e\u518d\u6267\u884c\u3002" : "These fixes are safe to preview now and execute later only after approval.",
     actions: fixPlan.actions || [],
     actionsEmptyNote: fixPlan.explanation || "",
     storefrontReminders,
     footerNote: zh
-      ? "前端切换器和自动定向这两项不再计分，只作为低优先级人工提醒。"
+      ? "\u524d\u7aef\u5207\u6362\u5668\u548c\u81ea\u52a8\u5b9a\u5411\u8fd9\u4e24\u9879\u4e0d\u518d\u8ba1\u5206\uff0c\u53ea\u4f5c\u4e3a\u4f4e\u4f18\u5148\u7ea7\u4eba\u5de5\u63d0\u9192\u3002"
       : "Selector visibility and automatic redirection are no longer scored and are shown only as low-priority manual reminders.",
     lang,
   };

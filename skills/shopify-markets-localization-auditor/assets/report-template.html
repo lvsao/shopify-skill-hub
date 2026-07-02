@@ -442,7 +442,7 @@
     const report = {{REPORT_DATA_JSON}};
     const isZh = String(report.lang || "").toLowerCase().startsWith("zh");
     document.documentElement.lang = isZh ? "zh-CN" : "en";
-    document.getElementById("printBtn").textContent = isZh ? "导出 PDF" : "Save as PDF";
+    document.getElementById("printBtn").textContent = isZh ? "\u5bfc\u51fa PDF" : "Save as PDF";
     document.getElementById("printBtn").addEventListener("click", () => window.print());
 
     function esc(value) {
@@ -469,7 +469,7 @@
           <div class="card-top">
             <h3>${esc(item.title)}</h3>
             ${badge(item.tone || "manual", isZh
-              ? (item.tone === "good" ? "稳定" : item.tone === "bad" ? "优先" : item.tone === "warn" ? "优化" : "提醒")
+              ? (item.tone === "good" ? "\u7a33\u5b9a" : item.tone === "bad" ? "\u4f18\u5148" : item.tone === "warn" ? "\u4f18\u5316" : "\u63d0\u9192")
               : (item.tone === "good" ? "Solid" : item.tone === "bad" ? "Priority" : item.tone === "warn" ? "Improve" : "Check"))}
           </div>
           <span class="card-value">${esc(item.value)}</span>
@@ -487,7 +487,7 @@
           <div class="card-top">
             <h3>${esc(item.title)}</h3>
             ${badge(item.tone || "manual", isZh
-              ? (item.tone === "good" ? "稳定" : item.tone === "bad" ? "优先" : item.tone === "warn" ? "优化" : "提醒")
+              ? (item.tone === "good" ? "\u7a33\u5b9a" : item.tone === "bad" ? "\u4f18\u5148" : item.tone === "warn" ? "\u4f18\u5316" : "\u63d0\u9192")
               : (item.tone === "good" ? "Solid" : item.tone === "bad" ? "Priority" : item.tone === "warn" ? "Improve" : "Check"))}
           </div>
           <span class="card-value">${esc(item.value)}</span>
@@ -522,7 +522,7 @@
     }
 
     function renderIdeas(rows) {
-      if (!rows || !rows.length) return `<p class="muted">${isZh ? "这次还没有生成额外的经营建议。" : "No additional growth ideas were generated in this run."}</p>`;
+      if (!rows || !rows.length) return `<p class="muted">${isZh ? "\u8fd9\u6b21\u8fd8\u6ca1\u6709\u751f\u6210\u989d\u5916\u7684\u7ecf\u8425\u5efa\u8bae\u3002" : "No additional growth ideas were generated in this run."}</p>`;
       return `<div class="ideas-grid">${rows.map((row) => `
         <article class="idea-card">
           <h3>${esc(row.title)}</h3>
@@ -535,7 +535,7 @@
     function renderActions(rows, emptyNote) {
       if (!rows || !rows.length) {
         const fallback = isZh
-          ? "这次没有准备好可直接执行的安全修复。说明当前问题更多是结构优化，而不是一键修改。"
+          ? "\u8fd9\u6b21\u6ca1\u6709\u51c6\u5907\u597d\u53ef\u76f4\u63a5\u6267\u884c\u7684\u5b89\u5168\u4fee\u590d\u3002\u8bf4\u660e\u5f53\u524d\u95ee\u9898\u66f4\u591a\u662f\u7ed3\u6784\u4f18\u5316\uff0c\u800c\u4e0d\u662f\u4e00\u952e\u4fee\u6539\u3002"
           : "No safe direct fixes were prepared in this run. The remaining work is mostly structural, not one-click changes.";
         return `<p class="muted">${esc(emptyNote || fallback)}</p>`;
       }
@@ -554,40 +554,40 @@
     }
 
     const overviewBars = [
-      { label: isZh ? "语言" : "Languages", value: report.languageCount, max: Math.max(report.languageCount, 20) },
-      { label: isZh ? "市场" : "Markets", value: report.marketCount, max: Math.max(report.marketCount, 30) },
-      { label: isZh ? "优先项" : "Priority", value: report.fixNowCount, max: Math.max(report.fixNowCount, 6) },
-      { label: isZh ? "优化项" : "Improve", value: report.tidyCount, max: Math.max(report.tidyCount, 8) },
+      { label: isZh ? "\u8bed\u8a00" : "Languages", value: report.languageCount, max: Math.max(report.languageCount, 20) },
+      { label: isZh ? "\u5e02\u573a" : "Markets", value: report.marketCount, max: Math.max(report.marketCount, 30) },
+      { label: isZh ? "\u4f18\u5148\u9879" : "Priority", value: report.fixNowCount, max: Math.max(report.fixNowCount, 6) },
+      { label: isZh ? "\u4f18\u5316\u9879" : "Improve", value: report.tidyCount, max: Math.max(report.tidyCount, 8) },
     ];
 
     document.getElementById("app").innerHTML = `
       <section class="hero">
-        <div class="eyebrow">Selofy Skill Hub · Shopify Markets Auditor</div>
+        <div class="eyebrow">Selofy Skill Hub \u00b7 Shopify Markets Auditor</div>
         <h1>${esc(report.title)}</h1>
         <p class="lead">${esc(report.summaryText)}</p>
         <div class="meta">
           <span class="chip">${esc(report.shop.name)}</span>
           <span class="chip">${esc(report.shop.domain)}</span>
-          <span class="chip">${isZh ? "生成时间" : "Generated"} ${esc(report.generatedAtLabel)}</span>
+          <span class="chip">${isZh ? "\u751f\u6210\u65f6\u95f4" : "Generated"} ${esc(report.generatedAtLabel)}</span>
         </div>
         <div class="hero-grid">
           <div class="metric score">
-            <div class="kicker">${isZh ? "整体表现" : "Overall health"}</div>
+            <div class="kicker">${isZh ? "\u6574\u4f53\u8868\u73b0" : "Overall health"}</div>
             <span class="score-value">${esc(report.score)}</span>
             <p class="sub">${esc(report.scoreText)}</p>
           </div>
           <div class="metric">
-            <div class="kicker">${isZh ? "已检查语言" : "Languages checked"}</div>
+            <div class="kicker">${isZh ? "\u5df2\u68c0\u67e5\u8bed\u8a00" : "Languages checked"}</div>
             <span class="metric-value">${esc(report.languageCount)}</span>
             <p class="sub">${esc(report.languageCountText)}</p>
           </div>
           <div class="metric">
-            <div class="kicker">${isZh ? "已检查市场" : "Markets checked"}</div>
+            <div class="kicker">${isZh ? "\u5df2\u68c0\u67e5\u5e02\u573a" : "Markets checked"}</div>
             <span class="metric-value">${esc(report.marketCount)}</span>
             <p class="sub">${esc(report.marketCountText)}</p>
           </div>
           <div class="metric">
-            <div class="kicker">${isZh ? "可预览修复" : "Fixes ready"}</div>
+            <div class="kicker">${isZh ? "\u53ef\u9884\u89c8\u4fee\u590d" : "Fixes ready"}</div>
             <span class="metric-value">${esc(report.fixCount)}</span>
             <p class="sub">${esc(report.fixCountText)}</p>
           </div>
@@ -599,7 +599,7 @@
           <div class="panel">
             <div class="section-head">
               <div>
-                <h2>${isZh ? "整体表现" : "Overall view"}</h2>
+                <h2>${isZh ? "\u6574\u4f53\u8868\u73b0" : "Overall view"}</h2>
                 <p class="section-desc">${esc(report.bigPicture)}</p>
               </div>
             </div>
@@ -614,22 +614,22 @@
             </div>
           </div>
           <div class="panel">
-            <h2>${isZh ? "这次先看什么" : "What matters first"}</h2>
+            <h2>${isZh ? "\u8fd9\u6b21\u5148\u770b\u4ec0\u4e48" : "What matters first"}</h2>
             <div class="snapshot" style="margin-top:14px;">
               <div class="snapshot-row">
-                <strong>${isZh ? "做得好的地方" : "Strengths"}</strong>
+                <strong>${isZh ? "\u505a\u5f97\u597d\u7684\u5730\u65b9" : "Strengths"}</strong>
                 <span class="muted">${esc(report.goodCount)}</span>
               </div>
               <div class="snapshot-row">
-                <strong>${isZh ? "优先补足" : "Priority fixes"}</strong>
+                <strong>${isZh ? "\u4f18\u5148\u8865\u8db3" : "Priority fixes"}</strong>
                 <span class="muted">${esc(report.fixNowCount)}</span>
               </div>
               <div class="snapshot-row">
-                <strong>${isZh ? "继续优化" : "Improve next"}</strong>
+                <strong>${isZh ? "\u7ee7\u7eed\u4f18\u5316" : "Improve next"}</strong>
                 <span class="muted">${esc(report.tidyCount)}</span>
               </div>
               <div class="snapshot-row">
-                <strong>${isZh ? "人工提醒" : "Manual reminders"}</strong>
+                <strong>${isZh ? "\u4eba\u5de5\u63d0\u9192" : "Manual reminders"}</strong>
                 <span class="muted">${esc((report.manualCards || []).length)}</span>
               </div>
             </div>
@@ -640,48 +640,48 @@
       <section class="section">
         <div class="section-head">
           <div>
-            <h2>${isZh ? "做得好的地方" : "What is working"}</h2>
-            <p class="section-desc">${isZh ? "这里只保留高层模块，不再逐条罗列重复项。" : "Repeated line items are condensed into a few readable modules."}</p>
+            <h2>${isZh ? "\u505a\u5f97\u597d\u7684\u5730\u65b9" : "What is working"}</h2>
+            <p class="section-desc">${isZh ? "\u8fd9\u91cc\u53ea\u4fdd\u7559\u9ad8\u5c42\u6a21\u5757\uff0c\u4e0d\u518d\u9010\u6761\u7f57\u5217\u91cd\u590d\u9879\u3002" : "Repeated line items are condensed into a few readable modules."}</p>
           </div>
         </div>
-        ${summaryCards(report.strengthCards, isZh ? "这次还没有可展示的稳定项。" : "No stable strengths were summarized in this run.")}
+        ${summaryCards(report.strengthCards, isZh ? "\u8fd9\u6b21\u8fd8\u6ca1\u6709\u53ef\u5c55\u793a\u7684\u7a33\u5b9a\u9879\u3002" : "No stable strengths were summarized in this run.")}
       </section>
 
       <section class="section">
         <div class="section-head">
           <div>
-            <h2>${isZh ? "优先补足" : "Priority fixes"}</h2>
-            <p class="section-desc">${isZh ? "这些是最值得先处理的块，不是把几十个小问题摊平给你看。" : "These are the highest-priority blocks, not a dump of repeated small findings."}</p>
+            <h2>${isZh ? "\u4f18\u5148\u8865\u8db3" : "Priority fixes"}</h2>
+            <p class="section-desc">${isZh ? "\u8fd9\u4e9b\u662f\u6700\u503c\u5f97\u5148\u5904\u7406\u7684\u5757\uff0c\u4e0d\u662f\u628a\u51e0\u5341\u4e2a\u5c0f\u95ee\u9898\u644a\u5e73\u7ed9\u4f60\u770b\u3002" : "These are the highest-priority blocks, not a dump of repeated small findings."}</p>
           </div>
         </div>
-        ${summaryCards(report.priorityCards, isZh ? "这次没有明显的优先项。" : "No urgent priority items were summarized.")}
+        ${summaryCards(report.priorityCards, isZh ? "\u8fd9\u6b21\u6ca1\u6709\u660e\u663e\u7684\u4f18\u5148\u9879\u3002" : "No urgent priority items were summarized.")}
       </section>
 
       <section class="section">
         <div class="section-head">
           <div>
-            <h2>${isZh ? "继续优化" : "Improve next"}</h2>
-            <p class="section-desc">${isZh ? "这部分不是报错，而是更精细化运营时最值得补的点。" : "These are not hard errors. They are the next best improvements for a stronger local experience."}</p>
+            <h2>${isZh ? "\u7ee7\u7eed\u4f18\u5316" : "Improve next"}</h2>
+            <p class="section-desc">${isZh ? "\u8fd9\u90e8\u5206\u4e0d\u662f\u62a5\u9519\uff0c\u800c\u662f\u66f4\u7cbe\u7ec6\u5316\u8fd0\u8425\u65f6\u6700\u503c\u5f97\u8865\u7684\u70b9\u3002" : "These are not hard errors. They are the next best improvements for a stronger local experience."}</p>
           </div>
         </div>
-        ${summaryCards(report.improveCards, isZh ? "这次没有额外的优化项。" : "No additional improvement themes were summarized.")}
+        ${summaryCards(report.improveCards, isZh ? "\u8fd9\u6b21\u6ca1\u6709\u989d\u5916\u7684\u4f18\u5316\u9879\u3002" : "No additional improvement themes were summarized.")}
       </section>
 
       <section class="section">
         <div class="section-head">
           <div>
-            <h2>${isZh ? "人工提醒" : "Manual reminders"}</h2>
-            <p class="section-desc">${isZh ? "这两项不再做自动判定，只提醒你顺手确认。" : "These are reminders only. They are no longer treated as automated pass/fail checks."}</p>
+            <h2>${isZh ? "\u4eba\u5de5\u63d0\u9192" : "Manual reminders"}</h2>
+            <p class="section-desc">${isZh ? "\u8fd9\u4e24\u9879\u4e0d\u518d\u505a\u81ea\u52a8\u5224\u5b9a\uff0c\u53ea\u63d0\u9192\u4f60\u987a\u624b\u786e\u8ba4\u3002" : "These are reminders only. They are no longer treated as automated pass/fail checks."}</p>
           </div>
         </div>
         ${summaryCards((report.manualCards || []).map((item) => ({
           tone: "manual",
           title: item.title,
-          value: isZh ? "提醒" : "Reminder",
+          value: isZh ? "\u63d0\u9192" : "Reminder",
           detail: item.summary,
           note: item.nextStep,
           chips: []
-        })), isZh ? "这次没有人工提醒。" : "No manual reminders in this run.")}
+        })), isZh ? "\u8fd9\u6b21\u6ca1\u6709\u4eba\u5de5\u63d0\u9192\u3002" : "No manual reminders in this run.")}
       </section>
 
       <section class="section">
@@ -695,10 +695,10 @@
           <table>
             <thead>
               <tr>
-                <th>${isZh ? "语言" : "Language"}</th>
-                <th>${isZh ? "状态" : "Status"}</th>
-                <th>${isZh ? "已分配市场" : "Assigned markets"}</th>
-                <th>${isZh ? "翻译准备度" : "Readiness"}</th>
+                <th>${isZh ? "\u8bed\u8a00" : "Language"}</th>
+                <th>${isZh ? "\u72b6\u6001" : "Status"}</th>
+                <th>${isZh ? "\u5df2\u5206\u914d\u5e02\u573a" : "Assigned markets"}</th>
+                <th>${isZh ? "\u7ffb\u8bd1\u51c6\u5907\u5ea6" : "Readiness"}</th>
               </tr>
             </thead>
             <tbody>${renderLocaleRows(report.localeRows)}</tbody>
@@ -717,11 +717,11 @@
           <table>
             <thead>
               <tr>
-                <th>${isZh ? "市场" : "Market"}</th>
-                <th>${isZh ? "国家" : "Countries"}</th>
-                <th>${isZh ? "语言" : "Languages"}</th>
-                <th>${isZh ? "货币策略" : "Currency strategy"}</th>
-                <th>${isZh ? "网址策略" : "URL strategy"}</th>
+                <th>${isZh ? "\u5e02\u573a" : "Market"}</th>
+                <th>${isZh ? "\u56fd\u5bb6" : "Countries"}</th>
+                <th>${isZh ? "\u8bed\u8a00" : "Languages"}</th>
+                <th>${isZh ? "\u8d27\u5e01\u7b56\u7565" : "Currency strategy"}</th>
+                <th>${isZh ? "\u7f51\u5740\u7b56\u7565" : "URL strategy"}</th>
               </tr>
             </thead>
             <tbody>${renderMarketRows(report.marketRows)}</tbody>
@@ -737,7 +737,7 @@
               <p class="section-desc">${esc(report.shippingIntro)}</p>
             </div>
           </div>
-          ${compactSummaryCards(report.shippingCards, isZh ? "这次没有 shipping 总结。" : "No shipping summary was generated.")}
+          ${compactSummaryCards(report.shippingCards, isZh ? "\u8fd9\u6b21\u6ca1\u6709 shipping \u603b\u7ed3\u3002" : "No shipping summary was generated.")}
         </div>
       </section>
 
@@ -749,7 +749,7 @@
               <p class="section-desc">${esc(report.storefrontIntro)}</p>
             </div>
           </div>
-          ${summaryCards(report.storefrontCards, isZh ? "这次没有 storefront 总结。" : "No storefront summary was generated.")}
+          ${summaryCards(report.storefrontCards, isZh ? "\u8fd9\u6b21\u6ca1\u6709 storefront \u603b\u7ed3\u3002" : "No storefront summary was generated.")}
         </div>
       </section>
 
@@ -757,7 +757,7 @@
         <div class="panel">
           <div class="section-head">
             <div>
-              <h2>${isZh ? "国际化生意建议" : "International growth ideas"}</h2>
+              <h2>${isZh ? "\u56fd\u9645\u5316\u751f\u610f\u5efa\u8bae" : "International growth ideas"}</h2>
               <p class="section-desc">${esc(report.expansionIntro)}</p>
             </div>
           </div>
@@ -769,7 +769,7 @@
         <div class="panel">
           <div class="section-head">
             <div>
-              <h2>${isZh ? "可预览修复" : "Approval-only fixes"}</h2>
+              <h2>${isZh ? "\u53ef\u9884\u89c8\u4fee\u590d" : "Approval-only fixes"}</h2>
               <p class="section-desc">${esc(report.actionsIntro)}</p>
             </div>
           </div>
