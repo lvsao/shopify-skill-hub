@@ -20,9 +20,9 @@ B - Dev Dashboard app
 ## Required Helper Commands
 
 ```text
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-markets-auditor.mjs connection-check --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs connection-check --env skill-hub.env
 ```
 
 ## Path A

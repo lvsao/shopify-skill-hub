@@ -1,6 +1,6 @@
 # Selofy Shopify Skill Hub
 
-[![Install with skills](https://img.shields.io/badge/install-npx%20skills%20add-111827?logo=npm&logoColor=white)](https://github.com/lvsao/shopify-skill-hub)
+[![skills.sh](https://skills.sh/b/lvsao/shopify-skill-hub)](https://skills.sh/lvsao/shopify-skill-hub)
 [![Skills](https://img.shields.io/badge/skills-7-2563eb)](./skills)
 [![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
