@@ -35,7 +35,7 @@ Ask the user to fill only:
 Recommended scopes:
 
 ```text
-read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies
+read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies,read_products
 ```
 
 ## Path B
@@ -49,7 +49,7 @@ Ask the user to fill only:
 Recommended scopes:
 
 ```text
-read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies
+read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies,read_products
 ```
 
 Before `shopify store auth`, tell the user that a Shopify approval page may open and they should click **Authorize**.

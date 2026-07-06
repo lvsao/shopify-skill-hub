@@ -12,7 +12,7 @@ const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DEFAULT_ENV = "skill-hub.env";
-const REQUIRED_SCOPES = "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies";
+const REQUIRED_SCOPES = "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies,read_products";
 const DEFAULT_RESOURCE_TYPES = [
   "PRODUCT",
   "COLLECTION",
