@@ -181,10 +181,10 @@
       "prerequisites": []
     },
     {
-      "name": "shopify-markets-auditor",
+      "name": "shopify-markets-localization-auditor",
       "displayName": "Shopify Localization & Markets Auditor",
       "displayName_zh": "Shopify 国际化与 Markets 审计",
-      "path": "../../skills/shopify-markets-auditor",
+      "path": "../../skills/shopify-markets-localization-auditor",
       "tags": ["shopify", "markets", "translation", "audit"],
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
