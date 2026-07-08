@@ -1,5 +1,7 @@
 ---
 name: "shopify-product-serp-optimizer"
+slug: "shopify-product-serp-optimizer"
+displayName: "Shopify Product SERP Optimizer"
 description: "Audit and improve Shopify product SERP performance with five-product batches, evidence-backed metadata recommendations, HTML reports, and one approval bundle for safe writes. Use for product-page search snippet work, not technical SEO, translations, redirects, theme work, or generic content strategy."
 version: 1.0.0
 author: "Selofy (lvsao)"

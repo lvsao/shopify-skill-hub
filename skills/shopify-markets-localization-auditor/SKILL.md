@@ -1,5 +1,7 @@
 ---
 name: "shopify-markets-localization-auditor"
+slug: "shopify-markets-localization-auditor"
+displayName: "Shopify Markets Localization Auditor"
 description: "Audit Shopify international setup across Markets, languages, shipping coverage, storefront localization, international SEO basics, and category-fit expansion opportunities with a plain-language HTML report and approval-based fixes. Use when a merchant wants to review or improve Markets, language readiness, local buying experience, or international growth direction. Do not use for theme coding, feed work, ad strategy, or generic translation writing."
 version: 1.0.0
 author: "Selofy (lvsao)"

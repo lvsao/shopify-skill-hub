@@ -1,5 +1,7 @@
 ---
 name: "shopify-store-translator"
+slug: "shopify-store-translator"
+displayName: "Shopify Store Translator"
 description: "Translate Shopify store resources into a target language with preview-first review, market checks, and approved writes. Use for direct API translation, outdated translation audits, or Shopify CSV translation workflows."
 version: 1.0.0
 author: "Selofy (lvsao)"
