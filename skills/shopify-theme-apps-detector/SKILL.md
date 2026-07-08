@@ -1,6 +1,20 @@
 ---
-name: shopify-theme-apps-detector
-description: Reveal a public Shopify store's theme and detectable apps without API access. Use when someone wants a tech-stack audit, competitor research, or a visual report with evidence and confidence levels.
+name: "shopify-theme-apps-detector"
+description: "Reveal a public Shopify store's theme and detectable apps without API access. Use when someone wants a tech-stack audit, competitor research, or a visual report with evidence and confidence levels."
+version: 1.0.0
+author: "Selofy (lvsao)"
+license: MIT
+platforms: [macos, linux, windows]
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - node
+    emoji: "🔍"
+    homepage: "https://github.com/lvsao/shopify-skill-hub"
+  hermes:
+    tags: [Shopify, Ecommerce, Themes, Apps, Audit, Research]
+    related_skills: [shopify-gmc-misrepresentation-auditor]
 ---
 
 # Shopify Theme & Apps Detector

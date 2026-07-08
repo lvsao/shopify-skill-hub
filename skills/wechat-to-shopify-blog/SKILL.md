@@ -1,6 +1,42 @@
 ---
-name: wechat-to-shopify-blog
-description: Convert an owned or authorized WeChat Official Account article into a Shopify blog draft. Use when the user provides a `mp.weixin.qq.com` URL and wants extraction, image filtering, Shopify-hosted uploads, English adaptation, blog selection, and draft-only article creation.
+name: "wechat-to-shopify-blog"
+description: "Convert an owned or authorized WeChat Official Account article into a Shopify blog draft. Use when the user provides a `mp.weixin.qq.com` URL and wants extraction, image filtering, Shopify-hosted uploads, English adaptation, blog selection, and draft-only article creation."
+version: 1.0.0
+author: "Selofy (lvsao)"
+license: MIT
+platforms: [macos, linux, windows]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - SHOPIFY_TEST_STORE_DOMAIN
+      bins:
+        - node
+    primaryEnv: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    envVars:
+      - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+        required: true
+        description: "Admin Access Token for Shopify store GraphQL communication."
+      - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+        required: false
+        description: "Optional storefront token for checking published resources."
+      - name: SKILL_HUB_SHOPIFY_CLI_JS
+        required: false
+        description: "Optional override path to local @shopify/cli entry point run.js."
+    emoji: "📰"
+    homepage: "https://github.com/lvsao/shopify-skill-hub"
+  hermes:
+    tags: [Shopify, Ecommerce, WeChat, Content, Blog, Bilingual]
+    related_skills: [shopify-store-translator]
+required_environment_variables:
+  - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    prompt: "Your Shopify Admin API Access Token"
+    help: "Create a custom app in Shopify Admin > Settings > Apps with Blogs read/write and Files read/write permissions"
+    required_for: "Creating blog drafts and uploading WeChat images to Shopify Files via Admin GraphQL API"
+  - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+    prompt: "Your Shopify Storefront API Access Token (optional)"
+    help: "Enable Storefront API in your custom app settings"
+    required_for: "Optional: checking blog publication status on the storefront"
 ---
 
 # WeChat To Shopify Blog

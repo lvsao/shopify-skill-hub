@@ -1,6 +1,42 @@
 ---
-name: shopify-product-serp-optimizer
-description: Audit and improve Shopify product SERP performance with five-product batches, evidence-backed metadata recommendations, HTML reports, and one approval bundle for safe writes. Use for product-page search snippet work, not technical SEO, translations, redirects, theme work, or generic content strategy.
+name: "shopify-product-serp-optimizer"
+description: "Audit and improve Shopify product SERP performance with five-product batches, evidence-backed metadata recommendations, HTML reports, and one approval bundle for safe writes. Use for product-page search snippet work, not technical SEO, translations, redirects, theme work, or generic content strategy."
+version: 1.0.0
+author: "Selofy (lvsao)"
+license: MIT
+platforms: [macos, linux, windows]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - SHOPIFY_TEST_STORE_DOMAIN
+      bins:
+        - node
+    primaryEnv: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    envVars:
+      - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+        required: true
+        description: "Admin Access Token for Shopify store GraphQL communication."
+      - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+        required: false
+        description: "Optional storefront token for checking published resources."
+      - name: SKILL_HUB_SHOPIFY_CLI_JS
+        required: false
+        description: "Optional override path to local @shopify/cli entry point run.js."
+    emoji: "🔍"
+    homepage: "https://github.com/lvsao/shopify-skill-hub"
+  hermes:
+    tags: [Shopify, Ecommerce, SEO, SERP, Products]
+    related_skills: [optimize-shopify-alt-text]
+required_environment_variables:
+  - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    prompt: "Your Shopify Admin API Access Token"
+    help: "Create a custom app in Shopify Admin > Settings > Apps with read/write permissions for products and online store content"
+    required_for: "Reading product metadata and writing approved SEO title/description updates via Admin GraphQL API"
+  - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+    prompt: "Your Shopify Storefront API Access Token (optional)"
+    help: "Enable Storefront API in your custom app settings"
+    required_for: "Optional: checking published product storefront data"
 ---
 
 # Shopify Product SERP Optimizer

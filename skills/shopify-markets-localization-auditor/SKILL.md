@@ -1,6 +1,42 @@
 ---
-name: shopify-markets-localization-auditor
-description: Audit Shopify international setup across Markets, languages, shipping coverage, storefront localization, international SEO basics, and category-fit expansion opportunities with a plain-language HTML report and approval-based fixes. Use when a merchant wants to review or improve Markets, language readiness, local buying experience, or international growth direction. Do not use for theme coding, feed work, ad strategy, or generic translation writing.
+name: "shopify-markets-localization-auditor"
+description: "Audit Shopify international setup across Markets, languages, shipping coverage, storefront localization, international SEO basics, and category-fit expansion opportunities with a plain-language HTML report and approval-based fixes. Use when a merchant wants to review or improve Markets, language readiness, local buying experience, or international growth direction. Do not use for theme coding, feed work, ad strategy, or generic translation writing."
+version: 1.0.0
+author: "Selofy (lvsao)"
+license: MIT
+platforms: [macos, linux, windows]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - SHOPIFY_TEST_STORE_DOMAIN
+      bins:
+        - node
+    primaryEnv: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    envVars:
+      - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+        required: true
+        description: "Admin Access Token for Shopify store GraphQL communication."
+      - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+        required: false
+        description: "Optional storefront token for checking published resources."
+      - name: SKILL_HUB_SHOPIFY_CLI_JS
+        required: false
+        description: "Optional override path to local @shopify/cli entry point run.js."
+    emoji: "🌐"
+    homepage: "https://github.com/lvsao/shopify-skill-hub"
+  hermes:
+    tags: [Shopify, Ecommerce, Markets, Localization, International, SEO]
+    related_skills: [shopify-store-translator]
+required_environment_variables:
+  - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    prompt: "Your Shopify Admin API Access Token"
+    help: "Create a custom app in Shopify Admin > Settings > Apps with Markets and Translations read permissions"
+    required_for: "Reading Markets configuration, languages, and shipping zones via Admin GraphQL API"
+  - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+    prompt: "Your Shopify Storefront API Access Token (optional)"
+    help: "Enable Storefront API in your custom app settings"
+    required_for: "Optional: checking published storefront localization"
 ---
 
 # Shopify Markets Auditor

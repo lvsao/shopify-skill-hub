@@ -1,6 +1,19 @@
 ---
-name: shopify-product-images-downloader
-description: Download product images from any public Shopify store without API access. Use when someone wants a full backup, a collection-only export, or a single-product image download, with optional WebP conversion or smart renaming.
+name: "shopify-product-images-downloader"
+description: "Download product images from any public Shopify store without API access. Use when someone wants a full backup, a collection-only export, or a single-product image download, with optional WebP conversion or smart renaming."
+version: 1.0.0
+author: "Selofy (lvsao)"
+license: MIT
+platforms: [macos, linux, windows]
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - node
+    emoji: "📥"
+    homepage: "https://github.com/lvsao/shopify-skill-hub"
+  hermes:
+    tags: [Shopify, Ecommerce, Images, Download, Backup]
 ---
 
 # Shopify Product Images Downloader
