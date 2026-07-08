@@ -146,38 +146,14 @@ async function probeAdminEndpoint(host, version, token, redirect = "follow") {
 
 async function resolveAdminEndpoint(env, preferredVersion) {
   const host = env.SHOPIFY_STORE_DOMAIN;
+  if (!host.endsWith(".myshopify.com") || host.includes("/")) {
+    throw new Error(`Invalid store domain: "${host}". Only official *.myshopify.com domains are allowed.`);
+  }
   const versions = candidateApiVersions(preferredVersion);
 
   for (const version of versions) {
-    if (host.endsWith(".myshopify.com")) {
-      const probe = await probeAdminEndpoint(host, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
-      if (probe.ok) return { host, version: probe.version };
-      continue;
-    }
-
-    const endpoint = `https://${host}/admin/api/${version}/graphql.json`;
-    const response = await fetch(endpoint, {
-      method: "POST",
-      redirect: "manual",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-      },
-      body: JSON.stringify({ query: "query SkillHubDomainProbe { shop { myshopifyDomain } }" }),
-    });
-
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      await response.arrayBuffer().catch(() => {});
-      if (!location) continue;
-      const redirectedHost = new URL(location, endpoint).host;
-      if (!redirectedHost.endsWith(".myshopify.com")) continue;
-      const probe = await probeAdminEndpoint(redirectedHost, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
-      if (probe.ok) return { host: redirectedHost, version: probe.version };
-    } else if (response.ok) {
-      const versionHeader = response.headers.get("x-shopify-api-version");
-      return { host, version: versionHeader || version };
-    }
+    const probe = await probeAdminEndpoint(host, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
+    if (probe.ok) return { host, version: probe.version };
   }
 
   throw new Error(
@@ -278,8 +254,38 @@ async function shopifyCliGraphql(env, query, variables = {}) {
   }
 }
 
+function validateSafeUrl(value) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Invalid protocol: "${parsed.protocol}". Only HTTP and HTTPS are allowed.`);
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      (hostname.startsWith("172.") &&
+        Number(hostname.split(".")[1]) >= 16 &&
+        Number(hostname.split(".")[1]) <= 31)
+    ) {
+      throw new Error(`Access to private address "${hostname}" is blocked.`);
+    }
+    return parsed.href;
+  } catch (err) {
+    throw new Error(`Invalid or unsafe URL "${value}": ${err.message}`);
+  }
+}
+
 async function fetchHomepageMeta(url) {
   if (!url) return null;
+  try {
+    validateSafeUrl(url);
+  } catch (e) {
+    return { url, ok: false, error: `Request blocked: ${e.message}` };
+  }
   try {
     const response = await fetch(url, { redirect: "follow" });
     if (!response.ok) return { url, ok: false, status: response.status };

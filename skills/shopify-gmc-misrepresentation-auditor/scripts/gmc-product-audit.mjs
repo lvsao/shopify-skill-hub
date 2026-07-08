@@ -20,21 +20,62 @@ import { resolve } from 'path';
 
 // ─── CLI args ─────────────────────────────────────────────────────────────────
 
+function validateSafeUrl(value) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Invalid protocol: "${parsed.protocol}". Only HTTP and HTTPS are allowed.`);
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    
+    // Block localhost, loopbacks, and private IP ranges to prevent SSRF
+    const isIp = /^[0-9.]+$/.test(hostname) || hostname.includes(":");
+    if (hostname === "localhost" || 
+        hostname === "127.0.0.1" || 
+        hostname === "0.0.0.0" || 
+        hostname.startsWith("10.") || 
+        hostname.startsWith("192.168.") || 
+        (hostname.startsWith("172.") && (Number(hostname.split(".")[1]) >= 16 && Number(hostname.split(".")[1]) <= 31))) {
+      throw new Error(`Access to private address "${hostname}" is blocked.`);
+    }
+    return parsed.href;
+  } catch (err) {
+    throw new Error(`Invalid or unsafe URL "${value}": ${err.message}`);
+  }
+}
+
 const args = process.argv.slice(2);
-const targetUrl = args.find(a => !a.startsWith('--'));
+const rawTargetUrl = args.find(a => !a.startsWith('--'));
 const outFlag = args.indexOf('--out');
 const outFile = outFlag !== -1 ? args[outFlag + 1] : 'gmc-audit-report.html';
 const storeFlag = args.indexOf('--store');
-const storeUrlArg = storeFlag !== -1 ? args[storeFlag + 1] : null;
+const rawStoreUrlArg = storeFlag !== -1 ? args[storeFlag + 1] : null;
 
-if (!targetUrl) {
+if (!rawTargetUrl) {
   process.stderr.write('Usage: node gmc-product-audit.mjs <url> [--store <store-url>] [--out <report.html>]\n');
+  process.exit(1);
+}
+
+let targetUrl;
+let storeUrlArg = null;
+try {
+  targetUrl = validateSafeUrl(rawTargetUrl);
+  if (rawStoreUrlArg) {
+    storeUrlArg = validateSafeUrl(rawStoreUrlArg);
+  }
+} catch (e) {
+  process.stderr.write(`Error: ${e.message}\n`);
   process.exit(1);
 }
 
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 
 async function fetchPage(url, opts = {}) {
+  try {
+    validateSafeUrl(url);
+  } catch (e) {
+    return { ok: false, status: 0, url, text: '', error: `Request blocked: ${e.message}` };
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeout || 15000);
   try {

@@ -103,11 +103,16 @@ async function loadEnv(file) {
 }
 
 function normalizeDomain(value) {
-  return String(value || "")
+  const domain = String(value || "")
     .trim()
     .replace(/^https?:\/\//i, "")
     .replace(/\/.*$/, "")
     .toLowerCase();
+  
+  if (!domain.endsWith(".myshopify.com") || domain.includes("/")) {
+    fail(`Invalid store domain: "${value}". Domain must end with ".myshopify.com".`);
+  }
+  return domain;
 }
 
 async function ensureGitignoreLine(line) {
@@ -147,6 +152,10 @@ async function initEnv(args) {
 }
 
 async function shopifyCliFetch({ env = {}, shop, query, variables, allowMutations = false }) {
+  shop = String(shop || "").trim().toLowerCase();
+  if (!shop.endsWith(".myshopify.com") || shop.includes("/")) {
+    fail(`Invalid shop domain: ${shop}. Request blocked for security.`);
+  }
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-hub-shopify-cli-"));
   const queryFile = path.join(tempDir, "query.graphql");
   const variableFile = path.join(tempDir, "variables.json");
@@ -220,6 +229,10 @@ function classifyCliError(error, detail = "") {
 }
 
 async function adminFetch({ shop, version, token, query, variables }) {
+  shop = String(shop || "").trim().toLowerCase();
+  if (!shop.endsWith(".myshopify.com") || shop.includes("/")) {
+    fail(`Invalid shop domain: ${shop}. Request blocked for security.`);
+  }
   const response = await fetch(`https://${shop}/admin/api/${version}/graphql.json`, {
     method: "POST",
     headers: {
@@ -250,30 +263,14 @@ async function resolveShopifyDomain(rawInput) {
     return `${adminMatch[1].toLowerCase()}.myshopify.com`;
   }
 
-  // If it looks like a custom domain (no path, may have www), try fetching HTML
-  const domain = input
-    .replace(/^https?:\/\//i, "")
-    .replace(/\/.*$/, "")
-    .toLowerCase();
-  if (domain.includes(".") && !domain.includes(" ")) {
-    try {
-      const response = await fetch(`https://${domain}`, {
-        signal: AbortSignal.timeout(10000),
-      });
-      const html = await response.text();
-      const shopMatch = html.match(/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i);
-      if (shopMatch) {
-        return shopMatch[1].toLowerCase();
-      }
-    } catch {
-      // fetch failed, fall through to error
-    }
-  }
-
   return null;
 }
 
 async function fetchPublicProduct(shop, handle) {
+  shop = String(shop || "").trim().toLowerCase();
+  if (!shop.endsWith(".myshopify.com") || shop.includes("/")) {
+    fail(`Invalid shop domain: ${shop}. Request blocked for security.`);
+  }
   const response = await fetch(`https://${shop}/products/${handle}.json`, {
     headers: { "User-Agent": "Shopify-Skill-Hub/1.0" },
   });
@@ -283,6 +280,10 @@ async function fetchPublicProduct(shop, handle) {
 }
 
 async function fetchPublicProductHtml(shop, handle) {
+  shop = String(shop || "").trim().toLowerCase();
+  if (!shop.endsWith(".myshopify.com") || shop.includes("/")) {
+    fail(`Invalid shop domain: ${shop}. Request blocked for security.`);
+  }
   const response = await fetch(`https://${shop}/products/${handle}`, {
     headers: { "User-Agent": "Shopify-Skill-Hub/1.0" },
   });
@@ -337,19 +338,14 @@ async function resolveAdmin(env) {
     : DEFAULT_VERSION_CANDIDATES;
   const uniqueVersions = [...new Set(versions)];
 
-  let shop = rawInput;
-  if (!shop.endsWith(".myshopify.com")) {
-    const probeVersion = uniqueVersions[0];
-    const probe = await fetch(`https://${shop}/admin/api/${probeVersion}/graphql.json`, {
-      method: "POST",
-      redirect: "manual",
-      headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
-      body: JSON.stringify({ query: "query SkillHubProbe { shop { myshopifyDomain } }" }),
-    }).catch(() => null);
-    const location = probe?.headers?.get?.("location");
-    if (location && /\.myshopify\.com/i.test(location)) {
-      shop = new URL(location).host.toLowerCase();
-    }
+  let shop = await resolveShopifyDomain(rawInput);
+  if (!shop) {
+    fail(
+      `Could not find your store's .myshopify.com domain from "${rawInput}".\n` +
+      `Please provide your store address in one of these ways:\n` +
+      `  1. Your Shopify admin URL: https://admin.shopify.com/store/your-store\n` +
+      `  2. Your .myshopify.com domain: your-store.myshopify.com`
+    );
   }
 
   for (const version of uniqueVersions) {
@@ -828,6 +824,10 @@ function normalizePublicProduct(raw, shop) {
 }
 
 async function readAllProductsPublic(shop, args) {
+  const cleanShop = String(shop || "").trim().toLowerCase();
+  if (!cleanShop.endsWith(".myshopify.com") || cleanShop.includes("/")) {
+    fail(`Invalid shop domain: ${shop}. Request blocked for security.`);
+  }
   const pageSize = Math.min(Math.max(Number(args["page-size"] || 50), 1), 250);
   const maxProducts = Math.min(Math.max(Number(args.limit || MAX_SCAN_PRODUCTS), 1), 500);
   const products = [];

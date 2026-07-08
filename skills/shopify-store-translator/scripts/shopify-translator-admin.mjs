@@ -63,7 +63,18 @@ function loadEnv(envPath) {
 
 function resolveAdminHost(domain) {
   if (!domain) throw new Error('SKILL_HUB_SHOPIFY_STORE_DOMAIN is not set');
-  return domain.endsWith('.myshopify.com') ? domain : `${domain}.myshopify.com`;
+  const cleanDomain = String(domain).trim().toLowerCase();
+  let host = cleanDomain;
+  if (!host.endsWith('.myshopify.com')) {
+    if (host.includes('/') || host.includes('.')) {
+      throw new Error(`Invalid shop domain: "${domain}". Domain must be a store name or end with ".myshopify.com".`);
+    }
+    host = `${host}.myshopify.com`;
+  }
+  if (!/^[a-zA-Z0-9][-a-zA-Z0-9]*\.myshopify\.com$/.test(host)) {
+    throw new Error(`Invalid shop domain: "${domain}". Request blocked for security.`);
+  }
+  return host;
 }
 
 // ─── GraphQL client ───────────────────────────────────────────────────────────

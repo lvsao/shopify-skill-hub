@@ -30,11 +30,53 @@ function parseArgs(argv) {
   }
 
   if (!args.url) throw new Error("Usage: node fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>");
+  try {
+    validateWeChatUrl(args.url);
+    const hostname = new URL(args.url).hostname.toLowerCase();
+    if (hostname !== "mp.weixin.qq.com") {
+      throw new Error(`Only official WeChat URLs (mp.weixin.qq.com) are allowed. Got "${hostname}".`);
+    }
+  } catch (e) {
+    throw new Error(`CLI argument validation failed: ${e.message}`);
+  }
   if (!Number.isInteger(args.maxImages) || args.maxImages < 1 || args.maxImages > 250) {
     throw new Error("--max-images must be an integer from 1 to 250.");
   }
 
   return args;
+}
+
+function validateWeChatUrl(value) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Invalid protocol: "${parsed.protocol}".`);
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      (hostname.startsWith("172.") &&
+        Number(hostname.split(".")[1]) >= 16 &&
+        Number(hostname.split(".")[1]) <= 31)
+    ) {
+      throw new Error(`SSRF blocked host: "${hostname}".`);
+    }
+    const isAllowed =
+      hostname === "mp.weixin.qq.com" ||
+      hostname === "qpic.cn" ||
+      hostname.endsWith(".qpic.cn") ||
+      hostname.endsWith(".mp.weixin.qq.com");
+    if (!isAllowed) {
+      throw new Error(`External domain "${hostname}" is blocked.`);
+    }
+    return parsed.href;
+  } catch (err) {
+    throw new Error(`Invalid or unsafe WeChat URL "${value}": ${err.message}`);
+  }
 }
 
 function decodeEntities(value = "") {
@@ -161,6 +203,11 @@ function extensionFromMime(mime) {
 }
 
 async function downloadImage(image, outputDir) {
+  try {
+    validateWeChatUrl(image.url);
+  } catch (e) {
+    throw new Error(`Image download blocked: ${e.message}`);
+  }
   const response = await fetch(image.url, {
     headers: {
       "User-Agent":
