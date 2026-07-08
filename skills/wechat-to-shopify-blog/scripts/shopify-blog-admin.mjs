@@ -144,18 +144,11 @@ async function loadEnv(envPath) {
       const adminMatch = rawDomain.match(/admin\.shopify\.com\/store\/([^\/\s?&]+)/i);
       if (adminMatch) {
         resolved = `${adminMatch[1].toLowerCase()}.myshopify.com`;
-      } else {
-        try {
-          const response = await fetch(`https://${resolved}`, { signal: AbortSignal.timeout(10000) });
-          const html = await response.text();
-          const shopMatch = html.match(/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i);
-          if (shopMatch) resolved = shopMatch[1].toLowerCase();
-        } catch {}
       }
     }
     if (!resolved.endsWith(".myshopify.com")) {
       throw new Error(
-        `Could not find store domain from "${rawDomain}". Provide your admin URL (https://admin.shopify.com/store/your-store) or website address.`
+        `Invalid storefront domain: "${rawDomain}". Dev Dashboard path requires your official .myshopify.com store domain.`
       );
     }
     env.SHOPIFY_STORE_DOMAIN = resolved;
@@ -221,38 +214,14 @@ async function probeAdminEndpoint(host, version, token, redirect = "follow") {
 
 async function resolveAdminEndpoint(env, preferredVersion) {
   const host = env.SHOPIFY_STORE_DOMAIN;
+  if (!host.endsWith(".myshopify.com") || host.includes("/")) {
+    throw new Error(`Invalid store domain: "${host}". Only official *.myshopify.com domains are allowed.`);
+  }
   const versions = candidateApiVersions(preferredVersion);
 
   for (const version of versions) {
-    if (host.endsWith(".myshopify.com")) {
-      const probe = await probeAdminEndpoint(host, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
-      if (probe.ok) return { host, version: probe.version };
-      continue;
-    }
-
-    const endpoint = `https://${host}/admin/api/${version}/graphql.json`;
-    const response = await fetch(endpoint, {
-      method: "POST",
-      redirect: "manual",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-      },
-      body: JSON.stringify({ query: "query SkillHubDomainProbe { shop { myshopifyDomain } }" }),
-    });
-
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      await response.arrayBuffer().catch(() => {});
-      if (!location) continue;
-      const redirectedHost = new URL(location, endpoint).host;
-      if (!redirectedHost.endsWith(".myshopify.com")) continue;
-      const probe = await probeAdminEndpoint(redirectedHost, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
-      if (probe.ok) return { host: redirectedHost, version: probe.version };
-    } else if (response.ok) {
-      const versionHeader = response.headers.get("x-shopify-api-version");
-      return { host, version: versionHeader || version };
-    }
+    const probe = await probeAdminEndpoint(host, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
+    if (probe.ok) return { host, version: probe.version };
   }
 
   throw new Error("Could not resolve a usable Shopify Admin API endpoint from the provided store domain and Admin API token.");

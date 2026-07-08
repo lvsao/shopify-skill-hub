@@ -159,6 +159,10 @@ function classifyCliError(error, detail) {
 }
 
 async function shopifyCliFetch({ cliJs, shop, query, variables, allowMutations = false }) {
+  shop = String(shop || "").trim().toLowerCase();
+  if (!shop.endsWith(".myshopify.com") || shop.includes("/")) {
+    fail(`Invalid shop domain: ${shop}. Request blocked for security.`);
+  }
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-hub-shopify-cli-"));
   const queryFile = path.join(tempDir, "query.graphql");
   const variableFile = path.join(tempDir, "variables.json");
@@ -215,6 +219,10 @@ async function shopifyCliFetch({ cliJs, shop, query, variables, allowMutations =
 }
 
 async function adminFetch({ shop, version, token, query, variables }) {
+  shop = String(shop || "").trim().toLowerCase();
+  if (!shop.endsWith(".myshopify.com") || shop.includes("/")) {
+    fail(`Invalid shop domain: ${shop}. Request blocked for security.`);
+  }
   const response = await fetch(`https://${shop}/admin/api/${version}/graphql.json`, {
     method: "POST",
     redirect: "manual",
@@ -250,13 +258,8 @@ async function resolveAdmin(env) {
     const adminMatch = rawInput.match(/admin\.shopify\.com\/store\/([^\/\s?&]+)/i);
     if (adminMatch) {
       shop = `${adminMatch[1].toLowerCase()}.myshopify.com`;
-    } else if (shop.includes(".")) {
-      try {
-        const response = await fetch(`https://${shop}`, { signal: AbortSignal.timeout(10000) });
-        const html = await response.text();
-        const shopMatch = html.match(/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i);
-        if (shopMatch) shop = shopMatch[1].toLowerCase();
-      } catch {}
+    } else {
+      fail(`Invalid store domain: "${rawInput}". Please configure your official .myshopify.com domain.`);
     }
   }
 
@@ -939,6 +942,19 @@ function extensionFromUrl(url) {
 }
 
 async function downloadImage(url, filePath) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const isShopifyCdn = host === "cdn.shopify.com" || 
+                         host.endsWith(".shopifycdn.com") || 
+                         host.endsWith(".shopifycdn.net") || 
+                         host.endsWith(".myshopify.com");
+    if (!isShopifyCdn) {
+      throw new Error(`Invalid CDN domain: "${host}". Only official Shopify CDN downloads are allowed.`);
+    }
+  } catch (urlErr) {
+    throw new Error(`Invalid URL: ${urlErr.message}`);
+  }
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {

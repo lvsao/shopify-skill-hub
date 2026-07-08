@@ -27,6 +27,11 @@ const rename = args.rename === "true"
 
 const domain = extractDomain(storeUrl)
 const baseUrl = `https://${domain}`
+try {
+  validateSafeUrl(baseUrl)
+} catch (e) {
+  fail(e.message)
+}
 
 console.log(`\n=== Shopify Product Images Downloader ===`)
 console.log(`Store: ${domain}`)
@@ -225,6 +230,45 @@ console.log(`Summary saved: ${summaryPath}`)
 // Helper functions
 // ════════════════════════════════════════════
 
+function validateSafeUrl(value) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Invalid protocol: "${parsed.protocol}". Only HTTP and HTTPS are allowed.`);
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      (hostname.startsWith("172.") &&
+        Number(hostname.split(".")[1]) >= 16 &&
+        Number(hostname.split(".")[1]) <= 31)
+    ) {
+      throw new Error(`Access to private address "${hostname}" is blocked.`);
+    }
+    return parsed.href;
+  } catch (err) {
+    throw new Error(`Invalid or unsafe URL "${value}": ${err.message}`);
+  }
+}
+
+function validateDownloadUrl(value, targetDomain) {
+  validateSafeUrl(value);
+  const host = new URL(value).hostname.toLowerCase();
+  const allowed =
+    host === "cdn.shopify.com" ||
+    host.endsWith(".shopifycdn.com") ||
+    host.endsWith(".shopifycdn.net") ||
+    host === targetDomain.toLowerCase() ||
+    host.endsWith(".myshopify.com");
+  if (!allowed) {
+    throw new Error(`Forbidden CDN or download target: "${host}".`);
+  }
+}
+
 function parseArgs(argv) {
   const result = {}
   for (let i = 0; i < argv.length; i++) {
@@ -275,6 +319,11 @@ async function fetchJSON(url) {
 
 function fetchText(url) {
   return new Promise((resolve, reject) => {
+    try {
+      validateSafeUrl(url);
+    } catch (e) {
+      return reject(e);
+    }
     const client = url.startsWith("https") ? https : http
     const req = client.get(url, { headers: { "User-Agent": "Shopify-Image-Downloader/1.0" } }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
@@ -355,6 +404,11 @@ function replaceExt(filename, newExt) {
 
 function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
+    try {
+      validateDownloadUrl(url, domain);
+    } catch (e) {
+      return reject(e);
+    }
     const client = url.startsWith("https") ? https : http
     const req = client.get(url, { headers: { "User-Agent": "Shopify-Image-Downloader/1.0" } }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
@@ -383,6 +437,11 @@ function downloadFile(url, dest) {
 
 async function downloadAndConvertToWebp(url, dest, sharpInstance) {
   return new Promise((resolve, reject) => {
+    try {
+      validateDownloadUrl(url, domain);
+    } catch (e) {
+      return reject(e);
+    }
     const client = url.startsWith("https") ? https : http
     const req = client.get(url, { headers: { "User-Agent": "Shopify-Image-Downloader/1.0" } }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {

@@ -18,7 +18,36 @@ import { createRequire } from 'module';
 
 // ─── Minimal fetch with timeout ──────────────────────────────────────────────
 
+function validateSafeUrl(value) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Invalid protocol: "${parsed.protocol}". Only HTTP and HTTPS are allowed.`);
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    
+    // Block localhost, loopbacks, and private IP ranges to prevent SSRF
+    const isIp = /^[0-9.]+$/.test(hostname) || hostname.includes(":");
+    if (hostname === "localhost" || 
+        hostname === "127.0.0.1" || 
+        hostname === "0.0.0.0" || 
+        hostname.startsWith("10.") || 
+        hostname.startsWith("192.168.") || 
+        (hostname.startsWith("172.") && (Number(hostname.split(".")[1]) >= 16 && Number(hostname.split(".")[1]) <= 31))) {
+      throw new Error(`Access to private address "${hostname}" is blocked.`);
+    }
+    return parsed.href;
+  } catch (err) {
+    throw new Error(`Invalid or unsafe URL "${value}": ${err.message}`);
+  }
+}
+
 async function fetchPage(url, opts = {}) {
+  try {
+    validateSafeUrl(url);
+  } catch (e) {
+    return { ok: false, status: 0, url, text: '', error: `Request blocked: ${e.message}` };
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeout || 15000);
   try {
@@ -42,6 +71,11 @@ async function fetchPage(url, opts = {}) {
 }
 
 async function headUrl(url) {
+  try {
+    validateSafeUrl(url);
+  } catch (e) {
+    return { ok: false, status: 0 };
+  }
   try {
     const res = await fetch(url, {
       method: 'HEAD',
@@ -686,9 +720,17 @@ function computeScore(checks) {
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
-const storeUrl = process.argv[2];
-if (!storeUrl) {
+const rawStoreUrl = process.argv[2];
+if (!rawStoreUrl) {
   process.stderr.write('Usage: node gmc-store-audit.mjs <store-url>\n');
+  process.exit(1);
+}
+
+let storeUrl;
+try {
+  storeUrl = validateSafeUrl(rawStoreUrl);
+} catch (e) {
+  process.stderr.write(`Error: ${e.message}\n`);
   process.exit(1);
 }
 

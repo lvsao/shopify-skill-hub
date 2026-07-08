@@ -203,35 +203,8 @@ Use this priority order:
 **Method 2: Direct `.myshopify.com` input**
 - If the user already provides something ending in `.myshopify.com` → use directly
 
-**Method 3: Shell-based HTML parsing (most reliable for website addresses)**
-- If the user provides a website address like `your-store.com`, `www.your-store.com`, or `https://your-store.com`:
-  1. **Use curl + findstr/grep to extract the Shopify shop directly from HTML:**
-     - **Windows (PowerShell/CMD):**
-       ```powershell
-       curl -s https://<domain> | findstr "Shopify.shop"
-       ```
-     - **Linux/Mac (bash/zsh):**
-       ```bash
-       curl -s https://<domain> | grep "Shopify.shop"
-       ```
-  2. **Parse the output** — it will look like:
-       ```text
-       Shopify.shop = "your-store.myshopify.com";
-       ```
-  3. **Extract the domain** between the quotes — this is the `.myshopify.com` domain
-  4. **If the first curl fails (Cloudflare challenge or timeout):**
-     - Try fetching a product page: `curl -s https://<domain>/products | findstr "Shopify.shop"`
-     - Try fetching a collection page: `curl -s https://<domain>/collections | findstr "Shopify.shop"`
-     - **If ALL curl attempts fail, skip to Method 4 immediately. Do NOT retry more than 2 times total.**
-  5. **Fallback to webfetch only if curl is not available:**
-       ```text
-       webfetch url: "https://<domain>" format: "html"
-       ```
-       Then search for: `/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i`
-
-**Method 4: Fallback request (fastest when automated methods fail)**
-- If Methods 1-3 don't work, tell the user: "I couldn't resolve your store domain automatically. Please copy your Shopify admin URL instead — it looks like `https://admin.shopify.com/store/your-store-name`"
-- **Do NOT loop back to webfetch.** Accept the admin URL and proceed with Method 1 extraction.
+**Method 3: Fallback request (when store domain cannot be extracted)**
+- If the store domain cannot be extracted from Method 1 or 2, ask the user: "Please provide your official .myshopify.com store domain (e.g., your-store.myshopify.com) or copy your Shopify admin URL (e.g. `https://admin.shopify.com/store/your-store-name`) to proceed."
 
 After resolving, update `skill-hub.env` with the resolved `SKILL_HUB_SHOPIFY_STORE_DOMAIN=<name>.myshopify.com` before running any CLI commands.
 

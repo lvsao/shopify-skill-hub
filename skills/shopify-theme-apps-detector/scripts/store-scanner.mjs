@@ -17,8 +17,41 @@ if (!url) {
   console.error('Usage: node store-scanner.mjs <url>');
   process.exit(1);
 }
+try {
+  let tempUrl = url.trim();
+  if (!/^https?:\/\//i.test(tempUrl)) tempUrl = 'https://' + tempUrl;
+  validateSafeUrl(tempUrl);
+} catch (e) {
+  console.error(`ERROR: ${e.message}`);
+  process.exit(1);
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+function validateSafeUrl(value) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Invalid protocol: "${parsed.protocol}". Only HTTP and HTTPS are allowed.`);
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      (hostname.startsWith("172.") &&
+        Number(hostname.split(".")[1]) >= 16 &&
+        Number(hostname.split(".")[1]) <= 31)
+    ) {
+      throw new Error(`Access to private address "${hostname}" is blocked.`);
+    }
+    return parsed.href;
+  } catch (err) {
+    throw new Error(`Invalid or unsafe URL "${value}": ${err.message}`);
+  }
+}
 
 function normalizeUrl(raw) {
   let u = raw.trim();
@@ -28,6 +61,11 @@ function normalizeUrl(raw) {
 }
 
 async function fetchWithTimeout(url, opts = {}) {
+  try {
+    validateSafeUrl(url);
+  } catch (e) {
+    throw e;
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
