@@ -1,6 +1,42 @@
 ---
-name: optimize-shopify-alt-text
-description: Audit and safely improve Shopify image alt text for product media, collection images, article featured images, and article inline images. Use when a merchant wants image-specific alt text review, batch planning, visual inspection when available, or approved Shopify alt text updates.
+name: "optimize-shopify-alt-text"
+description: "Audit and safely improve Shopify image alt text for product media, collection images, article featured images, and article inline images. Use when a merchant wants image-specific alt text review, batch planning, visual inspection when available, or approved Shopify alt text updates."
+version: 1.0.0
+author: "Selofy (lvsao)"
+license: MIT
+platforms: [macos, linux, windows]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - SHOPIFY_TEST_STORE_DOMAIN
+      bins:
+        - node
+    primaryEnv: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    envVars:
+      - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+        required: true
+        description: "Admin Access Token for Shopify store GraphQL communication."
+      - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+        required: false
+        description: "Optional storefront token for checking published resources."
+      - name: SKILL_HUB_SHOPIFY_CLI_JS
+        required: false
+        description: "Optional override path to local @shopify/cli entry point run.js."
+    emoji: "🖼️"
+    homepage: "https://github.com/lvsao/shopify-skill-hub"
+  hermes:
+    tags: [Shopify, Ecommerce, SEO, Images, AltText]
+    related_skills: [shopify-product-serp-optimizer]
+required_environment_variables:
+  - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    prompt: "Your Shopify Admin API Access Token"
+    help: "Create a custom app in Shopify Admin > Settings > Apps and add read/write permissions for products, collections, and online store content"
+    required_for: "Reading and updating image alt text via Admin GraphQL API"
+  - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+    prompt: "Your Shopify Storefront API Access Token (optional)"
+    help: "Enable Storefront API in your custom app settings"
+    required_for: "Optional: checking published storefront resources"
 ---
 
 # Optimize Shopify Alt Text
