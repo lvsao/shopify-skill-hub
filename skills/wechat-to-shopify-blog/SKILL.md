@@ -1,5 +1,7 @@
 ---
 name: "wechat-to-shopify-blog"
+slug: "wechat-to-shopify-blog"
+displayName: "WeChat to Shopify Blog"
 description: "Convert an owned or authorized WeChat Official Account article into a Shopify blog draft. Use when the user provides a `mp.weixin.qq.com` URL and wants extraction, image filtering, Shopify-hosted uploads, English adaptation, blog selection, and draft-only article creation."
 version: 1.0.0
 author: "Selofy (lvsao)"
