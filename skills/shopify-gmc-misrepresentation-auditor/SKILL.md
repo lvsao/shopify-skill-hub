@@ -1,6 +1,6 @@
 ---
-name: "shopify-gmc-misrepresentation-auditor"
-slug: "shopify-gmc-misrepresentation-auditor"
+name: "shopify-gmc-misrep-auditor"
+slug: "shopify-gmc-misrep-auditor"
 displayName: "Shopify GMC Misrepresentation Auditor"
 description: "Audit any live Shopify store or product page for Google Merchant Center Misrepresentation policy risks by crawling public pages. Use when a merchant was suspended, is preparing a GMC submission, or wants a public-page compliance sweep before appeal or launch."
 version: 1.0.0
