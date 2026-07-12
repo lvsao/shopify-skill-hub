@@ -3,42 +3,41 @@ name: "shopify-store-translator"
 slug: "shopify-store-translator"
 displayName: "Shopify Store Translator"
 description: "Translate Shopify store resources into a target language with preview-first review, market checks, and approved writes. Use for direct API translation, outdated translation audits, or Shopify CSV translation workflows."
-version: 1.0.0
+version: 2.0.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
+required_environment_variables:
+  - name: SKILL_HUB_SHOPIFY_STORE_DOMAIN
+    prompt: "Provide the Shopify admin URL or .myshopify.com domain."
+    help: "Stored in the private working-directory skill-hub.env file."
+    required_for: "All Shopify reads and approved writes"
 metadata:
   openclaw:
     requires:
       env:
+        - SKILL_HUB_SHOPIFY_STORE_DOMAIN
         - SHOPIFY_TEST_STORE_DOMAIN
+        - SKILL_HUB_SHOPIFY_CLI_JS
       bins:
         - node
-    primaryEnv: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+        - shopify
     envVars:
-      - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+      SKILL_HUB_SHOPIFY_STORE_DOMAIN:
         required: true
-        description: "Admin Access Token for Shopify store GraphQL communication."
-      - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+        description: "Shopify admin URL or .myshopify.com store domain."
+      SHOPIFY_TEST_STORE_DOMAIN:
         required: false
-        description: "Optional storefront token for checking published resources."
-      - name: SKILL_HUB_SHOPIFY_CLI_JS
+        description: "Optional local test-store fallback; never commit its value."
+      SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
-        description: "Optional override path to local @shopify/cli entry point run.js."
+        description: "Optional explicit Shopify CLI JS entrypoint when the CLI is not on PATH."
+    primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🔤"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, Translation, Localization, i18n]
     related_skills: [shopify-markets-localization-auditor]
-required_environment_variables:
-  - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
-    prompt: "Your Shopify Admin API Access Token"
-    help: "Create a custom app in Shopify Admin > Settings > Apps with Translations read/write permissions"
-    required_for: "Reading store resources and writing approved translations via Admin GraphQL API"
-  - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
-    prompt: "Your Shopify Storefront API Access Token (optional)"
-    help: "Enable Storefront API in your custom app settings"
-    required_for: "Optional: checking published translated storefront content"
 ---
 
 # Shopify Store Translator
@@ -73,28 +72,33 @@ required_environment_variables:
   - preserve required columns and structure
   - re-import through Shopify's native flow if the user chooses CSV
 
+## Exclusions
+
+This skill does not change currency, pricing, tax, duties, shipping, theme code, redirects, menus, or market country structure. It prepares and writes translations only after explicit approval.
+
 ## Required Order
 
 1. Use shared onboarding only if `skill-hub.env` is missing or incomplete.
 2. Run locale and market checks before translating.
 3. Fetch only the resource types the user asked for unless they explicitly want a full-store run.
-4. Produce review artifacts before any write.
-5. Write approved translations.
-6. Verify translations and market coverage.
-7. Clean temp files.
+4. Translate the fetched fields into a `translation-candidates.json` file containing `{ resourceId, key, translation }` entries.
+5. Generate a review CSV from the fetch file plus the candidate file.
+6. Obtain explicit approval, then write approved translations.
+7. Verify translations and market coverage.
+8. Clean temp files.
 
 ## Script Entry Points
 
 ```text
-node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs init-env --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs connection-check --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-market-lang-check.mjs check --target <locale> --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs check-markets --env skill-hub.env --locale <locale>
 node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs fetch --env skill-hub.env --resource-type <TYPE> --locale <locale> --output <temp-file>
-node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs generate-audit --input translation-audit.json --locale <locale>
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs generate-audit --input translation-fetch.json --translations translation-candidates.json --locale <locale>
 node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs write --env skill-hub.env --input translation-audit.csv --locale <locale>
-node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs translate-csv --input <shopify-export.csv> --output <translated.csv> --locale <locale>
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs translate-csv --input <shopify-export.csv> --locale <locale> --offset 0 --limit 50
+node <absolute-path-to-skill>/scripts/shopify-translator-admin.mjs write-csv-translations --input <shopify-export.csv> --patch translation-patches.json --output <translated.csv>
 ```
 
 ## Artifacts

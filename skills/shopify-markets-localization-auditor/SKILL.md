@@ -3,42 +3,36 @@ name: "shopify-markets-localization-auditor"
 slug: "shopify-markets-localization-auditor"
 displayName: "Shopify Markets Localization Auditor"
 description: "Audit Shopify international setup across Markets, languages, shipping coverage, storefront localization, international SEO basics, and category-fit expansion opportunities with a plain-language HTML report and approval-based fixes. Use when a merchant wants to review or improve Markets, language readiness, local buying experience, or international growth direction. Do not use for theme coding, feed work, ad strategy, or generic translation writing."
-version: 1.0.0
+version: 2.0.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
+required_environment_variables:
+  - name: SKILL_HUB_SHOPIFY_STORE_DOMAIN
+    prompt: "Provide the Shopify admin URL or .myshopify.com domain."
+    help: "Store it in the private working-directory skill-hub.env file."
+    required_for: "Shopify Markets and localization checks or approved fixes."
 metadata:
   openclaw:
     requires:
       env:
-        - SHOPIFY_TEST_STORE_DOMAIN
+        - SKILL_HUB_SHOPIFY_STORE_DOMAIN
       bins:
         - node
-    primaryEnv: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+        - shopify
     envVars:
-      - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+      SKILL_HUB_SHOPIFY_STORE_DOMAIN:
         required: true
-        description: "Admin Access Token for Shopify store GraphQL communication."
-      - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+        description: "Shopify admin URL or .myshopify.com store domain."
+      SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
-        description: "Optional storefront token for checking published resources."
-      - name: SKILL_HUB_SHOPIFY_CLI_JS
-        required: false
-        description: "Optional override path to local @shopify/cli entry point run.js."
+        description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
+    primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🌐"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, Markets, Localization, International, SEO]
     related_skills: [shopify-store-translator]
-required_environment_variables:
-  - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
-    prompt: "Your Shopify Admin API Access Token"
-    help: "Create a custom app in Shopify Admin > Settings > Apps with Markets and Translations read permissions"
-    required_for: "Reading Markets configuration, languages, and shipping zones via Admin GraphQL API"
-  - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
-    prompt: "Your Shopify Storefront API Access Token (optional)"
-    help: "Enable Storefront API in your custom app settings"
-    required_for: "Optional: checking published storefront localization"
 ---
 
 # Shopify Markets Auditor
@@ -89,11 +83,12 @@ This skill does not own:
 Use the bundled helper instead of ad hoc GraphQL or shell glue:
 
 ```text
-node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs connection-check --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs audit --env skill-hub.env --output shopify-markets-localization-audit.json --lang zh-CN
 node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs audit --env skill-hub.env --locales de,fr,ja --output shopify-markets-localization-audit.json --lang en
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs audit --env skill-hub.env --locales de,fr,it,ja --transport bulk --output shopify-markets-localization-audit.json --lang en
+node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs audit --env skill-hub.env --output shopify-markets-localization-audit.json --resume
 node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs report --input shopify-markets-localization-audit.json --output shopify-markets-localization-report-YYYYMMDD-HHMM.html --lang zh-CN
 node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs fix-plan --input shopify-markets-localization-audit.json --output shopify-markets-localization-fix-plan.json
 node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs apply --env skill-hub.env --input shopify-markets-localization-fix-plan.json
@@ -106,6 +101,9 @@ node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs a
 2. Run the connection check.
 3. Gather admin evidence first.
 4. Compute locale readiness for each requested locale. If the user did not name locales, use all published non-primary locales and any market default or alternate locale not yet covered.
+   - Keep `--transport auto` for normal use. It batches up to three locales per ordinary Admin query, then switches to Shopify CLI bulk queries at four or more locales.
+   - Use `--transport bulk` for a large single-locale store. Use `--transport standard` only when diagnosing a bulk-query compatibility issue.
+   - For a large audit that stops partway through, repeat the same command with `--resume`. Keep the same `--output` path; the helper resumes completed resource types from its adjacent checkpoint.
 5. Crawl the storefront homepage for public SEO and policy signals.
 6. If the report will include international business recommendations, first identify the store's business type using API data and storefront-visible evidence such as `shop.name`, `shop.description`, collections, products, and at least one product-detail page when possible.
 7. Then run external market research for the store's actual category before writing any business advice. Prefer the newest credible sources and use the method and constraints in `references/business-research-method.md`.
@@ -162,6 +160,7 @@ Important:
   - `International growth ideas`
   - `Approval-only fixes`
 - Render the final report in the user's current conversation language. Do not hardcode one output language in the skill rules.
+- The script's `--lang auto` follows the machine locale (`zh*` becomes `zh-CN`; all other locales become `en`). Pass `--lang zh-CN` or `--lang en` when the conversation language differs from the machine.
 - Every issue must answer:
   - what is wrong
   - why it matters

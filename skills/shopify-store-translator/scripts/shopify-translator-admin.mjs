@@ -15,11 +15,9 @@
  *   write                 Write translations from a CSV file to Shopify
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const API_VERSION = '2026-04';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { loadSkillHubEnv, resolveAdminHost, shopifyGraphql } from './lib/shopify-cli.mjs';
 
 // ─── CLI arg parsing ──────────────────────────────────────────────────────────
 
@@ -30,104 +28,36 @@ for (let i = 1; i < args.length; i += 2) {
   if (args[i]?.startsWith('--')) flags[args[i].slice(2)] = args[i + 1] ?? true;
 }
 
-// ─── Env loading ──────────────────────────────────────────────────────────────
-
-function loadEnv(envPath) {
-  // Try skill-hub.env first, then .env as fallback
-  const candidates = envPath
-    ? [resolve(envPath)]
-    : [resolve('skill-hub.env'), resolve('.env')];
-
-  let env = {};
-  for (const p of candidates) {
-    if (!existsSync(p)) continue;
-    const lines = readFileSync(p, 'utf8').split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const idx = trimmed.indexOf('=');
-      if (idx < 0) continue;
-      env[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
-    }
-    break; // use first found file
-  }
-
-  // Compatibility: map legacy .env variable names to skill-hub.env names
-  if (!env.SKILL_HUB_SHOPIFY_STORE_DOMAIN && env.SHOPIFY_TEST_STORE_DOMAIN)
-    env.SKILL_HUB_SHOPIFY_STORE_DOMAIN = env.SHOPIFY_TEST_STORE_DOMAIN;
-  if (!env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN && env.SHOPIFY_ADMIN_API_ACCESS_TOKEN)
-    env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN = env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
-
-  return env;
-}
-
-function resolveAdminHost(domain) {
-  if (!domain) throw new Error('SKILL_HUB_SHOPIFY_STORE_DOMAIN is not set');
-  const cleanDomain = String(domain).trim().toLowerCase();
-  let host = cleanDomain;
-  if (!host.endsWith('.myshopify.com')) {
-    if (host.includes('/') || host.includes('.')) {
-      throw new Error(`Invalid shop domain: "${domain}". Domain must be a store name or end with ".myshopify.com".`);
-    }
-    host = `${host}.myshopify.com`;
-  }
-  if (!/^[a-zA-Z0-9][-a-zA-Z0-9]*\.myshopify\.com$/.test(host)) {
-    throw new Error(`Invalid shop domain: "${domain}". Request blocked for security.`);
-  }
-  return host;
-}
-
-// ─── GraphQL client ───────────────────────────────────────────────────────────
-
-async function gql(host, token, query, variables = {}) {
-  const url = `https://${host}/admin/api/${API_VERSION}/graphql.json`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': token,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-  const json = await res.json();
-  if (json.errors) throw new Error(JSON.stringify(json.errors, null, 2));
-  return json.data;
-}
-
-// ─── Rate limit helper ────────────────────────────────────────────────────────
-
-async function gqlWithThrottle(host, token, query, variables = {}) {
-  const url = `https://${host}/admin/api/${API_VERSION}/graphql.json`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': token },
-    body: JSON.stringify({ query, variables }),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-  const json = await res.json();
-  if (json.errors) throw new Error(JSON.stringify(json.errors, null, 2));
-  const available = json.extensions?.cost?.throttleStatus?.currentlyAvailable ?? 2000;
-  if (available < 200) await new Promise(r => setTimeout(r, 1000));
-  return json.data;
-}
+const loadEnv = loadSkillHubEnv;
+const gql = (host, _token, query, variables = {}) => shopifyGraphql(host, query, variables);
+const gqlWithThrottle = gql;
 
 // ─── CSV helpers ──────────────────────────────────────────────────────────────
 
 function parseCSV(content) {
-  const lines = content.trim().split('\n');
-  const headers = lines[0].split(',');
-  return lines.slice(1).map(line => {
-    const values = [];
-    let cur = '', inQuote = false;
-    for (const ch of line) {
-      if (ch === '"') { inQuote = !inQuote; continue; }
-      if (ch === ',' && !inQuote) { values.push(cur); cur = ''; continue; }
-      cur += ch;
-    }
-    values.push(cur);
-    return Object.fromEntries(headers.map((h, i) => [h.trim(), (values[i] ?? '').trim()]));
-  });
+  const rows = [];
+  let row = [], value = '', quoted = false;
+  const text = String(content).replace(/^\uFEFF/, '');
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (quoted) {
+      if (char === '"' && text[index + 1] === '"') { value += '"'; index += 1; }
+      else if (char === '"') quoted = false;
+      else value += char;
+    } else if (char === '"') quoted = true;
+    else if (char === ',') { row.push(value); value = ''; }
+    else if (char === '\n' || char === '\r') {
+      if (char === '\r' && text[index + 1] === '\n') index += 1;
+      row.push(value); value = '';
+      if (row.some((cell) => cell !== '')) rows.push(row);
+      row = [];
+    } else value += char;
+  }
+  if (quoted) throw new Error('CSV_PARSE_FAILED: Unterminated quoted field.');
+  row.push(value);
+  if (row.some((cell) => cell !== '')) rows.push(row);
+  const [headers = [], ...dataRows] = rows;
+  return { headers: headers.map((header) => header.trim()), rows: dataRows };
 }
 
 function escapeCSV(val) {
@@ -137,42 +67,42 @@ function escapeCSV(val) {
     ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+function csvRecords(content) {
+  const { headers, rows } = parseCSV(content);
+  return rows.map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ''])));
+}
+
+function stringifyCSV(headers, rows) {
+  return [headers, ...rows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+}
+
+function minimumTranslationRatio(locale) {
+  return /^(zh|ja|ko)(-|$)/i.test(locale) ? 0.6 : 0.8;
+}
+
 // ─── Commands ─────────────────────────────────────────────────────────────────
 
 async function cmdInitEnv() {
-  const method = flags.method || 'admin_custom_app';
   const envPath = flags.env || 'skill-hub.env';
   if (existsSync(envPath)) {
     console.log(`${envPath} already exists. Edit it directly.`);
     return;
   }
-  const content = method === 'dev_dashboard_app'
-    ? `# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it.
+  const content = `# Skill Hub shared Shopify configuration
+# Shopify CLI stores the local OAuth authorization. Do not add API keys here.
 
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
-SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
-SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
-`
-    : `# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it.
-
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
-SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=shopify_cli_oauth
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=
 `;
   writeFileSync(envPath, content);
-  console.log(`Created ${envPath}. Fill in the required values.`);
+  console.log(`Created ${envPath}. Add your Shopify admin URL or .myshopify.com domain.`);
 }
 
 async function cmdConnectionCheck() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
-  if (!token) { console.error('CLI_AUTH_REQUIRED: No admin token found.'); process.exit(1); }
   try {
-    const data = await gql(host, token, 'query { shop { name id } }');
+    const data = await gql(host, null, 'query { shop { name id } }');
     console.log(JSON.stringify({ status: 'OK', shop: data.shop.name, id: data.shop.id }));
   } catch (e) {
     console.error('CONNECTION_FAILED:', e.message);
@@ -183,7 +113,7 @@ async function cmdConnectionCheck() {
 async function cmdCheckLocales() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const token = null;
   const target = flags.target;
   if (!target) { console.error('--target locale is required'); process.exit(1); }
 
@@ -206,20 +136,22 @@ async function cmdCheckLocales() {
 async function cmdEnableLocale() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const token = null;
   const locale = flags.locale;
   if (!locale) { console.error('--locale is required'); process.exit(1); }
 
   // Enable
   const enableData = await gql(host, token,
-    `mutation { shopLocaleEnable(locale: "${locale}") { shopLocale { locale published } userErrors { field message } } }`
+    `mutation EnableLocale($locale: String!) { shopLocaleEnable(locale: $locale) { shopLocale { locale published } userErrors { field message } } }`,
+    { locale }
   );
   const enableErrors = enableData.shopLocaleEnable.userErrors;
   if (enableErrors.length) { console.error('Enable errors:', enableErrors); process.exit(1); }
 
   // Publish
   const publishData = await gql(host, token,
-    `mutation { shopLocaleUpdate(locale: "${locale}", shopLocale: { published: true }) { shopLocale { locale published } userErrors { field message } } }`
+    `mutation PublishLocale($locale: String!) { shopLocaleUpdate(locale: $locale, shopLocale: { published: true }) { shopLocale { locale published } userErrors { field message } } }`,
+    { locale }
   );
   const publishErrors = publishData.shopLocaleUpdate.userErrors;
   if (publishErrors.length) { console.error('Publish errors:', publishErrors); process.exit(1); }
@@ -230,12 +162,12 @@ async function cmdEnableLocale() {
 async function cmdCheckMarkets() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const token = null;
   const locale = flags.locale;
   if (!locale) { console.error('--locale is required'); process.exit(1); }
 
   const data = await gql(host, token, `query {
-    markets(first: 20) {
+    markets(first: 50) {
       nodes {
         id name enabled primary
         webPresence {
@@ -268,7 +200,7 @@ async function cmdCheckMarkets() {
 async function cmdAddLocaleToMarket() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const token = null;
   const webPresenceId = flags['market-web-presence-id'];
   const locale = flags.locale;
   if (!webPresenceId || !locale) {
@@ -278,7 +210,7 @@ async function cmdAddLocaleToMarket() {
 
   // Read current alternateLocales first
   const checkData = await gql(host, token, `query {
-    markets(first: 20) {
+    markets(first: 50) {
       nodes {
         webPresence { id alternateLocales { locale } }
       }
@@ -296,17 +228,16 @@ async function cmdAddLocaleToMarket() {
   }
 
   const newLocales = [...existing, locale];
-  const localesArg = JSON.stringify(newLocales);
 
-  const data = await gql(host, token, `mutation {
+  const data = await gql(host, token, `mutation UpdateMarketLocales($webPresenceId: ID!, $locales: [String!]!) {
     marketWebPresenceUpdate(
-      webPresenceId: "${webPresenceId}"
-      webPresence: { alternateLocales: ${localesArg} }
+      webPresenceId: $webPresenceId
+      webPresence: { alternateLocales: $locales }
     ) {
       market { webPresence { alternateLocales { locale } } }
       userErrors { field message }
     }
-  }`);
+  }`, { webPresenceId, locales: newLocales });
 
   const errors = data.marketWebPresenceUpdate.userErrors;
   if (errors.length) { console.error('Errors:', errors); process.exit(1); }
@@ -322,7 +253,7 @@ async function cmdAddLocaleToMarket() {
 async function cmdFetch() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const token = null;
   const resourceType = flags['resource-type'] || 'PRODUCT';
   const locale = flags.locale;
   const outputFile = flags.output;
@@ -335,17 +266,16 @@ async function cmdFetch() {
   let hasNextPage = true;
 
   while (hasNextPage) {
-    const afterClause = cursor ? `, after: "${cursor}"` : '';
-    const data = await gqlWithThrottle(host, token, `query {
-      translatableResources(first: 50, resourceType: ${resourceType}${afterClause}) {
+    const data = await gqlWithThrottle(host, token, `query FetchTranslatableResources($resourceType: TranslatableResourceType!, $locale: String!, $after: String) {
+      translatableResources(first: 50, resourceType: $resourceType, after: $after) {
         nodes {
           resourceId
           translatableContent { key value digest locale type }
-          translations(locale: "${locale}") { key value outdated }
+          translations(locale: $locale) { key value outdated }
         }
         pageInfo { hasNextPage endCursor }
       }
-    }`);
+    }`, { resourceType, locale, after: cursor });
 
     const { nodes, pageInfo } = data.translatableResources;
     hasNextPage = pageInfo.hasNextPage;
@@ -381,13 +311,13 @@ async function cmdFetch() {
 async function cmdWrite() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const token = null;
   const inputFile = flags.input;
   const locale = flags.locale;
   if (!inputFile || !locale) { console.error('--input and --locale are required'); process.exit(1); }
 
   const csv = readFileSync(inputFile, 'utf8');
-  const rows = parseCSV(csv).filter(r => r.status === 'NEW' || r.status === 'OUTDATED' || r.status === 'UPDATE');
+  const rows = csvRecords(csv).filter(r => r.status === 'NEW' || r.status === 'OUTDATED' || r.status === 'UPDATE');
 
   // Group by resource_id (support both 'resource_id' and legacy 'product_id' column names)
   const byResource = {};
@@ -408,31 +338,30 @@ async function cmdWrite() {
   const resourceIds = Object.keys(byResource);
   let successCount = 0, errorCount = 0;
 
-  // Batch 5 resources per request using GraphQL aliases
-  for (let i = 0; i < resourceIds.length; i += 5) {
-    const batch = resourceIds.slice(i, i + 5);
-    const aliasParts = batch.map((id, idx) => {
-      const translations = byResource[id].map(t =>
-        `{locale: "${locale}", key: "${t.key}", value: ${JSON.stringify(t.value)}, translatableContentDigest: "${t.digest}"}`
-      ).join(', ');
-      return `r${idx}: translationsRegister(resourceId: "${id}", translations: [${translations}]) { translations { key value } userErrors { field message } }`;
-    });
-
-    const mutation = `mutation { ${aliasParts.join('\n')} }`;
+  for (const id of resourceIds) {
+    const translations = byResource[id].map((item) => ({
+      locale,
+      key: item.key,
+      value: item.value,
+      translatableContentDigest: item.digest,
+    }));
     try {
-      const data = await gqlWithThrottle(host, token, mutation);
-      for (const key of Object.keys(data)) {
-        const result = data[key];
-        if (result.userErrors?.length) {
-          console.error(`Error for alias ${key}:`, result.userErrors);
-          errorCount++;
-        } else {
-          successCount += result.translations?.length ?? 0;
+      const data = await gqlWithThrottle(host, token, `mutation RegisterTranslations($resourceId: ID!, $translations: [TranslationInput!]!) {
+        translationsRegister(resourceId: $resourceId, translations: $translations) {
+          translations { key value }
+          userErrors { field message }
         }
+      }`, { resourceId: id, translations });
+      const result = data.translationsRegister;
+      if (result.userErrors?.length) {
+        console.error(`Error for resource ${id}:`, result.userErrors);
+        errorCount += translations.length;
+      } else {
+        successCount += result.translations?.length ?? 0;
       }
     } catch (e) {
-      console.error(`Batch ${i}-${i + 5} failed:`, e.message);
-      errorCount += batch.length;
+      console.error(`Resource ${id} failed:`, e.message);
+      errorCount += translations.length;
     }
   }
 
@@ -441,16 +370,16 @@ async function cmdWrite() {
 
 async function cmdTranslateCSV() {
   const inputFile = flags.input;
-  const outputFile = flags.output;
   const locale = flags.locale;
-  if (!inputFile || !outputFile || !locale) {
-    console.error('--input, --output, and --locale are required');
+  if (!inputFile || !locale) {
+    console.error('--input and --locale are required');
     process.exit(1);
   }
 
   const content = readFileSync(inputFile, 'utf8');
-  const rows = parseCSV(content);
-  const headers = rows[0];
+  const { headers, rows } = parseCSV(content);
+  const offset = Math.max(0, Number.parseInt(flags.offset || '0', 10) || 0);
+  const limit = Math.max(1, Number.parseInt(flags.limit || '50', 10) || 50);
 
   // Column indices
   const COL = { type:0, id:1, field:2, locale:3, market:4, status:5, default:6, translated:7 };
@@ -472,7 +401,7 @@ async function cmdTranslateCSV() {
   let needsTranslation = 0, skipped = 0, alreadyDone = 0;
   const toTranslate = [];
 
-  for (let i = 1; i < rows.length; i++) {
+  for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     while (r.length < 8) r.push('');
     if ((r[COL.translated] || '').trim()) { alreadyDone++; continue; }
@@ -481,15 +410,22 @@ async function cmdTranslateCSV() {
     toTranslate.push({ rowIdx: i, type: r[COL.type], field: r[COL.field], value: r[COL.default] });
   }
 
+  const page = toTranslate.slice(offset, offset + limit);
+
   console.log(JSON.stringify({
     status: 'READY',
     locale,
-    totalRows: rows.length - 1,
+    headers,
+    totalRows: rows.length,
     alreadyDone,
     skipped,
     needsTranslation,
-    note: `Agent should translate the ${needsTranslation} rows listed in toTranslate and call write-csv-translations to apply them.`,
-    toTranslate: toTranslate.slice(0, 50), // first 50 for agent context
+    offset,
+    limit,
+    hasMore: offset + page.length < toTranslate.length,
+    nextOffset: offset + page.length < toTranslate.length ? offset + page.length : null,
+    note: 'Translate this page, save patches as [{rowIdx, translation}], then run write-csv-translations. Use nextOffset for the next page.',
+    toTranslate: page,
   }, null, 2));
 }
 
@@ -504,7 +440,7 @@ async function cmdWriteCSVTranslations() {
   }
 
   const content = readFileSync(inputFile, 'utf8');
-  const rows = parseCSV(content);
+  const { headers, rows } = parseCSV(content);
   const patches = JSON.parse(readFileSync(patchFile, 'utf8'));
 
   for (const { rowIdx, translation } of patches) {
@@ -514,13 +450,7 @@ async function cmdWriteCSVTranslations() {
     }
   }
 
-  const csvLines = rows.map(row => row.map(v => {
-    const s = String(v == null ? '' : v);
-    return (s.includes(',') || s.includes('"') || s.includes('\n'))
-      ? '"' + s.replace(/"/g, '""') + '"' : s;
-  }).join(','));
-
-  writeFileSync(outputFile, csvLines.join('\n'), 'utf8');
+  writeFileSync(outputFile, '\uFEFF' + stringifyCSV(headers, rows), 'utf8');
   console.log(JSON.stringify({ status: 'OK', outputFile, patchedRows: patches.length }));
 }
 
@@ -533,6 +463,7 @@ async function cmdWriteCSVTranslations() {
 async function cmdGenerateAudit() {
   const inputFile = flags.input;
   const locale = flags.locale;
+  const translationsFile = flags.translations;
   const csvOutput = flags.output || resolve('translation-audit.csv');
   if (!inputFile || !locale) {
     console.error('--input <annotated-json> and --locale are required');
@@ -543,6 +474,15 @@ async function cmdGenerateAudit() {
   const data = JSON.parse(raw);
   const resources = data.resources || [];
   const resourceType = data.resourceType || 'UNKNOWN';
+  const translationMap = new Map();
+  if (translationsFile) {
+    const candidates = JSON.parse(readFileSync(resolve(translationsFile), 'utf8'));
+    for (const candidate of candidates) {
+      if (candidate.resourceId && candidate.key && typeof candidate.translation === 'string') {
+        translationMap.set(`${candidate.resourceId}\u0000${candidate.key}`, candidate.translation);
+      }
+    }
+  }
 
   let totalNew = 0, totalOutdated = 0, totalSkipped = 0, totalCurrent = 0;
   const csvRows = [];
@@ -553,7 +493,7 @@ async function cmdGenerateAudit() {
     const rname = res.resourceName || rid;
 
     for (const field of res.fields || []) {
-      const translation = field.translation;
+      const translation = field.translation ?? translationMap.get(`${rid}\u0000${field.key}`);
       if (!translation || !translation.trim()) continue;
 
       // Skip: handle fields, non-translatable types
@@ -605,8 +545,7 @@ async function cmdGenerateAudit() {
     const transLen = parseInt(row.translation_length, 10);
     if (origLen > 0 && transLen > 0) {
       const ratio = transLen / origLen;
-      // Non-CJK threshold: 70%, CJK threshold: 50%
-      if (ratio < 0.5) {
+      if (ratio < minimumTranslationRatio(locale)) {
         warnings.push({ field: row.field_key, resource: row.resource_name, ratio: Math.round(ratio * 100) + '%', original: origLen, translation: transLen });
       }
     }
@@ -622,7 +561,7 @@ async function cmdGenerateAudit() {
     current: totalCurrent,
     csvOutput,
     lengthWarnings: warnings.length > 0 ? warnings : undefined,
-    instruction: 'Review the CSV above. Type APPROVE to write translations to Shopify, or tell me which items to change.',
+    instruction: 'Review the CSV above. Obtain explicit approval before running the write command.',
   }, null, 2));
 }
 
@@ -647,7 +586,7 @@ const commands = {
 async function cmdVerifyTranslations() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const token = null;
   const locale = flags.locale;
   const inputFile = flags.input;
   if (!locale) { console.error('--locale required'); process.exit(1); }
@@ -656,7 +595,7 @@ async function cmdVerifyTranslations() {
   let resourceIds = [];
   if (inputFile) {
     const csv = readFileSync(inputFile, 'utf8');
-    const rows = parseCSV(csv);
+    const rows = csvRecords(csv);
     const writtenRows = rows.filter(r => r.status === 'NEW' || r.status === 'OUTDATED');
     resourceIds = [...new Set(writtenRows.map(r => r.resource_id).filter(Boolean))];
   }
@@ -669,13 +608,13 @@ async function cmdVerifyTranslations() {
   let issues = [];
   for (const id of resourceIds.slice(0, 10)) { // max 10 resources
     try {
-      const data = await gql(host, token, `query {
-        translatableResource(resourceId: "${id}") {
+      const data = await gql(host, token, `query VerifyTranslation($resourceId: ID!, $locale: String!) {
+        translatableResource(resourceId: $resourceId) {
           resourceId
           translatableContent { key value digest locale }
-          translations(locale: "${locale}") { key value outdated }
+          translations(locale: $locale) { key value outdated }
         }
-      }`);
+      }`, { resourceId: id, locale });
       const res = data.translatableResource;
       if (!res) { issues.push({ resourceId: id, error: 'NOT_FOUND' }); continue; }
       for (const t of res.translatableContent) {
@@ -685,7 +624,7 @@ async function cmdVerifyTranslations() {
         // Check for garbled characters
         const garbled = (stored.match(/\uFFFD/g) || []).length;
         const lengthRatio = stored.length / t.value.length;
-        if (garbled > 0 || lengthRatio < 0.6) {
+        if (garbled > 0 || lengthRatio < minimumTranslationRatio(locale)) {
           issues.push({
             resourceId: id,
             key: t.key,
@@ -737,7 +676,7 @@ if (!command || !commands[command]) {
   console.log(`Usage: shopify-translator-admin.mjs <command> [options]
 
 Commands:
-  init-env              --method admin_custom_app|dev_dashboard_app --env skill-hub.env
+  init-env              --env skill-hub.env
   connection-check      --env skill-hub.env
   check-locales         --env skill-hub.env --target <locale>
   enable-locale         --env skill-hub.env --locale <locale>
@@ -745,10 +684,11 @@ Commands:
   add-locale-to-market  --env skill-hub.env --market-web-presence-id <id> --locale <locale>
   fetch                 --env skill-hub.env --resource-type <TYPE> --locale <locale> [--output <file>]
   write                 --env skill-hub.env --input <csv> --locale <locale>
-  generate-audit        --input <annotated.json> --locale <locale> [--output <audit.csv>]
+  generate-audit        --input <fetch.json> --translations <candidates.json> --locale <locale> [--output <audit.csv>]
   verify-translations   --env skill-hub.env --locale <locale> [--input <csv>]
   check-encoding        --file <path>
-  translate-csv         --input <shopify-export.csv> --output <translated.csv> --locale <locale>
+  translate-csv         --input <shopify-export.csv> --locale <locale> [--offset 0 --limit 50]
+  write-csv-translations --input <shopify-export.csv> --patch <patches.json> --output <translated.csv>
 `);
   process.exit(command ? 1 : 0);
 }

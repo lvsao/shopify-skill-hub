@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { createInterface } from "node:readline";
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -22,6 +23,13 @@ const DEFAULT_RESOURCE_TYPES = [
   "SHOP",
   "SHOP_POLICY",
 ];
+const LOCALE_BATCH_SIZE = 3;
+const BULK_LOCALE_THRESHOLD = 4;
+const RETRY_LIMIT = 3;
+const THROTTLE_HEADROOM = 100;
+const BULK_WATCH_TIMEOUT_MS = 60 * 60 * 1000;
+const BULK_CONCURRENCY = 3;
+let nextRequestAt = 0;
 const SKIP_TRANSLATABLE_TYPES = new Set([
   "URI",
   "URL",
@@ -43,6 +51,8 @@ function parseArgs(argv) {
       output: null,
       method: null,
       locales: null,
+      transport: "auto",
+      resume: false,
       execute: false,
       lang: "auto",
     };
@@ -55,6 +65,8 @@ function parseArgs(argv) {
     output: null,
     method: null,
     locales: null,
+    transport: "auto",
+    resume: false,
     execute: false,
     lang: "auto",
   };
@@ -77,6 +89,11 @@ function parseArgs(argv) {
     } else if (key === "--locales") {
       args.locales = value;
       i += 1;
+    } else if (key === "--transport") {
+      args.transport = value;
+      i += 1;
+    } else if (key === "--resume") {
+      args.resume = true;
     } else if (key === "--execute") {
       args.execute = true;
     } else if (key === "--lang") {
@@ -88,8 +105,11 @@ function parseArgs(argv) {
   const valid = ["help", "init-env", "connection-check", "audit", "report", "fix-plan", "apply"];
   if (!valid.includes(args.command)) {
     throw new Error(
-      "Usage: node shopify-markets-localization-auditor.mjs <init-env|connection-check|audit|report|fix-plan|apply> [--env skill-hub.env] [--input file.json] [--output file] [--locales de,fr,ja] [--method admin_custom_app|dev_dashboard_app] [--lang zh-CN|en|auto] [--execute]",
+      "Usage: node shopify-markets-localization-auditor.mjs <init-env|connection-check|audit|report|fix-plan|apply> [--env skill-hub.env] [--input file.json] [--output file] [--locales de,fr,ja] [--transport auto|standard|bulk] [--resume] [--lang zh-CN|en|auto] [--execute]",
     );
+  }
+  if (!["auto", "standard", "bulk"].includes(args.transport)) {
+    throw new Error("--transport must be auto, standard, or bulk.");
   }
 
   return args;
@@ -97,10 +117,10 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log(`Usage:
-  node shopify-markets-localization-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
-  node shopify-markets-localization-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
+  node shopify-markets-localization-auditor.mjs init-env --env skill-hub.env
   node shopify-markets-localization-auditor.mjs connection-check --env skill-hub.env
-  node shopify-markets-localization-auditor.mjs audit --env skill-hub.env --output shopify-markets-localization-audit.json --lang zh-CN
+  node shopify-markets-localization-auditor.mjs audit --env skill-hub.env --output shopify-markets-localization-audit.json --transport auto --lang zh-CN
+  node shopify-markets-localization-auditor.mjs audit --env skill-hub.env --output shopify-markets-localization-audit.json --resume
   node shopify-markets-localization-auditor.mjs report --input shopify-markets-localization-audit.json --output shopify-markets-localization-report.html --lang zh-CN
   node shopify-markets-localization-auditor.mjs fix-plan --input shopify-markets-localization-audit.json --output shopify-markets-localization-fix-plan.json
   node shopify-markets-localization-auditor.mjs apply --env skill-hub.env --input shopify-markets-localization-fix-plan.json
@@ -131,30 +151,14 @@ async function ensureGitignoreLine(line) {
 }
 
 async function initEnv(args) {
-  const method = args.method || "admin_custom_app";
   const envFile = args.env || DEFAULT_ENV;
   let gitignoreCreated = false;
-  let body;
-  if (method === "admin_custom_app") {
-    body = `# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
+  const body = `# Skill Hub shared Shopify configuration
+# Shopify CLI stores the local OAuth authorization. Do not add API keys here.
 
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
-SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=shopify_cli_oauth
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=
 `;
-  } else if (method === "dev_dashboard_app") {
-    body = `# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
-
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
-SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
-SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
-`;
-  } else {
-    throw new Error("--method must be admin_custom_app or dev_dashboard_app");
-  }
 
   const alreadyExists = existsSync(envFile);
   if (!alreadyExists) await writeFile(envFile, body, "utf8");
@@ -167,9 +171,7 @@ SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
   const placeholderDetected = Object.values(currentEnv).some((value) =>
     typeof value === "string" && (
       value.includes("your-store") ||
-      value.includes("your-client-id") ||
-      value.includes("shpat_xxx") ||
-      value.includes("atkn_your-token")
+      value.includes("your-store")
     ));
   console.log(JSON.stringify({
     ok: true,
@@ -180,7 +182,7 @@ SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
       : gitignore,
     placeholderDetected,
     warning: placeholderDetected
-      ? "The env file still contains placeholder values. Replace them with real store credentials before connection-check."
+      ? "The env file still contains a placeholder store address. Replace it before connection-check."
       : null,
     requiredScopes: REQUIRED_SCOPES,
   }, null, 2));
@@ -194,6 +196,24 @@ function normalizeDomain(value) {
   }
   const url = raw.includes("://") ? new URL(raw) : new URL(`https://${raw}`);
   return url.host.toLowerCase();
+}
+
+async function resolveStoreDomainFromHtml(hostname) {
+  const candidates = [
+    `https://${hostname}`,
+    `https://${hostname}/products`,
+    `https://${hostname}/collections`,
+  ];
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!response.ok) continue;
+      const html = await response.text();
+      const match = html.match(/Shopify\.shop\s*=\s*"([^"]+\.myshopify\.com)"/i);
+      if (match) return match[1].toLowerCase();
+    } catch {}
+  }
+  return null;
 }
 
 function validateSafeUrl(value) {
@@ -309,8 +329,52 @@ function classifyCliError(error, detail = "") {
   if (error?.code === "CLI_NOT_FOUND") return { code: "CLI_NOT_FOUND", message: error.message };
   if (error?.code === "ENOENT" || error?.code === "EINVAL" || error?.code === "EFTYPE") return { code: "CLI_SPAWN_FAILED", message: error.message };
   if (/access denied|denied access/i.test(text)) return { code: "CLI_ACCESS_DENIED", message: text.trim() };
-  if (/store auth|stored store auth|auth.*required|not authenticated|login/i.test(text)) return { code: "CLI_AUTH_REQUIRED", message: text.trim() };
+  if (/not authenticated|authentication required|run shopify store auth|authorization required|invalid.*token|token.*expired/i.test(text)) return { code: "CLI_AUTH_REQUIRED", message: text.trim() };
+  if (/throttled|too many requests|\b429\b/i.test(text)) return { code: "CLI_THROTTLED", message: text.trim() };
+  if (/fetch failed|request[\s\S]*(?:failed|aborted)|user\s+aborted\s+a\s+request|network|socket|econnreset|econnrefused|etimedout|enotfound|undici|\b5\d\d\b|internal.server.error/i.test(text)) return { code: "CLI_TRANSIENT_NETWORK", message: text.trim() };
   return { code: "CLI_SPAWN_FAILED", message: text.trim() || "Shopify CLI request failed." };
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForRateBudget() {
+  const waitMs = nextRequestAt - Date.now();
+  if (waitMs > 0) await sleep(waitMs);
+}
+
+function observeThrottle(extensions) {
+  const status = extensions?.cost?.throttleStatus;
+  if (!status || !Number.isFinite(status.currentlyAvailable) || !Number.isFinite(status.restoreRate) || status.restoreRate <= 0) return;
+  if (status.currentlyAvailable >= THROTTLE_HEADROOM) return;
+  const waitMs = Math.ceil(((THROTTLE_HEADROOM - status.currentlyAvailable) / status.restoreRate) * 1000);
+  nextRequestAt = Math.max(nextRequestAt, Date.now() + waitMs);
+}
+
+function isRetryableError(error) {
+  return /CLI_THROTTLED|CLI_TRANSIENT_NETWORK|THROTTLED|INTERNAL_SERVER_ERROR|fetch failed|socket|econnreset|etimedout|\b429\b/i.test(error?.message || "");
+}
+
+function retryDelay(attempt, error) {
+  const base = /THROTTLED|\b429\b/i.test(error?.message || "") ? 2000 : 800;
+  return Math.min(15000, base * (2 ** attempt)) + Math.floor(Math.random() * 250);
+}
+
+async function withRetries(operation) {
+  let lastError;
+  for (let attempt = 0; attempt <= RETRY_LIMIT; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt === RETRY_LIMIT || !isRetryableError(error)) throw error;
+      const delay = retryDelay(attempt, error);
+      console.error(`[shopify] Temporary request failure; retrying in ${Math.ceil(delay / 1000)}s (${attempt + 1}/${RETRY_LIMIT}).`);
+      await sleep(delay);
+    }
+  }
+  throw lastError;
 }
 
 async function shopifyCliGraphql(env, query, variables = {}) {
@@ -335,28 +399,83 @@ async function shopifyCliGraphql(env, query, variables = {}) {
       "--output-file",
       outputFile,
       "--json",
-      "--no-color",
     ];
-    if (/(^|\n)\s*mutation\b/i.test(query)) cliArgs.push("--allow-mutations");
+    const isMutation = /(^|\n)\s*mutation\b/i.test(query);
+    if (isMutation) cliArgs.push("--allow-mutations");
 
-    const execResult = await execFileAsync(process.execPath, cliArgs, {
-      timeout: 180000,
+    const runOnce = async () => {
+      await waitForRateBudget();
+      await rm(outputFile, { force: true }).catch(() => {});
+      await execFileAsync(process.execPath, cliArgs, {
+        timeout: 180000,
+        maxBuffer: 1024 * 1024 * 20,
+        windowsHide: true,
+      }).catch((error) => {
+        const classified = classifyCliError(error, [error.stderr, error.stdout].filter(Boolean).map(String).join("\n"));
+        throw new Error(`${classified.code}: ${classified.message}`);
+      });
+      if (!await pathExists(outputFile)) throw new Error("CLI_OUTPUT_MISSING: Shopify CLI did not create output JSON.");
+      let json;
+      try {
+        json = normalizeCliJson(JSON.parse(await readFile(outputFile, "utf8")));
+      } catch (error) {
+        throw new Error(`CLI_JSON_PARSE_FAILED: ${error.message}`);
+      }
+      if (json.errors) throw new Error(`CLI_GRAPHQL_ERRORS: ${JSON.stringify(json.errors)}`);
+      observeThrottle(json.extensions);
+      return json.data;
+    };
+    // A mutation can succeed even when its CLI process times out. Do not repeat it implicitly.
+    return isMutation ? await runOnce() : await withRetries(runOnce);
+  } catch (error) {
+    const authHint = /CLI_AUTH_REQUIRED/.test(error.message)
+      ? `\nAuthenticate first: shopify store auth --store ${env.SHOPIFY_API_DOMAIN} --scopes ${REQUIRED_SCOPES} --json`
+      : "";
+    throw new Error(`${error.message}${authHint}`);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+async function shopifyCliBulkQuery(env, query, onNode) {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "skill-hub-shopify-bulk-"));
+  const queryFile = path.join(tempDir, "query.graphql");
+  const outputFile = path.join(tempDir, "output.jsonl");
+  try {
+    const cliJs = await resolveShopifyCliJs(env);
+    await writeFile(queryFile, query, "utf8");
+    const cliArgs = [
+      cliJs, "store", "bulk", "execute", "--store", env.SHOPIFY_API_DOMAIN,
+      "--query-file", queryFile, "--output-file", outputFile, "--watch",
+    ];
+    await waitForRateBudget();
+    await rm(outputFile, { force: true }).catch(() => {});
+    await execFileAsync(process.execPath, cliArgs, {
+      timeout: BULK_WATCH_TIMEOUT_MS,
       maxBuffer: 1024 * 1024 * 20,
       windowsHide: true,
-    }).catch((error) => ({ cliError: classifyCliError(error, [error.stderr, error.stdout].filter(Boolean).map(String).join("\n")) }));
-
-    if (execResult.cliError) throw new Error(`${execResult.cliError.code}: ${execResult.cliError.message}`);
-    if (!await pathExists(outputFile)) throw new Error("CLI_OUTPUT_MISSING: Shopify CLI did not create output JSON.");
-    let json;
-    try {
-      json = normalizeCliJson(JSON.parse(await readFile(outputFile, "utf8")));
-    } catch (error) {
-      throw new Error(`CLI_JSON_PARSE_FAILED: ${error.message}`);
+    }).catch((error) => {
+      const classified = classifyCliError(error, [error.stderr, error.stdout].filter(Boolean).map(String).join("\n"));
+      throw new Error(`${classified.code}: ${classified.message}\nBulk queries are not automatically resubmitted because the prior operation may still be running. Check it with: shopify store bulk status --store ${env.SHOPIFY_API_DOMAIN}`);
+    });
+    if (!await pathExists(outputFile)) throw new Error("CLI_BULK_OUTPUT_MISSING: Shopify CLI did not create a JSONL result file.");
+    let nodeCount = 0;
+    const lines = createInterface({ input: createReadStream(outputFile, { encoding: "utf8" }), crlfDelay: Infinity });
+    for await (const line of lines) {
+      if (!line) continue;
+      let value;
+      try { value = JSON.parse(line); } catch { throw new Error("CLI_BULK_JSONL_PARSE_FAILED: Shopify bulk result contained invalid JSONL."); }
+      if (value?.resourceId) {
+        onNode(value);
+        nodeCount += 1;
+      }
     }
-    if (json.errors) throw new Error(`CLI_GRAPHQL_ERRORS: ${JSON.stringify(json.errors)}`);
-    return json.data;
+    return nodeCount;
   } catch (error) {
-    throw new Error(`${error.message}\nIf this is CLI_AUTH_REQUIRED, run: shopify store auth --store ${env.SHOPIFY_API_DOMAIN} --scopes ${REQUIRED_SCOPES} --json --no-color`);
+    const authHint = /CLI_AUTH_REQUIRED/.test(error.message)
+      ? `\nAuthenticate first: shopify store auth --store ${env.SHOPIFY_API_DOMAIN} --scopes ${REQUIRED_SCOPES} --json`
+      : "";
+    throw new Error(`${error.message}${authHint}`);
   } finally {
     await rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
@@ -369,53 +488,26 @@ async function loadEnv(envPath) {
   }
   const env = parseEnv(text);
   env.SHOPIFY_STORE_DOMAIN = env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || env.SHOPIFY_STORE_DOMAIN || env.SHOPIFY_TEST_STORE_DOMAIN;
-  env.SHOPIFY_ADMIN_API_ACCESS_TOKEN = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN || env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
-  env.SHOPIFY_CLIENT_ID = env.SKILL_HUB_SHOPIFY_CLIENT_ID || env.SHOPIFY_CLIENT_ID;
-  const preferredVersion = env.SKILL_HUB_SHOPIFY_API_VERSION || env.SHOPIFY_API_VERSION;
   if (!env.SHOPIFY_STORE_DOMAIN) throw new Error(`Missing SHOPIFY_STORE_DOMAIN in ${envPath}.`);
 
   env.SHOPIFY_STORE_DOMAIN = normalizeDomain(env.SHOPIFY_STORE_DOMAIN);
-  const accessMethod = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || (env.SHOPIFY_CLIENT_ID ? "dev_dashboard_app" : "admin_custom_app");
-
-  if (accessMethod === "dev_dashboard_app") {
-    if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
-      throw new Error(`Invalid storefront domain: "${env.SHOPIFY_STORE_DOMAIN}". Dev Dashboard path requires your official .myshopify.com store domain.`);
+  if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
+    const resolved = await resolveStoreDomainFromHtml(env.SHOPIFY_STORE_DOMAIN);
+    if (resolved) {
+      console.error(`Note: resolved store domain from page HTML: ${env.SHOPIFY_STORE_DOMAIN} → ${resolved}`);
+      env.SHOPIFY_STORE_DOMAIN = resolved;
+    } else {
+      throw new Error(`Could not resolve "${env.SHOPIFY_STORE_DOMAIN}" to a .myshopify.com domain. Provide your Shopify admin URL (https://admin.shopify.com/store/your-store) or .myshopify.com domain.`);
     }
-    env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
-    env.SHOPIFY_API_VERSION = "shopify-cli";
-    env.SHOPIFY_TRANSPORT = "shopify_cli";
-    return env;
   }
-
-  if (!env.SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
-    throw new Error(`Missing SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN in ${envPath} for admin_custom_app.`);
-  }
-
-  const endpoint = await resolveAdminEndpoint(env, preferredVersion);
-  env.SHOPIFY_API_DOMAIN = endpoint.host;
-  env.SHOPIFY_API_VERSION = endpoint.version;
+  env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
+  env.SHOPIFY_API_VERSION = "shopify-cli";
+  env.SHOPIFY_TRANSPORT = "shopify_cli";
   return env;
 }
 
 async function graphql(env, query, variables = {}) {
-  if (env.SHOPIFY_TRANSPORT === "shopify_cli") {
-    return shopifyCliGraphql(env, query, variables);
-  }
-
-  const endpoint = `https://${env.SHOPIFY_API_DOMAIN}/admin/api/${env.SHOPIFY_API_VERSION}/graphql.json`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-  const json = await response.json();
-  if (!response.ok || json.errors) {
-    throw new Error(JSON.stringify({ status: response.status, errors: json.errors }, null, 2));
-  }
-  return json.data;
+  return shopifyCliGraphql(env, query, variables);
 }
 
 function writeJsonOutput(value, outputPath) {
@@ -432,6 +524,12 @@ function writeJsonOutput(value, outputPath) {
 function parseLocales(raw) {
   if (!raw) return null;
   return raw.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function resolveReportLang(requested, existing = null) {
+  if (requested !== "auto") return requested;
+  if (existing === "zh-CN" || existing === "en") return existing;
+  return /^zh(?:-|$)/i.test(Intl.DateTimeFormat().resolvedOptions().locale || "") ? "zh-CN" : "en";
 }
 
 function textFromHtml(html) {
@@ -597,35 +695,47 @@ query MarketsAuditOverview {
   }
 }`;
 
-const TRANSLATABLE_QUERY = `#graphql
-query LocaleCoveragePage($resourceType: TranslatableResourceType!, $locale: String!, $after: String) {
-  translatableResources(first: 100, resourceType: $resourceType, after: $after) {
-    nodes {
-      resourceId
-      translatableContent {
-        key
-        value
-        type
-        digest
-      }
-      translations(locale: $locale) {
-        key
-        value
-        outdated
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
+function assertLocaleCode(locale) {
+  if (!/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(locale)) {
+    throw new Error(`Unsupported locale code: ${locale}`);
+  }
+}
+
+function buildTranslatableQuery(locales, { resourceType, bulk = false } = {}) {
+  locales.forEach(assertLocaleCode);
+  const translations = locales.map((locale, index) => `translation_${index}: translations(locale: ${JSON.stringify(locale)}) { key outdated }`).join("\n      ");
+  const typeArgument = bulk ? `resourceType: ${resourceType}` : "resourceType: $resourceType, after: $after";
+  const nodeSelection = `resourceId
+      translatableContent { key type }
+      ${translations}`;
+  const connectionSelection = bulk
+    ? `edges { node { ${nodeSelection} } }`
+    : `nodes { ${nodeSelection} }
+    pageInfo { hasNextPage endCursor }`;
+  return `#graphql
+query LocaleCoverage${bulk ? "Bulk" : "Page"}${bulk ? "" : "($resourceType: TranslatableResourceType!, $after: String)"} {
+  translatableResources(first: ${bulk ? 250 : 100}, ${typeArgument}) {
+    ${connectionSelection}
   }
 }`;
+}
 
 const CONNECTION_QUERY = `#graphql
 query SkillHubConnectionCheck {
   shop {
     name
     myshopifyDomain
+  }
+}`;
+
+const APPLY_VERIFICATION_QUERY = `#graphql
+query VerifyMarketsLocalizationActions {
+  shopLocales { locale published }
+  markets(first: 50) {
+    nodes {
+      id
+      currencySettings { localCurrencies }
+    }
   }
 }`;
 
@@ -640,52 +750,123 @@ async function cmdConnectionCheck(args) {
   }, null, 2));
 }
 
-async function computeLocaleCoverage(env, locale, resourceTypes) {
-  const totals = {
-    locale,
-    resourceTypes,
-    eligible: 0,
-    current: 0,
-    outdated: 0,
-    missing: 0,
-    resources: 0,
-    perType: [],
-  };
+function createCoverageTotals(locales, resourceTypes, initialCoverage = []) {
+  const initialByLocale = new Map(initialCoverage.map((item) => [item.locale, item]));
+  return new Map(locales.map((locale) => {
+    const initial = initialByLocale.get(locale);
+    return [locale, initial ? {
+      locale,
+      resourceTypes,
+      eligible: initial.eligible || 0,
+      current: initial.current || 0,
+      outdated: initial.outdated || 0,
+      missing: initial.missing || 0,
+      resources: initial.resources || 0,
+      perType: Array.isArray(initial.perType) ? initial.perType : [],
+    } : { locale, resourceTypes, eligible: 0, current: 0, outdated: 0, missing: 0, resources: 0, perType: [] }];
+  }));
+}
 
-  for (const resourceType of resourceTypes) {
-    const perType = { resourceType, eligible: 0, current: 0, outdated: 0, missing: 0, resources: 0 };
-    let after = null;
-    let hasNextPage = true;
-    while (hasNextPage) {
-      const page = await graphql(env, TRANSLATABLE_QUERY, { resourceType, locale, after });
-      const connection = page.translatableResources;
-      for (const node of connection.nodes || []) {
-        perType.resources += 1;
-        const translationMap = Object.fromEntries((node.translations || []).map((entry) => [entry.key, entry]));
-        for (const content of node.translatableContent || []) {
-          if (content.key === "handle") continue;
-          if (SKIP_TRANSLATABLE_TYPES.has(content.type)) continue;
-          perType.eligible += 1;
-          const translation = translationMap[content.key];
-          if (!translation) perType.missing += 1;
-          else if (translation.outdated) perType.outdated += 1;
-          else perType.current += 1;
-        }
-      }
-      hasNextPage = Boolean(connection.pageInfo?.hasNextPage);
-      after = connection.pageInfo?.endCursor || null;
+function createCoverageCounter(totalsByLocale, locales, resourceType) {
+  const perTypeByLocale = new Map(locales.map((locale) => [locale, {
+    resourceType, eligible: 0, current: 0, outdated: 0, missing: 0, resources: 0,
+  }]));
+
+  function consume(node) {
+    for (const locale of locales) perTypeByLocale.get(locale).resources += 1;
+    for (const content of node.translatableContent || []) {
+      if (content.key === "handle" || SKIP_TRANSLATABLE_TYPES.has(content.type)) continue;
+      locales.forEach((locale, index) => {
+        const perType = perTypeByLocale.get(locale);
+        perType.eligible += 1;
+        const translations = node[`translation_${index}`] || [];
+        const translation = translations.find((entry) => entry.key === content.key);
+        if (!translation) perType.missing += 1;
+        else if (translation.outdated) perType.outdated += 1;
+        else perType.current += 1;
+      });
     }
+  }
+
+  function commit() {
+  for (const locale of locales) {
+    const totals = totalsByLocale.get(locale);
+    const perType = perTypeByLocale.get(locale);
     totals.eligible += perType.eligible;
     totals.current += perType.current;
     totals.outdated += perType.outdated;
     totals.missing += perType.missing;
     totals.resources += perType.resources;
-    totals.perType.push(perType);
+    const existing = totals.perType.find((item) => item.resourceType === resourceType);
+    if (existing) Object.keys(perType).forEach((key) => { if (key !== "resourceType") existing[key] += perType[key]; });
+    else totals.perType.push(perType);
+  }
   }
 
-  totals.readinessPct = totals.eligible ? Math.round((totals.current / totals.eligible) * 100) : 0;
-  totals.gapPct = totals.eligible ? 100 - totals.readinessPct : 0;
-  return totals;
+  return { consume, commit };
+}
+
+function countCoverageNodes(totalsByLocale, locales, resourceType, nodes) {
+  const counter = createCoverageCounter(totalsByLocale, locales, resourceType);
+  for (const node of nodes || []) counter.consume(node);
+  counter.commit();
+}
+
+function finalizeCoverage(totalsByLocale) {
+  return [...totalsByLocale.values()].map((totals) => ({
+    ...totals,
+    readinessPct: totals.eligible ? Math.round((totals.current / totals.eligible) * 100) : 0,
+    gapPct: totals.eligible ? 100 - Math.round((totals.current / totals.eligible) * 100) : 0,
+  }));
+}
+
+async function computeLocaleCoverageStandard(env, locales, resourceTypes, options = {}) {
+  const totalsByLocale = createCoverageTotals(locales, options.allResourceTypes || resourceTypes, options.initialCoverage);
+  for (const resourceType of resourceTypes) {
+    for (let offset = 0; offset < locales.length; offset += LOCALE_BATCH_SIZE) {
+      const localeBatch = locales.slice(offset, offset + LOCALE_BATCH_SIZE);
+      const query = buildTranslatableQuery(localeBatch);
+      let after = null;
+      let hasNextPage = true;
+      while (hasNextPage) {
+        const page = await graphql(env, query, { resourceType, after });
+        const connection = page.translatableResources;
+        countCoverageNodes(totalsByLocale, localeBatch, resourceType, connection.nodes);
+        hasNextPage = Boolean(connection.pageInfo?.hasNextPage);
+        after = connection.pageInfo?.endCursor || null;
+      }
+    }
+    await options.onResourceComplete?.(resourceType, finalizeCoverage(totalsByLocale));
+  }
+  return finalizeCoverage(totalsByLocale);
+}
+
+async function runWithConcurrency(items, limit, work) {
+  let cursor = 0;
+  let firstError = null;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      if (firstError) return;
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) return;
+      try { await work(items[index]); } catch (error) { firstError ||= error; return; }
+    }
+  }));
+  if (firstError) throw firstError;
+}
+
+async function computeLocaleCoverageBulk(env, locales, resourceTypes, options = {}) {
+  const totalsByLocale = createCoverageTotals(locales, options.allResourceTypes || resourceTypes, options.initialCoverage);
+  await runWithConcurrency(resourceTypes, BULK_CONCURRENCY, async (resourceType) => {
+    console.error(`[audit] Bulk scanning ${resourceType} for ${locales.length} locale(s)...`);
+    const counter = createCoverageCounter(totalsByLocale, locales, resourceType);
+    const query = buildTranslatableQuery(locales, { resourceType, bulk: true });
+    await shopifyCliBulkQuery(env, query, counter.consume);
+    counter.commit();
+    await options.onResourceComplete?.(resourceType, finalizeCoverage(totalsByLocale));
+  });
+  return finalizeCoverage(totalsByLocale);
 }
 
 function inferStoreProfile(data) {
@@ -860,7 +1041,7 @@ function buildFindings(overview, coverageByLocale, storefront) {
       }
     }
 
-    if (!market.webPresenceId) {
+    if (!market.webPresenceId && !market.primary) {
       findings.push({
         level: "medium",
         bucket: "tidy-next",
@@ -1470,22 +1651,60 @@ function buildReportModel(audit) {
   };
 }
 
+function checkpointPathFor(outputPath) {
+  return `${path.resolve(outputPath)}.checkpoint.json`;
+}
+
+async function loadAuditCheckpoint(checkpointPath, locales, transport) {
+  const checkpoint = JSON.parse(await readFile(checkpointPath, "utf8"));
+  const expectedLocales = [...locales].sort().join(",");
+  if (checkpoint.version !== 1 || checkpoint.transport !== transport || [...(checkpoint.locales || [])].sort().join(",") !== expectedLocales) {
+    throw new Error("The audit checkpoint does not match the current locales or transport. Start a new audit without --resume.");
+  }
+  return checkpoint;
+}
+
+async function writeAuditCheckpoint(checkpointPath, checkpoint) {
+  await mkdir(path.dirname(checkpointPath), { recursive: true });
+  await writeFile(checkpointPath, JSON.stringify(checkpoint, null, 2), "utf8");
+}
+
 async function cmdAudit(args) {
   const env = await loadEnv(args.env);
   const raw = await graphql(env, OVERVIEW_QUERY);
   const overview = normalizeOverview(raw);
   const requestedLocales = parseLocales(args.locales);
   const localesToAudit = chooseLocalesForAudit(overview, requestedLocales);
-
-  const localeCoverage = [];
-  for (const locale of localesToAudit) {
-    console.error(`[audit] Computing locale readiness for ${locale}...`);
-    localeCoverage.push(await computeLocaleCoverage(env, locale, DEFAULT_RESOURCE_TYPES));
-  }
+  const useBulk = args.transport === "bulk" || (args.transport === "auto" && localesToAudit.length >= BULK_LOCALE_THRESHOLD);
+  const transport = useBulk ? "bulk" : "standard";
+  if (args.resume && !args.output) throw new Error("--resume requires --output so the audit checkpoint can be found.");
+  const checkpointPath = args.output ? checkpointPathFor(args.output) : null;
+  const checkpoint = args.resume ? await loadAuditCheckpoint(checkpointPath, localesToAudit, transport) : null;
+  const completedResourceTypes = new Set(checkpoint?.completedResourceTypes || []);
+  const pendingResourceTypes = DEFAULT_RESOURCE_TYPES.filter((item) => !completedResourceTypes.has(item));
+  let checkpointWrite = Promise.resolve();
+  const onResourceComplete = async (resourceType, localeCoverage) => {
+    if (!checkpointPath) return;
+    completedResourceTypes.add(resourceType);
+    const snapshot = {
+      version: 1,
+      transport,
+      locales: localesToAudit,
+      completedResourceTypes: DEFAULT_RESOURCE_TYPES.filter((item) => completedResourceTypes.has(item)),
+      localeCoverage,
+      updatedAt: new Date().toISOString(),
+    };
+    checkpointWrite = checkpointWrite.then(() => writeAuditCheckpoint(checkpointPath, snapshot));
+    await checkpointWrite;
+  };
+  console.error(`[audit] Locale coverage transport: ${transport}; ${pendingResourceTypes.length}/${DEFAULT_RESOURCE_TYPES.length} resource types remaining.`);
+  const localeCoverage = useBulk
+    ? await computeLocaleCoverageBulk(env, localesToAudit, pendingResourceTypes, { initialCoverage: checkpoint?.localeCoverage, allResourceTypes: DEFAULT_RESOURCE_TYPES, onResourceComplete })
+    : await computeLocaleCoverageStandard(env, localesToAudit, pendingResourceTypes, { initialCoverage: checkpoint?.localeCoverage, allResourceTypes: DEFAULT_RESOURCE_TYPES, onResourceComplete });
 
   const storefront = await crawlStorefront(overview.shop);
   const { findings, workingWell } = buildFindings(overview, localeCoverage, storefront);
-  overview.reportLang = args.lang === "auto" ? "zh-CN" : args.lang;
+  overview.reportLang = resolveReportLang(args.lang);
   const fixPlan = buildFixPlan(overview, localeCoverage);
 
   const audit = {
@@ -1501,10 +1720,12 @@ async function cmdAudit(args) {
     findings,
     workingWell,
     fixPlan,
-    reportLang: args.lang === "auto" ? "zh-CN" : args.lang,
+    localeCoverageTransport: transport,
+    reportLang: resolveReportLang(args.lang),
   };
 
   await writeJsonOutput(audit, args.output);
+  if (checkpointPath) await rm(checkpointPath, { force: true }).catch(() => {});
 }
 
 async function renderReport(audit, outputPath) {
@@ -1522,7 +1743,7 @@ async function cmdReport(args) {
   if (!args.input) throw new Error("--input is required");
   if (!args.output) throw new Error("--output is required");
   const audit = JSON.parse(await readFile(args.input, "utf8"));
-  audit.reportLang = args.lang === "auto" ? (audit.reportLang || "zh-CN") : args.lang;
+  audit.reportLang = resolveReportLang(args.lang, audit.reportLang);
   await renderReport(audit, args.output);
   console.log(JSON.stringify({ ok: true, output: args.output }, null, 2));
 }
@@ -1533,42 +1754,70 @@ async function cmdFixPlan(args) {
   await writeJsonOutput(audit.fixPlan?.actions || [], args.output);
 }
 
+function assertNoUserErrors(payload, operation) {
+  const userErrors = payload?.userErrors || [];
+  if (userErrors.length) throw new Error(`${operation} failed: ${userErrors.map((item) => item.message).join("; ")}`);
+}
+
 async function applyAction(env, action) {
   if (action.type === "enable_publish_locale") {
-    await graphql(env, `#graphql
+    const enabled = await graphql(env, `#graphql
       mutation EnableLocale($locale: String!) {
         shopLocaleEnable(locale: $locale) {
           userErrors { field message }
         }
       }`, { locale: action.variables.locale });
+    assertNoUserErrors(enabled.shopLocaleEnable, "Enable locale");
 
-    return graphql(env, `#graphql
+    const published = await graphql(env, `#graphql
       mutation PublishLocale($locale: String!) {
         shopLocaleUpdate(locale: $locale, shopLocale: { published: true }) {
           userErrors { field message }
         }
       }`, { locale: action.variables.locale });
+    assertNoUserErrors(published.shopLocaleUpdate, "Publish locale");
+    return published;
   }
 
   if (action.type === "publish_locale") {
-    return graphql(env, `#graphql
+    const published = await graphql(env, `#graphql
       mutation PublishLocale($locale: String!) {
         shopLocaleUpdate(locale: $locale, shopLocale: { published: true }) {
           userErrors { field message }
         }
       }`, { locale: action.variables.locale });
+    assertNoUserErrors(published.shopLocaleUpdate, "Publish locale");
+    return published;
   }
 
   if (action.type === "enable_local_currencies") {
-    return graphql(env, `#graphql
+    const updated = await graphql(env, `#graphql
       mutation EnableLocalCurrencies($id: ID!) {
         marketUpdate(id: $id, input: { currencySettings: { localCurrencies: true } }) {
           userErrors { field message }
         }
       }`, { id: action.variables.marketId });
+    assertNoUserErrors(updated.marketUpdate, "Enable local currencies");
+    return updated;
   }
 
   throw new Error(`Unsupported action type: ${action.type}`);
+}
+
+function verifyAppliedAction(action, data) {
+  if (action.type === "enable_publish_locale" || action.type === "publish_locale") {
+    const locale = (data.shopLocales || []).find((item) => item.locale === action.variables.locale);
+    return locale?.published
+      ? { title: action.title, status: "VERIFIED" }
+      : { title: action.title, status: "NOT_VERIFIED", reason: "The locale is not published after the mutation." };
+  }
+  if (action.type === "enable_local_currencies") {
+    const market = (data.markets?.nodes || []).find((item) => item.id === action.variables.marketId);
+    return market?.currencySettings?.localCurrencies
+      ? { title: action.title, status: "VERIFIED" }
+      : { title: action.title, status: "NOT_VERIFIED", reason: "Local currencies are not enabled after the mutation." };
+  }
+  return { title: action.title, status: "SKIPPED", reason: "No verification rule for this action." };
 }
 
 async function cmdApply(args) {
@@ -1602,7 +1851,20 @@ async function cmdApply(args) {
       results.push({ title: action.title, status: "ERROR", error: error.message });
     }
   }
-  console.log(JSON.stringify({ mode: "execute", results }, null, 2));
+  const successfulActions = actions.filter((action) => results.some((result) => result.title === action.title && result.status === "OK"));
+  let verification = { status: "SKIPPED", results: [] };
+  if (successfulActions.length) {
+    try {
+      const data = await graphql(env, APPLY_VERIFICATION_QUERY);
+      verification = {
+        status: "COMPLETE",
+        results: successfulActions.map((action) => verifyAppliedAction(action, data)),
+      };
+    } catch (error) {
+      verification = { status: "ERROR", error: error.message, results: [] };
+    }
+  }
+  console.log(JSON.stringify({ mode: "execute", results, verification }, null, 2));
 }
 
 let args;

@@ -272,7 +272,6 @@ Would you like me to help configure this?
 - A: Guide me through manual setup
 - B: Let the agent update market configurations via API
 - C: I'll set it up myself later
-- D: Show me the tutorial at https://www.selofy.com/tutorials/shopify/shopify-international-market-translation
 ```
 
 ### Step 4: Guide or Execute Configuration

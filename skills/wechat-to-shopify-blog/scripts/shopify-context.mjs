@@ -1,13 +1,6 @@
 #!/usr/bin/env node
 
-import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import os from "node:os";
-import path from "node:path";
-
-const execFileAsync = promisify(execFile);
-const REQUIRED_SCOPES = "read_products,write_content,write_files";
+import { loadShopifyEnv, shopifyCliGraphql } from "./lib/shopify-helpers.mjs";
 
 function parseArgs(argv) {
   const args = {
@@ -38,220 +31,11 @@ function parseArgs(argv) {
   return args;
 }
 
-async function loadEnv(path) {
-  const text = await readFile(path, "utf8").catch(() => null);
-  if (!text) {
-    throw new Error(`Missing env file: ${path}. Current working directory: ${process.cwd()}. The env must be in the user's working directory, not the installed skill directory. Run from the folder that contains skill-hub.env, or pass an absolute path such as --env "<USER_WORKDIR>\\skill-hub.env".`);
-  }
-  const env = {};
+const loadEnv = loadShopifyEnv;
+const graphql = shopifyCliGraphql;
 
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const eq = line.indexOf("=");
-    if (eq === -1) continue;
-    const name = line.slice(0, eq).trim();
-    const value = line.slice(eq + 1).trim();
-    env[name] = value;
-  }
-
-  const aliases = {
-    SHOPIFY_STORE_DOMAIN:
-      env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || env.SHOPIFY_STORE_DOMAIN || env.SHOPIFY_TEST_STORE_DOMAIN,
-    SHOPIFY_ADMIN_API_ACCESS_TOKEN:
-      env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN || env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-    SHOPIFY_CLIENT_ID: env.SKILL_HUB_SHOPIFY_CLIENT_ID || env.SHOPIFY_CLIENT_ID,
-    SHOPIFY_API_VERSION: env.SKILL_HUB_SHOPIFY_API_VERSION || env.SHOPIFY_API_VERSION,
-  };
-
-  env.SHOPIFY_STORE_DOMAIN = aliases.SHOPIFY_STORE_DOMAIN;
-  env.SHOPIFY_ADMIN_API_ACCESS_TOKEN = aliases.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
-  env.SHOPIFY_CLIENT_ID = aliases.SHOPIFY_CLIENT_ID;
-
-  if (!env.SHOPIFY_STORE_DOMAIN) throw new Error(`Missing SHOPIFY_STORE_DOMAIN in ${path}.`);
-
-  env.SHOPIFY_STORE_DOMAIN = normalizeDomain(env.SHOPIFY_STORE_DOMAIN);
-
-  const accessMethod = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || (env.SHOPIFY_CLIENT_ID ? "dev_dashboard_app" : "admin_custom_app");
-
-  if (accessMethod === "dev_dashboard_app") {
-    if (!env.SHOPIFY_STORE_DOMAIN.endsWith(".myshopify.com")) {
-      throw new Error("Dev Dashboard app setup requires SKILL_HUB_SHOPIFY_STORE_DOMAIN to be the store's .myshopify.com domain.");
-    }
-    env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
-    env.SHOPIFY_API_VERSION = "shopify-cli";
-    env.SHOPIFY_TRANSPORT = "shopify_cli";
-    return env;
-  }
-
-  if (!env.SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
-    throw new Error(`Missing SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN in ${path} for admin_custom_app.`);
-  }
-
-  const endpoint = await resolveAdminEndpoint(env, aliases.SHOPIFY_API_VERSION);
-  env.SHOPIFY_API_DOMAIN = endpoint.host;
-  env.SHOPIFY_API_VERSION = endpoint.version;
-  return env;
-}
-
-function normalizeDomain(value) {
-  const raw = value.trim();
-  const url = raw.includes("://") ? new URL(raw) : new URL(`https://${raw}`);
-  return url.host;
-}
-
-function candidateApiVersions(preferredVersion) {
-  const versions = [];
-  if (preferredVersion) versions.push(preferredVersion);
-
-  const now = new Date();
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth() + 1;
-  const quarterMonth = [1, 4, 7, 10].filter((value) => value <= month).pop() || 1;
-
-  for (let offset = 0; offset < 8; offset += 1) {
-    const quarterIndex = [1, 4, 7, 10].indexOf(quarterMonth) - offset;
-    const candidateYear = year + Math.floor(quarterIndex / 4);
-    const candidateMonth = [1, 4, 7, 10][((quarterIndex % 4) + 4) % 4];
-    versions.push(`${candidateYear}-${String(candidateMonth).padStart(2, "0")}`);
-  }
-
-  return [...new Set(versions)];
-}
-
-async function probeAdminEndpoint(host, version, token, redirect = "follow") {
-  const endpoint = `https://${host}/admin/api/${version}/graphql.json`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    redirect,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": token,
-    },
-    body: JSON.stringify({ query: "query SkillHubVersionProbe { shop { myshopifyDomain } }" }),
-  });
-
-  let json = null;
-  try {
-    json = await response.json();
-  } catch {}
-
-  return {
-    ok: response.ok && !json?.errors,
-    status: response.status,
-    location: response.headers.get("location"),
-    version: response.headers.get("x-shopify-api-version") || version,
-  };
-}
-
-async function resolveAdminEndpoint(env, preferredVersion) {
-  const host = env.SHOPIFY_STORE_DOMAIN;
-  if (!host.endsWith(".myshopify.com") || host.includes("/")) {
-    throw new Error(`Invalid store domain: "${host}". Only official *.myshopify.com domains are allowed.`);
-  }
-  const versions = candidateApiVersions(preferredVersion);
-
-  for (const version of versions) {
-    const probe = await probeAdminEndpoint(host, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
-    if (probe.ok) return { host, version: probe.version };
-  }
-
-  throw new Error(
-    "Could not resolve a usable Shopify Admin API endpoint from SHOPIFY_STORE_DOMAIN. Check the store domain and Admin API token.",
-  );
-}
-
-async function graphql(env, query, variables = {}) {
-  if (env.SHOPIFY_TRANSPORT === "shopify_cli") {
-    return shopifyCliGraphql(env, query, variables);
-  }
-
-  const endpoint = `https://${env.SHOPIFY_API_DOMAIN}/admin/api/${env.SHOPIFY_API_VERSION}/graphql.json`;
-  let response;
-  try {
-    response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-      },
-      body: JSON.stringify({ query, variables }),
-    });
-  } catch (error) {
-    throw new Error(`Shopify Admin API request failed for resolved domain ${env.SHOPIFY_API_DOMAIN}: ${error.message}`);
-  }
-
-  const json = await response.json();
-  if (!response.ok || json.errors) {
-    throw new Error(JSON.stringify({ status: response.status, errors: json.errors }, null, 2));
-  }
-  return json.data;
-}
-
-async function pathExists(filePath) {
-  return access(filePath).then(() => true).catch(() => false);
-}
-
-async function resolveShopifyCliJs(env = {}) {
-  const candidates = [];
-  if (env.SKILL_HUB_SHOPIFY_CLI_JS || process.env.SKILL_HUB_SHOPIFY_CLI_JS) {
-    candidates.push(env.SKILL_HUB_SHOPIFY_CLI_JS || process.env.SKILL_HUB_SHOPIFY_CLI_JS);
-  }
-  const npmRoot = await execFileAsync("npm", ["root", "-g"], { windowsHide: true })
-    .then(({ stdout }) => stdout.trim())
-    .catch(() => "");
-  if (npmRoot) candidates.push(path.join(npmRoot, "@shopify", "cli", "bin", "run.js"));
-  if (process.env.APPDATA) candidates.push(path.join(process.env.APPDATA, "npm", "node_modules", "@shopify", "cli", "bin", "run.js"));
-  for (const candidate of candidates) {
-    if (candidate && await pathExists(candidate)) return candidate;
-  }
-  const error = new Error(`CLI_NOT_FOUND: Could not locate Shopify CLI JS entrypoint. Set SKILL_HUB_SHOPIFY_CLI_JS to @shopify/cli/bin/run.js.`);
-  error.code = "CLI_NOT_FOUND";
-  throw error;
-}
-
-function normalizeCliJson(raw) {
-  if (raw?.errors) return { errors: raw.errors };
-  return raw?.data ? raw : { data: raw };
-}
-
-function classifyCliError(error, detail = "") {
-  const text = `${detail}\n${error?.message || ""}`;
-  if (error?.code === "CLI_NOT_FOUND") return { code: "CLI_NOT_FOUND", message: error.message };
-  if (error?.code === "ENOENT" || error?.code === "EINVAL" || error?.code === "EFTYPE") return { code: "CLI_SPAWN_FAILED", message: error.message };
-  if (/access denied|denied access/i.test(text)) return { code: "CLI_ACCESS_DENIED", message: text.trim() };
-  if (/store auth|stored store auth|auth.*required|not authenticated|login/i.test(text)) return { code: "CLI_AUTH_REQUIRED", message: text.trim() };
-  return { code: "CLI_SPAWN_FAILED", message: text.trim() || "Shopify CLI request failed." };
-}
-
-async function shopifyCliGraphql(env, query, variables = {}) {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "skill-hub-shopify-cli-"));
-  const queryFile = path.join(tempDir, "query.graphql");
-  const variableFile = path.join(tempDir, "variables.json");
-  const outputFile = path.join(tempDir, "output.json");
-  try {
-    const cliJs = await resolveShopifyCliJs(env);
-    await writeFile(queryFile, query, "utf8");
-    await writeFile(variableFile, JSON.stringify(variables || {}), "utf8");
-    const args = [cliJs, "store", "execute", "--store", env.SHOPIFY_API_DOMAIN, "--query-file", queryFile, "--variable-file", variableFile, "--output-file", outputFile, "--json", "--no-color"];
-    if (/(^|\n)\s*mutation\b/i.test(query)) args.push("--allow-mutations");
-    const execResult = await execFileAsync(process.execPath, args, { timeout: 180000, maxBuffer: 1024 * 1024 * 20, windowsHide: true })
-      .catch((error) => ({ cliError: classifyCliError(error, [error.stderr, error.stdout].filter(Boolean).map(String).join("\n")) }));
-    if (execResult.cliError) throw new Error(`${execResult.cliError.code}: ${execResult.cliError.message}`);
-    if (!await pathExists(outputFile)) throw new Error("CLI_OUTPUT_MISSING: Shopify CLI did not create output JSON.");
-    let json;
-    try {
-      json = normalizeCliJson(JSON.parse(await readFile(outputFile, "utf8")));
-    } catch (error) {
-      throw new Error(`CLI_JSON_PARSE_FAILED: ${error.message}`);
-    }
-    if (json.errors) throw new Error(`CLI_GRAPHQL_ERRORS: ${JSON.stringify(json.errors)}`);
-    return json.data;
-  } catch (error) {
-    throw new Error(`${error.message}\nIf this is CLI_AUTH_REQUIRED, run: shopify store auth --store ${env.SHOPIFY_API_DOMAIN} --scopes ${REQUIRED_SCOPES} --json --no-color`);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
-  }
+function printHelp() {
+  console.log("Usage: node shopify-context.mjs --env skill-hub.env [--article-id gid://shopify/Article/...] [--product-page-size 1-250]");
 }
 
 function validateSafeUrl(value) {
@@ -403,7 +187,12 @@ query ProductPage($first: Int!, $after: String) {
 }`;
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  if (argv.length === 0 || argv.includes("--help") || argv.includes("-h")) {
+    printHelp();
+    return;
+  }
+  const args = parseArgs(argv);
   const env = await loadEnv(args.env);
 
   const overview = await graphql(env, OVERVIEW_QUERY, {

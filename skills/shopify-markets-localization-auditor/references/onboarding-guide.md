@@ -1,61 +1,29 @@
-# Selofy Skill Hub — Shopify Onboarding Guide
+# Shopify CLI OAuth Onboarding
 
-Use the shared Selofy Skill Hub onboarding pattern.
+Use Shopify CLI OAuth for this skill. Never request an Admin API key, Client ID, app secret, or automation token.
 
-## Before Asking Setup Questions
+## Store address input
 
-1. Identify the current working directory.
-2. Check for the exact filename `skill-hub.env` in that directory.
-3. If the file already has complete non-placeholder values, run the connection check before asking anything else.
+Ask for a store address. Accept any of these forms:
 
-## Ask Only One Setup Question
+- `https://admin.shopify.com/store/your-store`
+- `your-store.myshopify.com`
+- `https://your-store.myshopify.com/admin`
+- a normal storefront URL such as `https://www.example.com`
 
-```text
-Where did you create your Shopify app?
+For an Admin URL or `.myshopify.com` domain, extract the handle directly. For a normal storefront URL, the helper (`loadEnv`) fetches the page HTML and searches for `Shopify.shop = "<handle>.myshopify.com"` to resolve the permanent domain. If resolution fails, ask for the Shopify admin URL or `.myshopify.com` domain.
 
-A - Shopify store Settings custom app (Legacy Custom App)
-B - Dev Dashboard app
-```
+## Connection flow
 
-## Required Helper Commands
-
-```text
-node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --method admin_custom_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs init-env --method dev_dashboard_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs connection-check --env skill-hub.env
-```
-
-## Path A
-
-Ask the user to fill only:
-
-- store address
-- Admin API access token
-
-Recommended scopes:
+1. Check `shopify version`; install or upgrade Shopify CLI to 3.93.0+ when necessary.
+2. Run `init-env` to create `skill-hub.env` in the merchant's working directory. It stores only the store address and connection method; it never stores credentials. Ensure it is ignored by Git.
+3. The helper resolves the merchant-provided address to its `.myshopify.com` domain and stores that resolved value in `SKILL_HUB_SHOPIFY_STORE_DOMAIN`.
+4. Tell the merchant that the Shopify CLI Connector App page will open, then run:
 
 ```text
-read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies,read_products
+shopify store auth --store <handle>.myshopify.com --scopes read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies,read_products --json
 ```
 
-## Path B
+5. Wait for approval and run `connection-check`. Re-run authorization only after a missing, expired, revoked, or insufficient grant.
 
-Ask the user to fill only:
-
-- store address
-- app Client ID
-- App Automation Token
-
-Recommended scopes:
-
-```text
-read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies,read_products
-```
-
-Before `shopify store auth`, tell the user that a Shopify approval page may open and they should click **Authorize**.
-
-## Output Rule
-
-Create `skill-hub.env` in the user's current working directory.
-
-Do not keep temp auth files, query files, output files, or scratch JSON after the workflow finishes.
+OAuth grants API access only. Keep the existing read → report → fix preview → explicit approval → execute boundary.

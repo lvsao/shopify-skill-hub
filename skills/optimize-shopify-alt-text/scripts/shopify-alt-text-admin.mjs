@@ -6,7 +6,6 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const DEFAULT_ENV = "skill-hub.env";
-const DEFAULT_VERSION_CANDIDATES = ["2026-04", "2026-01", "2025-10", "2025-07"];
 const REQUIRED_SCOPES = "read_products,write_products,read_content,write_content,read_files,write_files";
 const SOFT_ALT_LIMIT = 125;
 const HARD_ALT_LIMIT = 512;
@@ -21,7 +20,7 @@ function printUsage() {
   console.log(`Usage: node shopify-alt-text-admin.mjs <command> [options]
 
 Commands:
-  init-env          --method admin_custom_app|dev_dashboard_app --env skill-hub.env
+  init-env          --env skill-hub.env
   connection-check  --env skill-hub.env
   target            --env skill-hub.env --product|--collection|--article|--media-id|--url <value> [--download] [--limit 3]
   scan              --env skill-hub.env [--page-size 50]
@@ -77,8 +76,8 @@ function normalizeDomain(value) {
   return value.replace(/^https?:\/\//i, "").replace(/\/.*$/, "").trim().toLowerCase();
 }
 
-async function ensureGitignoreLine(line) {
-  const gitignore = ".gitignore";
+async function ensureGitignoreLine(line, directory = process.cwd()) {
+  const gitignore = path.join(directory, ".gitignore");
   const existing = await fs.readFile(gitignore, "utf8").catch(() => null);
   if (existing === null) return { updated: false, reason: "missing .gitignore" };
   if (existing.split(/\r?\n/).includes(line)) return { updated: false, reason: "already ignored" };
@@ -88,33 +87,17 @@ async function ensureGitignoreLine(line) {
 }
 
 async function initEnv(args) {
-  const method = args.method || "admin_custom_app";
   const envFile = args.env || DEFAULT_ENV;
-  let body;
-  if (method === "admin_custom_app") {
-    body = `# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
+  const body = `# Skill Hub shared Shopify configuration
+# Shopify CLI holds the local OAuth authorization. Do not add API keys here.
 
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
-SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=shopify_cli_oauth
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=
 `;
-  } else if (method === "dev_dashboard_app") {
-    body = `# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
-
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=admin.shopify.com/store/your-store
-SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
-SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=atkn_your-token
-`;
-  } else {
-    fail("--method must be admin_custom_app or dev_dashboard_app");
-  }
 
   const exists = await fs.readFile(envFile, "utf8").then(() => true).catch(() => false);
   if (!exists) await fs.writeFile(envFile, body, "utf8");
-  const gitignore = await ensureGitignoreLine(envFile);
+  const gitignore = await ensureGitignoreLine(path.basename(envFile), path.dirname(path.resolve(envFile)));
   console.log(JSON.stringify({ envFile, created: !exists, gitignore }, null, 2));
 }
 
@@ -218,104 +201,40 @@ async function shopifyCliFetch({ cliJs, shop, query, variables, allowMutations =
   }
 }
 
-async function adminFetch({ shop, version, token, query, variables }) {
-  shop = String(shop || "").trim().toLowerCase();
-  if (!shop.endsWith(".myshopify.com") || shop.includes("/")) {
-    fail(`Invalid shop domain: ${shop}. Request blocked for security.`);
-  }
-  const response = await fetch(`https://${shop}/admin/api/${version}/graphql.json`, {
-    method: "POST",
-    redirect: "manual",
-    headers: {
-      "content-type": "application/json",
-      "x-shopify-access-token": token,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-  const json = await response.json().catch(() => ({}));
-  return {
-    ok: response.ok && !json.errors,
-    status: response.status,
-    location: response.headers.get("location"),
-    apiVersion: response.headers.get("x-shopify-api-version") || version,
-    json,
-  };
+async function resolveStoreDomain(rawInput) {
+  const raw = String(rawInput || "").trim();
+  if (!raw) fail("A Shopify store URL or domain is required.");
+  const adminMatch = raw.match(/admin\.shopify\.com\/store\/([^/\s?#]+)/i);
+  if (adminMatch) return `${adminMatch[1].toLowerCase()}.myshopify.com`;
+  const host = normalizeDomain(raw);
+  if (host.endsWith(".myshopify.com")) return host;
+
+  const html = await fetch(`https://${host}`, { redirect: "follow" })
+    .then((response) => response.ok ? response.text() : "")
+    .catch(() => "");
+  const match = html.match(/(?:Shopify\.shop|myshopify(?:_domain|Domain)|permanent(?:_domain|Domain))\s*[:=]\s*["']([^"']+\.myshopify\.com)["']/i)
+    || html.match(/https?:\\?\/\\?\/([a-z0-9-]+\.myshopify\.com)/i);
+  if (match?.[1]) return match[1].toLowerCase();
+  fail(`Could not identify the Shopify permanent domain from "${raw}". Please paste the Shopify admin URL (https://admin.shopify.com/store/your-store) or your .myshopify.com domain.`);
 }
 
 async function resolveAdmin(env) {
-  const method = env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || "admin_custom_app";
-  const inputDomain = normalizeDomain(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const versions = env.SKILL_HUB_SHOPIFY_API_VERSION
-    ? [env.SKILL_HUB_SHOPIFY_API_VERSION, ...DEFAULT_VERSION_CANDIDATES]
-    : DEFAULT_VERSION_CANDIDATES;
-  const uniqueVersions = [...new Set(versions)];
-
-  let shop = inputDomain;
-
-  // Resolve admin URL or custom domain to .myshopify.com
-  if (!shop.endsWith(".myshopify.com")) {
-    const rawInput = (env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || "").trim();
-    const adminMatch = rawInput.match(/admin\.shopify\.com\/store\/([^\/\s?&]+)/i);
-    if (adminMatch) {
-      shop = `${adminMatch[1].toLowerCase()}.myshopify.com`;
-    } else {
-      fail(`Invalid store domain: "${rawInput}". Please configure your official .myshopify.com domain.`);
-    }
-  }
-
-  if (method === "dev_dashboard_app") {
-    if (!shop.endsWith(".myshopify.com")) fail(
-      `Could not find store domain from "${env.SKILL_HUB_SHOPIFY_STORE_DOMAIN}". ` +
-      `Provide your admin URL (https://admin.shopify.com/store/your-store) or website address.`
-    );
-    const cliJs = await resolveShopifyCliJs(env);
-    const cliProbe = await shopifyCliFetch({
-      cliJs,
-      shop,
-      query: `query SkillHubAltTextConnectionCheck { shop { name myshopifyDomain } }`,
-      variables: {},
-    });
-    if (cliProbe.ok) {
-      return { shop, version: "shopify-cli", transport: "shopify_cli", cliJs, shopInfo: cliProbe.json.data.shop };
-    }
-    const detail = JSON.stringify(cliProbe.json.errors || cliProbe.json, null, 2);
-    fail(
-      `Shopify CLI connection check failed. Run store auth only for CLI_AUTH_REQUIRED. Command: shopify store auth --store ${shop} --scopes ${REQUIRED_SCOPES} --json --no-color\n${detail}`,
-    );
-  }
-
-  let token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
-  if (!token || token.includes("xxx") || token.startsWith("your-")) {
-    fail("A valid Shopify Admin credential is required in skill-hub.env.");
-  }
-
-  const query = `query SkillHubAltTextConnectionCheck { shop { name myshopifyDomain } }`;
-  for (const version of uniqueVersions) {
-    const result = await adminFetch({ shop, version, token, query, variables: {} });
-    if (result.ok) {
-      return { shop, version: result.apiVersion, token, transport: "admin_token", shopInfo: result.json.data.shop };
-    }
-  }
-  fail("Could not validate Shopify Admin GraphQL access with the configured credentials.");
+  const shop = await resolveStoreDomain(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
+  const cliJs = await resolveShopifyCliJs(env);
+  const cliProbe = await shopifyCliFetch({
+    cliJs,
+    shop,
+    query: `query SkillHubAltTextConnectionCheck { shop { name myshopifyDomain } }`,
+    variables: {},
+  });
+  if (cliProbe.ok) return { shop, version: "shopify-cli", transport: "shopify_cli", cliJs, shopInfo: cliProbe.json.data.shop };
+  const detail = JSON.stringify(cliProbe.json.errors || cliProbe.json, null, 2);
+  fail(`Shopify CLI connection check failed. If authorization is missing or expired, run: shopify store auth --store ${shop} --scopes ${REQUIRED_SCOPES} --json\n${detail}`);
 }
 
 async function gql(client, query, variables = {}) {
-  if (client.transport === "shopify_cli") {
-    const allowMutations = /(^|\n)\s*mutation\b/i.test(query);
-    const result = await shopifyCliFetch({ cliJs: client.cliJs, shop: client.shop, query, variables, allowMutations });
-    if (!result.ok) {
-      const detail = JSON.stringify(result.json.errors || result.json, null, 2);
-      fail(`Shopify CLI GraphQL request failed: ${detail}`);
-    }
-    return result.json.data;
-  }
-  const result = await adminFetch({
-    shop: client.shop,
-    version: client.version,
-    token: client.token,
-    query,
-    variables,
-  });
+  const allowMutations = /(^|\n)\s*mutation\b/i.test(query);
+  const result = await shopifyCliFetch({ cliJs: client.cliJs, shop: client.shop, query, variables, allowMutations });
   if (!result.ok) {
     const detail = JSON.stringify(result.json.errors || result.json, null, 2);
     fail(`Shopify GraphQL request failed: ${detail}`);
@@ -353,7 +272,8 @@ function handleFromUrl(value, segment) {
     const index = parts.indexOf(segment);
     return index !== -1 && parts[index + 1] ? decodeURIComponent(parts[index + 1]) : "";
   } catch {
-  return "";
+    return "";
+  }
 }
 
 function articleHandleFromUrl(value) {
@@ -367,7 +287,6 @@ function articleHandleFromUrl(value) {
   } catch {
     return "";
   }
-}
 }
 
 function productImageRecord(product, media, position) {

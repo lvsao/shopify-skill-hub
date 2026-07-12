@@ -1,44 +1,38 @@
 ---
-name: "optimize-shopify-image-alt"
-slug: "optimize-shopify-image-alt"
+name: "optimize-shopify-alt-text"
+slug: "optimize-shopify-alt-text"
 displayName: "Optimize Shopify Alt Text"
 description: "Audit and safely improve Shopify image alt text for product media, collection images, article featured images, and article inline images. Use when a merchant wants image-specific alt text review, batch planning, visual inspection when available, or approved Shopify alt text updates."
-version: 1.0.0
+version: 2.0.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
+required_environment_variables:
+  - name: SKILL_HUB_SHOPIFY_STORE_DOMAIN
+    prompt: "Provide the Shopify admin URL or .myshopify.com domain."
+    help: "Store it in the private working-directory skill-hub.env file."
+    required_for: "Shopify connection checks and approved alt-text updates."
 metadata:
   openclaw:
     requires:
       env:
-        - SHOPIFY_TEST_STORE_DOMAIN
+        - SKILL_HUB_SHOPIFY_STORE_DOMAIN
       bins:
         - node
-    primaryEnv: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+        - shopify
     envVars:
-      - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
+      SKILL_HUB_SHOPIFY_STORE_DOMAIN:
         required: true
-        description: "Admin Access Token for Shopify store GraphQL communication."
-      - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
+        description: "Shopify admin URL or .myshopify.com store domain."
+      SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
-        description: "Optional storefront token for checking published resources."
-      - name: SKILL_HUB_SHOPIFY_CLI_JS
-        required: false
-        description: "Optional override path to local @shopify/cli entry point run.js."
+        description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
+    primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🖼️"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, SEO, Images, AltText]
     related_skills: [shopify-product-serp-optimizer]
-required_environment_variables:
-  - name: SHOPIFY_ADMIN_API_ACCESS_TOKEN
-    prompt: "Your Shopify Admin API Access Token"
-    help: "Create a custom app in Shopify Admin > Settings > Apps and add read/write permissions for products, collections, and online store content"
-    required_for: "Reading and updating image alt text via Admin GraphQL API"
-  - name: SHOPIFY_STOREFRONT_API_ACCESS_TOKEN
-    prompt: "Your Shopify Storefront API Access Token (optional)"
-    help: "Enable Storefront API in your custom app settings"
-    required_for: "Optional: checking published storefront resources"
 ---
 
 # Optimize Shopify Alt Text
@@ -52,7 +46,7 @@ required_environment_variables:
 - Never edit anything except image alt text. For article bodies, only update inline `<img alt="">` attributes.
 - Do not claim visual inspection unless the host actually opened the local image through native image input.
 - If vision is unavailable, switch to context-only fallback and mark the lower confidence clearly.
-- Keep artifacts clean: `skill-hub.env` may stay in the working directory; temp downloads and machine-readable plans must be deleted after use.
+- Keep artifacts clean: `skill-hub.env` contains only the store address and connection method; temp downloads and machine-readable plans must be deleted after use.
 - Keep alt text concise. Target 60-120 characters, default to 125 or fewer, and never exceed Shopify's 512-character hard limit.
 
 ## Read First
@@ -84,7 +78,7 @@ node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs scan --env skil
 
 ## Workflow
 
-1. Follow shared onboarding only when `skill-hub.env` is missing or incomplete.
+1. Follow shared Shopify CLI OAuth onboarding when `skill-hub.env` is missing, incomplete, or the stored CLI authorization is unavailable.
 2. Run `connection-check`.
 3. Use `target` for specific requests or `scan` for broad requests.
 4. If vision is needed, run `vision-sample` and verify the model can describe pixel facts from a local file.
@@ -99,8 +93,7 @@ node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs scan --env skil
 Use the bundled helper instead of ad hoc GraphQL or one-off scripts:
 
 ```text
-node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs init-env --method admin_custom_app --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs init-env --method dev_dashboard_app --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs init-env --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
 node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs vision-sample --env skill-hub.env --limit 3
