@@ -18,6 +18,7 @@ function parseFrontmatter(text) {
 
 const errors = [];
 const catalogNames = new Set();
+const publishedSlugs = new Set();
 const index = JSON.parse(await readFile(path.join(ROOT, "catalog", "INDEX.json"), "utf8"));
 for (const category of index.categories) {
   const catalog = JSON.parse(await readFile(path.join(ROOT, "catalog", category, "skills.json"), "utf8"));
@@ -31,8 +32,11 @@ for (const entry of await readdir(path.join(ROOT, "skills"), { withFileTypes: tr
   const frontmatter = parseFrontmatter(text);
   const label = `skills/${entry.name}/SKILL.md`;
 
-  if (frontmatter.name !== entry.name) errors.push(`${label}: name must match its folder name.`);
-  if (frontmatter.slug !== entry.name) errors.push(`${label}: slug must match its folder name.`);
+  if (!frontmatter.name) errors.push(`${label}: missing name.`);
+  if (!frontmatter.slug) errors.push(`${label}: missing slug.`);
+  if (frontmatter.name !== frontmatter.slug) errors.push(`${label}: name and slug must describe the same published identity.`);
+  if (publishedSlugs.has(frontmatter.slug)) errors.push(`${label}: slug must be unique across published skills.`);
+  publishedSlugs.add(frontmatter.slug);
   if (!SEMVER.test(frontmatter.version ?? "")) errors.push(`${label}: version must be stable SemVer.`);
   if (!catalogNames.has(entry.name)) errors.push(`${label}: skill is missing from the catalog.`);
   if (!text.includes("openclaw:")) errors.push(`${label}: missing metadata.openclaw.`);

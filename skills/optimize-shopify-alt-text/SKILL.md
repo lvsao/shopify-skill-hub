@@ -1,6 +1,6 @@
 ---
-name: "optimize-shopify-alt-text"
-slug: "optimize-shopify-alt-text"
+name: "optimize-shopify-image-alt"
+slug: "optimize-shopify-image-alt"
 displayName: "Optimize Shopify Alt Text"
 description: "Audit and safely improve Shopify image alt text for product media, collection images, article featured images, and article inline images. Use when a merchant wants image-specific alt text review, batch planning, visual inspection when available, or approved Shopify alt text updates."
 version: 2.0.0
