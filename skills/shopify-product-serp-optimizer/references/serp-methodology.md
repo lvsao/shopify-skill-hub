@@ -23,7 +23,6 @@ It includes:
 - Query intent and query class mapping for product pages.
 - Product title, product description, SEO title, and meta description scoring.
 - Evidence-backed candidates for Shopify `title`, `descriptionHtml`, `seo.title`, and `seo.description`.
-- Product metafield definition/value auditing and evidence-backed metafield optimization suggestions.
 - Image alt text assessment and direct in-skill optimization for product media.
 - HTML reporting for product SERP, content, and distribution opportunities.
 - Product-led content and community opportunity guidance.
@@ -134,12 +133,11 @@ Supported evidence can come from:
 - Product type, vendor, tags, options, variants, SKU, price, and availability.
 - Collections and product URL.
 - Product media alt text and filenames.
-- Product metafield definitions and populated metafield values.
 - Verified review/rating data when available.
 - Merchant-provided target query or positioning.
 - GSC query evidence when the user provides it.
 
-**In Path C (public mode):** SEO fields come from HTML `<title>` and `<meta>` tags only (cannot distinguish custom vs fallback). Metafield evidence is unavailable. Collection data is unavailable. Product status is inferred from `published_at`. Product URL is constructed from domain + handle.
+**In read-only (public) mode:** SEO fields come from HTML `<title>` and `<meta>` tags only (cannot distinguish custom vs fallback). Collection data is unavailable. Product status is inferred from `published_at`. Product URL is constructed from domain + handle.
 
 Unsupported or high-risk claims include:
 
@@ -193,7 +191,7 @@ Use these rules before auditing:
 
 Do not write "missing SEO title" or "missing meta description" in the report just because the API field is null. Say that Shopify is using the default product title or product description fallback, then judge whether the fallback is good enough.
 
-**In Path C (public mode):** The fallback rules above cannot be resolved because the HTML always shows the effective value. Treat SEO title and meta description values as `"public_html_effective"` — do not claim they are custom SEO fields or Shopify fallbacks. Score the content itself (is it weak? generic? misaligned?) rather than the source.
+**In read-only (public) mode:** The fallback rules above cannot be resolved because the HTML always shows the effective value. Treat SEO title and meta description values as `"public_html_effective"` — do not claim they are custom SEO fields or Shopify fallbacks. Score the content itself (is it weak? generic? misaligned?) rather than the source.
 
 ## SEO Title Rubric
 
@@ -272,21 +270,6 @@ When rewriting `title` or `descriptionHtml`:
 - Keep the opening description content useful to buyers first, then search snippets second.
 - Do not inject unsupported claims, certifications, shipping promises, review claims, or legal/compliance language.
 - Treat title, description, SEO title, meta description, and alt text as one review bundle. Show all recommended fields together before asking for approval.
-
-## Metafield Audit Rules
-
-Audit metafields in two layers:
-
-- definition layer through `metafieldDefinitions`
-- value layer through the product's actual `metafields`
-
-Classify findings as:
-
-- populated definitions
-- defined but missing values
-- value-only metafields without surfaced definitions
-
-Only propose metafield value optimization when the field meaning is clear and the product evidence supports a specific value.
 
 ## Image Alt Text Boundary
 
@@ -469,7 +452,7 @@ When this skill is triggered:
 - Do not stop after giving chat-only title/meta suggestions.
 - Do not ask whether the user wants the report unless file creation is actually blocked.
 - If Shopify access is unavailable:
-  - If a product URL is available, use **Path C (Public Storefront)** to extract full product data from public JSON + HTML scraping per `references/public-data-extraction.md`.
+  - If a product URL is available, use **read-only (public storefront) mode** to extract full product data from public JSON + HTML scraping per `references/public-data-extraction.md`.
   - If only a product title is available, generate a provisional read-only report from merchant-visible product wording plus live Google and Amazon evidence, and label the evidence limits clearly.
 - For broader requests, generate the report for the current analyzed batch rather than waiting for all future batches.
 

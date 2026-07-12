@@ -24,7 +24,9 @@ jobs:
           node-version: "22"
 
       - name: Validate sync payload
-        run: node scripts/build-sync-payload.mjs > skill-hub-sync-payload.json
+        run: |
+          node scripts/release-preflight.mjs
+          node scripts/build-sync-payload.mjs > skill-hub-sync-payload.json
 
       - name: Sync to Selofy Web
         env:

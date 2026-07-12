@@ -312,6 +312,10 @@ async function collectSkills() {
       const skillMd = await readFile(skillMdPath, "utf8");
       const frontmatter = parseFrontmatter(skillMd);
       const slug = item.name || frontmatter.name;
+      const version = frontmatter.version;
+      if (!/^\d+\.\d+\.\d+$/.test(version || "")) {
+        throw new Error(`${slug}.SKILL.md must declare a stable SemVer version (for example, 2.0.0).`);
+      }
       const features = normalizeFeatures(item.features, slug);
       const prerequisites = normalizePrerequisites(item.prerequisites, slug);
 
@@ -332,6 +336,7 @@ async function collectSkills() {
         (await getLatestGitCommitIso([relativeSkillPath, categorySkillPath])) || GENERATED_AT;
       const skill = {
         slug,
+        version,
         name: item.displayName || slug,
         shortDescription,
         longDescription,

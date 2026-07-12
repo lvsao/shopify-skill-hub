@@ -60,6 +60,19 @@ Gap score:
 (missing + outdated) / eligible
 ```
 
+## Query Transport And Rate Limits
+
+The Admin GraphQL API is rate-limited by calculated query cost, not by a fixed request count. The helper therefore:
+
+- batches up to three locale translation selections into one standard query;
+- reads Shopify's returned throttle status when available and waits only when capacity is low;
+- retries throttling and transient network failures with exponential backoff and jitter;
+- uses Shopify CLI `store bulk execute` automatically when auditing four or more locales, and allows `--transport bulk` for very large single-locale audits;
+- streams JSONL records directly into coverage counters rather than loading a whole bulk export into memory;
+- runs at most three bulk jobs concurrently for large audits and checkpoints each completed resource type beside the requested audit output.
+
+Bulk queries are read-only and use the same Shopify CLI stored OAuth authentication. Shopify currently permits up to five concurrent bulk queries per shop; this helper deliberately caps itself at three so it remains responsive alongside merchant workflows. A bulk query is not automatically resubmitted after a CLI watch failure: it may already be running, so first inspect it with `shopify store bulk status --store <store>.myshopify.com`. If an audit stops after one or more resource types finish, repeat the same command with `--resume` and the same `--output` file. Use `--transport standard` only to troubleshoot an unsupported bulk query; it is intentionally slower for large audits.
+
 ## Markets
 
 Use `markets` to read:

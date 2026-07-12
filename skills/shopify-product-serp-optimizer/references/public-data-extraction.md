@@ -1,6 +1,6 @@
 # Public Data Extraction — No-API Mode
 
-Use this reference when the merchant chooses Path C (public_storefront) and provides only a store domain or product URL. This guide explains how to extract every available product field using Shopify's built-in public JSON endpoints and HTML scraping, so the full audit report can still be generated despite having zero API permissions.
+Use this reference when the merchant chooses read-only (public storefront) mode and provides only a store domain or product URL. This guide explains how to extract every available product field using Shopify's built-in public JSON endpoints and HTML scraping, so the full audit report can still be generated despite having zero API permissions.
 
 ## Overview
 
@@ -9,10 +9,7 @@ When the merchant gives a product URL instead of API credentials:
 ```text
 Shopify Admin API fields available:   ~18 fields
 Public JSON + HTML fields available:  ~16 fields (89%)
-Fields requiring Admin API:           2 fields (metafields, metafieldDefinitions)
-```
-
-The two missing fields affect only the Metafield Audit module in the report. All other modules (title, description, SEO title, meta description, images, alt text, evidence, micro-intents, enhanced snippets, blog map, community) can be produced from public data.
+All fields can be produced from public data.
 
 ## Step-by-Step: Extract Data from a Product URL
 
@@ -28,7 +25,7 @@ const productsIndex = pathParts.indexOf("products");
 const handle = productsIndex !== -1 ? pathParts[productsIndex + 1] : null;  // "flora-dog-walking-set"
 ```
 
-Then resolve the store domain to `.myshopify.com` (same method as Path B):
+Then resolve the store domain to `.myshopify.com` (same method as the connected mode):
 - If `storeDomain` ends with `.myshopify.com`, use directly
 - If it is `admin.shopify.com/store/<name>`, extract to `<name>.myshopify.com`
 - Otherwise, fetch the storefront HTML and extract `Shopify.shop = "..."`
@@ -175,7 +172,7 @@ Returns products within that collection (same format as `/products.json`).
 
 ## Field Availability Matrix
 
-| Report Field | Admin API | Public JSON | HTML Scrape | Availability in Path C |
+| Report Field | Admin API | Public JSON | HTML Scrape | Availability in read-only mode |
 |-------------|-----------|-------------|-------------|----------------------|
 | product title | ✅ | ✅ | ✅ | ✅ Full |
 | product description (HTML) | ✅ | ✅ `body_html` | ✅ Parse `<div>` | ✅ Full (prefer JSON) |
@@ -196,20 +193,12 @@ Returns products within that collection (same format as `/products.json`).
 | SEO title (custom vs fallback) | ✅ | ❌ | ❌ | ❌ Not available |
 | Meta description (effective) | ✅ | ❌ | ✅ `<meta>` | ✅ Effective value only |
 | Meta description (custom vs fallback) | ✅ | ❌ | ❌ | ❌ Not available |
-| Metafields | ✅ | ❌ | ❌ | ❌ Not available |
-| Metafield definitions | ✅ | ❌ | ❌ | ❌ Not available |
 | Collection memberships | ✅ | ❌ | ❌ | ❌ Not available |
 | Published timestamps | ❌ | ✅ | ❌ | ✅ Full from JSON |
 
 ## Public Mode Limitations in the Report
 
-When generating the audit report in Path C, apply these adjustments:
-
-### Metafields Audit Module
-- Skip entirely. The report should show:
-  ```text
-  "Metafield audit requires Admin API access (Path A or B). Not available in public mode."
-  ```
+When generating the audit report in read-only mode, apply these adjustments:
 
 ### SEO Title / Meta Description Source Labels
 - Use `"public_html_effective"` as the source label for both fields.
@@ -255,7 +244,7 @@ Before declaring data extraction complete:
 - [ ] Product page HTML fetched and parsed for `<title>` and `<meta name="description">`
 - [ ] CDN image URLs extracted for any vision-based alt text analysis
 - [ ] If scanning: `/products.json` pagination works (no blocking)
-- [ ] If the store blocks public JSON (403/Cloudflare/etc.), inform the user and suggest Path A or B
+- [ ] If the store blocks public JSON (403/Cloudflare/etc.), inform the user and suggest connected mode
 
 ## Fallback if Public Access Is Blocked
 
@@ -267,7 +256,7 @@ Some Shopify stores block `/products.json` and/or `/products/{handle}.json` via:
 
 If the JSON endpoint returns 403, 404, or a non-JSON response after 3 retries:
 
-1. Inform the user: "Your store's public endpoints appear to be blocked by security measures. The skill needs either API access (Path A or B) or storefront JSON access."
+1. Inform the user: "Your store's public endpoints appear to be blocked by security measures. The skill needs either API access (connected mode) or storefront JSON access."
 2. Suggest the user try a product URL instead of store domain (some stores block JSON on store root but allow it on product pages).
-3. If still blocked, recommend switching to Path A or Path B.
+3. If still blocked, recommend switching to connected mode.
 4. Do not fall back to full HTML scraping — raw HTML parsing is unreliable for product description, variants, and images.

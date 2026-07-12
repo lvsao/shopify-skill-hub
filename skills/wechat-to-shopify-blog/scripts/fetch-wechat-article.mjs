@@ -9,6 +9,7 @@ function parseArgs(argv) {
     url: null,
     downloadImages: false,
     outputDir: null,
+    output: null,
     maxImages: 80,
   };
 
@@ -23,13 +24,18 @@ function parseArgs(argv) {
     } else if (key === "--output-dir") {
       args.outputDir = value;
       i += 1;
+    } else if (key === "--output") {
+      args.output = value;
+      i += 1;
     } else if (key === "--max-images") {
       args.maxImages = Number(value);
       i += 1;
     }
   }
 
-  if (!args.url) throw new Error("Usage: node fetch-wechat-article.mjs --url <mp.weixin.qq.com URL>");
+  if (!args.url) {
+    throw new Error("Usage: node fetch-wechat-article.mjs --url <mp.weixin.qq.com URL> [--download-images --output-dir <temp-dir>] [--output article.json]");
+  }
   try {
     validateWeChatUrl(args.url);
     const hostname = new URL(args.url).hostname.toLowerCase();
@@ -261,9 +267,7 @@ async function main() {
     }
   }
 
-  console.log(
-    JSON.stringify(
-      {
+  const result = {
         sourceUrl: args.url,
         fetchedAt: new Date().toISOString(),
         title: elementTextById(html, "activity-name") || jsVar(html, "msg_title") || meta(html, "og:title"),
@@ -291,11 +295,15 @@ async function main() {
         textBlocks: toTextBlocks(contentHtml),
         bodyHtml: contentHtml,
         outputDir,
-      },
-      null,
-      2,
-    ),
-  );
+  };
+  const output = JSON.stringify(result, null, 2);
+  if (args.output) {
+    await mkdir(path.dirname(path.resolve(args.output)), { recursive: true });
+    await writeFile(args.output, output, "utf8");
+    console.log(JSON.stringify({ ok: true, output: args.output, imageCount: images.length }, null, 2));
+    return;
+  }
+  console.log(output);
 }
 
 main().catch((error) => {

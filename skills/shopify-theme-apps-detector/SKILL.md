@@ -3,7 +3,7 @@ name: "shopify-theme-apps-detector"
 slug: "shopify-theme-apps-detector"
 displayName: "Shopify Theme Apps Detector"
 description: "Reveal a public Shopify store's theme and detectable apps without API access. Use when someone wants a tech-stack audit, competitor research, or a visual report with evidence and confidence levels."
-version: 1.0.0
+version: 2.0.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]

@@ -9,10 +9,7 @@
  *   node shopify-market-lang-check.mjs setup-market ... (future)
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { resolve } from 'path';
-
-const API_VERSION = '2026-04';
+import { loadSkillHubEnv, resolveAdminHost, shopifyGraphql } from './lib/shopify-cli.mjs';
 const args = process.argv.slice(2);
 const command = args[0];
 const flags = {};
@@ -20,77 +17,19 @@ for (let i = 1; i < args.length; i += 2) {
   if (args[i]?.startsWith('--')) flags[args[i].slice(2)] = args[i + 1] ?? true;
 }
 
-function loadEnv(envPath) {
-  const candidates = envPath ? [resolve(envPath)] : [resolve('skill-hub.env'), resolve('.env')];
-  let env = {};
-  for (const p of candidates) {
-    if (!existsSync(p)) continue;
-    const lines = readFileSync(p, 'utf8').split('\n');
-    for (const line of lines) {
-      const t = line.trim();
-      if (!t || t.startsWith('#')) continue;
-      const idx = t.indexOf('=');
-      if (idx < 0) continue;
-      env[t.slice(0, idx).trim()] = t.slice(idx + 1).trim();
-    }
-    break;
-  }
-  if (!env.SKILL_HUB_SHOPIFY_STORE_DOMAIN && env.SHOPIFY_TEST_STORE_DOMAIN)
-    env.SKILL_HUB_SHOPIFY_STORE_DOMAIN = env.SHOPIFY_TEST_STORE_DOMAIN;
-  if (!env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN && env.SHOPIFY_ADMIN_API_ACCESS_TOKEN)
-    env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN = env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
-  return env;
-}
-
-function resolveAdminHost(domain) {
-  if (!domain) throw new Error('SKILL_HUB_SHOPIFY_STORE_DOMAIN not set');
-  const cleanDomain = String(domain).trim().toLowerCase();
-  let host = cleanDomain;
-  if (!host.endsWith('.myshopify.com')) {
-    if (host.includes('/') || host.includes('.')) {
-      throw new Error(`Invalid shop domain: "${domain}". Domain must be a store name or end with ".myshopify.com".`);
-    }
-    host = `${host}.myshopify.com`;
-  }
-  if (!/^[a-zA-Z0-9][-a-zA-Z0-9]*\.myshopify\.com$/.test(host)) {
-    throw new Error(`Invalid shop domain: "${domain}". Request blocked for security.`);
-  }
-  return host;
-}
-
-async function gql(host, token, query) {
-  const url = `https://${host}/admin/api/${API_VERSION}/graphql.json`;
-  let res;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': token },
-      body: JSON.stringify({ query }),
-    });
-  } catch (fetchErr) {
-    throw new Error(`FETCH_FAILED for ${url}: ${fetchErr.message}`);
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => 'no body');
-    throw new Error(`HTTP ${res.status} for ${url}: ${text.substring(0, 500)}`);
-  }
-  const json = await res.json();
-  if (json.errors) throw new Error(JSON.stringify(json.errors, null, 2));
-  return json.data;
-}
+const loadEnv = loadSkillHubEnv;
+const gql = (host, _token, query, variables = {}) => shopifyGraphql(host, query, variables);
 
 // ── COMMAND: check ─────────────────────────────────────────────────────────
 
 async function cmdCheck() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
   const targetLocale = flags.target;
-  if (!token) { console.error('No admin token found'); process.exit(1); }
   if (!targetLocale) { console.error('--target locale required (e.g. zh-CN)'); process.exit(1); }
 
-  const localesData = await gql(host, token, 'query { shopLocales { locale primary published } }');
-  const marketsData = await gql(host, token, `query { markets(first: 20) { nodes { id name enabled primary status webPresence { id rootUrls { locale url } defaultLocale { locale } alternateLocales { locale } } } } }`);
+  const localesData = await gql(host, null, 'query { shopLocales { locale primary published } }');
+  const marketsData = await gql(host, null, `query { markets(first: 50) { nodes { id name enabled primary status webPresence { id rootUrls { locale url } defaultLocale { locale } alternateLocales { locale } } } } }`);
 
   const allLocales = localesData.shopLocales;
   const primaryLocale = allLocales.find(l => l.primary);
@@ -163,7 +102,6 @@ async function cmdCheck() {
       lines.push(`  3. Consider adding ${targetLocale} to alternate locales in: ${missingMarkets.map(m => m.name).join(', ')}`);
     }
   }
-  lines.push('For detailed tutorial: https://www.selofy.com/tutorials/shopify/shopify-international-market-translation');
 
   console.log(lines.join('\n'));
   // Also output JSON for machine consumption
@@ -177,12 +115,11 @@ async function cmdCheck() {
 async function cmdValidateSetup() {
   const env = loadEnv(flags.env);
   const host = resolveAdminHost(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
-  const token = env.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN;
   const targetLocale = flags.target;
-  if (!token || !targetLocale) { console.error('--target and --env required'); process.exit(1); }
+  if (!targetLocale) { console.error('--target and --env required'); process.exit(1); }
 
-  const localesData = await gql(host, token, 'query { shopLocales { locale primary published } }');
-  const marketsData = await gql(host, token, `query { markets(first: 20) { nodes { id name enabled primary status webPresence { id rootUrls { locale url } defaultLocale { locale } alternateLocales { locale } } } } }`);
+  const localesData = await gql(host, null, 'query { shopLocales { locale primary published } }');
+  const marketsData = await gql(host, null, `query { markets(first: 50) { nodes { id name enabled primary status webPresence { id rootUrls { locale url } defaultLocale { locale } alternateLocales { locale } } } } }`);
 
   const targetInfo = localesData.shopLocales.find(l => l.locale === targetLocale);
   const marketsWithLocale = marketsData.markets.nodes.filter(m =>
