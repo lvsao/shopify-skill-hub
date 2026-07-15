@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { assertRequiredScopes, devDashboardGraphql, isDevDashboardMode, mergeRuntimeEnv } from "./lib/shopify-dev-dashboard-auth.mjs";
 
 const DEFAULT_ENV = "skill-hub.env";
 const REQUIRED_SCOPES = "read_products,write_products,read_content,write_content,read_files,write_files";
@@ -65,10 +66,14 @@ function parseEnv(text) {
 
 async function loadEnv(file) {
   const text = await fs.readFile(file, "utf8").catch(() => null);
-  if (!text) {
+  const env = mergeRuntimeEnv(text ? parseEnv(text) : {});
+  if (!text && !env.SKILL_HUB_SHOPIFY_STORE_DOMAIN) {
     fail(`Missing env file: ${file}. Current working directory: ${process.cwd()}. The env must be in the user's working directory, not the installed skill directory. Run from the folder that contains skill-hub.env, or pass an absolute path such as --env "<USER_WORKDIR>\\skill-hub.env".`);
   }
-  return parseEnv(text);
+  if (!["shopify_cli_oauth", "dev_dashboard_client_credentials"].includes(env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || "shopify_cli_oauth")) {
+    fail("Unsupported SKILL_HUB_SHOPIFY_ACCESS_METHOD. Use shopify_cli_oauth or dev_dashboard_client_credentials.");
+  }
+  return env;
 }
 
 function normalizeDomain(value) {
@@ -89,10 +94,14 @@ async function ensureGitignoreLine(line, directory = process.cwd()) {
 async function initEnv(args) {
   const envFile = args.env || DEFAULT_ENV;
   const body = `# Skill Hub shared Shopify configuration
-# Shopify CLI holds the local OAuth authorization. Do not add API keys here.
+# Choose quick browser connection by default. For long-running agents, set the
+# method to dev_dashboard_client_credentials and add the Client ID and Secret.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=shopify_cli_oauth
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=
+# SKILL_HUB_SHOPIFY_CLIENT_ID=
+# SKILL_HUB_SHOPIFY_CLIENT_SECRET=
+# SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=
 `;
 
   const exists = await fs.readFile(envFile, "utf8").then(() => true).catch(() => false);
@@ -220,6 +229,11 @@ async function resolveStoreDomain(rawInput) {
 
 async function resolveAdmin(env) {
   const shop = await resolveStoreDomain(env.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
+  if (isDevDashboardMode(env)) {
+    const result = await devDashboardGraphql(env, shop, `query SkillHubAltTextConnectionCheck { shop { name myshopifyDomain } }`);
+    assertRequiredScopes(result.scopes, REQUIRED_SCOPES);
+    return { shop, version: result.version, transport: "dev_dashboard_client_credentials", env, shopInfo: result.data.shop };
+  }
   const cliJs = await resolveShopifyCliJs(env);
   const cliProbe = await shopifyCliFetch({
     cliJs,
@@ -233,6 +247,9 @@ async function resolveAdmin(env) {
 }
 
 async function gql(client, query, variables = {}) {
+  if (client.transport === "dev_dashboard_client_credentials") {
+    return (await devDashboardGraphql(client.env, client.shop, query, variables)).data;
+  }
   const allowMutations = /(^|\n)\s*mutation\b/i.test(query);
   const result = await shopifyCliFetch({ cliJs: client.cliJs, shop: client.shop, query, variables, allowMutations });
   if (!result.ok) {

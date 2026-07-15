@@ -1,51 +1,54 @@
-# Shopify CLI OAuth Onboarding
+# Connect Your Store
 
-This skill connects stores only through Shopify CLI OAuth. Never ask for an Admin API token, a Partner account, a Client ID, an app secret, or an automation token.
+Offer a connection only when store data or an approved update is needed. Ask for a Shopify admin link or `.myshopify.com` address; accept a normal storefront URL only when the helper can safely resolve its permanent Shopify address.
 
-## What the merchant provides
+## Choice 1 — Quick connection (recommended)
 
-Ask only for a store address. Accept any of these forms:
+This is best for a first try or a one-off task. The merchant provides no secret.
 
-- `https://admin.shopify.com/store/your-store`
-- `your-store.myshopify.com`
-- `https://your-store.myshopify.com/admin`
-- a normal storefront URL such as `https://www.example.com`
-
-The agent must normalize an Admin URL or `.myshopify.com` input to `your-store.myshopify.com`. For a normal storefront URL, the helper may inspect public HTML for the permanent Shopify domain. If it cannot identify one, ask for the Shopify admin URL or `.myshopify.com` domain. Never guess a domain and never request a key as a fallback.
-
-## Connection flow
-
-1. Check `shopify version`.
-2. If Shopify CLI is missing, explain that it will be installed to connect the store, then run `npm install -g @shopify/cli@latest`.
-3. If the installed CLI is older than 3.93.0 or does not include `shopify store auth`, upgrade it with the same command.
-4. Create `skill-hub.env` in the user working directory with `init-env`. It stores only the chosen store address and the connection method; it never stores credentials. Ensure it is ignored by Git.
-5. Resolve the merchant-provided address to its `.myshopify.com` domain and store that resolved value in `SKILL_HUB_SHOPIFY_STORE_DOMAIN`.
-6. Tell the merchant: “A Shopify permission page is opening in your browser. Review the requested permissions and click Install. I’ll wait here until it finishes.”
-7. Run the authorization directly. Do not ask the merchant to copy a token or run a second terminal command:
+1. Check Shopify CLI 3.93.0+ and install or upgrade it if necessary.
+2. Create the private working-directory `skill-hub.env` with `init-env`; it stores the store address and chosen method, never a CLI token.
+3. Say: “A Shopify permission page is opening. Please review it and click Install; I will continue when it finishes.”
+4. Run:
 
 ```text
 shopify store auth --store <shop>.myshopify.com --scopes read_products,write_products,read_content,write_content,read_files,write_files --json
 ```
 
-8. Wait for the command to exit. Shopify CLI stores the online OAuth authorization locally for later `shopify store execute` calls.
-9. Run the helper’s read-only `connection-check`. On success, continue to the audit and preview workflow.
+5. Run `connection-check`. If access expires, is revoked, or lacks a needed permission, repeat this browser step. Never ask the merchant to copy an access token.
+
+## Choice 2 — Long-running connection
+
+Use this only for the merchant’s own store and a trusted local or server agent. It lets the agent request a fresh short-lived connection automatically; the Client Secret remains private.
+
+1. In Shopify admin, open the store switcher/name menu and choose **Developer Dashboard**. Labels can vary slightly by admin version.
+2. Choose **Apps** → **Create app** → **Start from Dev Dashboard**, name the app, then open **Versions** and create the first version.
+3. In the permissions field, enter this exact copyable list. Shopify asks for a comma-separated list:
+
+```text
+read_products,write_products,read_content,write_content,read_files,write_files
+```
+
+4. Set the app URL to Shopify’s default app home if no app page is needed, then **Release** the version.
+5. In **Settings**, copy the Client ID and Client Secret directly into private configuration. Do not paste either into chat, source code, or a repository.
+6. From **Home**, choose **Install app**, select the merchant’s own store, and approve the installation.
+7. Set `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_client_credentials` plus the store domain, Client ID, and Client Secret in `skill-hub.env`, or provide the same values as private server environment variables. The helper requests and refreshes temporary API access automatically.
+
+Advanced merchants may choose all permissions, but explain that it gives any approved agent a much larger operating area. Empty permissions are allowed, but the app cannot do store work until permissions are added.
+
+## Adding a permission later
+
+Only request a permission required by the active task. Show the exact copyable list and reason, then get explicit approval before changing app configuration.
+
+For controlled automation, first synchronize the existing app configuration only inside private `.skill-hub/`; never do this in the Skills repository. `SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN` is optional and only permits Shopify CLI to publish that app’s configuration—it cannot access store data. It expires and must be rotated.
+
+After the merchant explicitly approves synchronization, the agent may run `shopify app config link --path <private-.skill-hub-app-dir> --client-id <client-id>`, then `shopify app config validate --path <private-.skill-hub-app-dir> --json`. After separately approving the exact scope release, inject the Automation Token only for `shopify app deploy --path <private-.skill-hub-app-dir> --allow-updates`. Never run these commands from the Skills repository or expose their secret values.
+
+After a release, tell the merchant to open the app in Shopify admin and approve the pending permission update. Wait for that confirmation, then rerun the read-only connection check. Do not assume a newly released permission works immediately.
 
 ## Safety and recovery
 
-- OAuth authorizes store access only. It does not authorize any write proposed by this skill. Keep the existing preview → explicit merchant approval → `apply --execute` boundary.
-- If authorization is missing, expired, revoked, or lacks the required permissions, rerun `shopify store auth` with this skill’s exact scopes.
-- If the CLI is missing, classify the failure as `CLI_NOT_FOUND`.
-- If the browser authorization does not complete, report `CLI_AUTH_REQUIRED` and retry only after the merchant is ready.
-- If a requested field or mutation is denied after authentication, report `CLI_ACCESS_DENIED`; do not silently broaden scopes.
-- Do not use `shopify app config link`, Dev Dashboard app configuration, custom apps, or any API-token workflow.
-
-## Helper commands
-
-```text
-node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs init-env --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs connection-check --env skill-hub.env
-node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs target --env skill-hub.env --product "Example Product"
-node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs scan --env skill-hub.env --page-size 50
-```
-
-The helper must run all Admin GraphQL through Shopify CLI’s stored OAuth authorization. It must keep temporary query, variable, and output files in the operating-system temp directory and delete them immediately.
+- Connection never replaces the existing preview → explicit approval → `apply --execute` rule.
+- If long-running connection reports `DEV_DASHBOARD_STORE_NOT_PERMITTED`, the app and store are not in the same Shopify organization; use quick connection instead.
+- If it reports `SCOPE_UPDATE_REQUIRED`, show the listed permissions and follow the approval flow. Do not silently broaden access.
+- Keep all secrets in private local/server configuration. Never display them in commands, reports, logs, or committed files.

@@ -3,7 +3,7 @@ name: "shopify-product-serp-optimizer"
 slug: "shopify-product-serp-optimizer"
 displayName: "Shopify Product SERP Optimizer"
 description: "Audit and improve Shopify product SERP performance with five-product batches, evidence-backed metadata recommendations, HTML reports, and one approval bundle for safe writes. Use for product-page search snippet work, not technical SEO, translations, redirects, theme work, or generic content strategy."
-version: 2.0.0
+version: 2.1.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -12,6 +12,15 @@ required_environment_variables:
     prompt: "Provide the Shopify admin URL or .myshopify.com domain."
     help: "Store it in the private working-directory skill-hub.env file."
     required_for: "Shopify product audits and approved SEO updates."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_ID
+    help: "Optional private value for long-running Dev Dashboard connection."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_SECRET
+    help: "Optional private value; never commit or paste into chat."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN
+    help: "Optional private token for approved permission releases only."
+    required_for: "Approved permission-release workflow only."
 metadata:
   openclaw:
     requires:
@@ -27,6 +36,15 @@ metadata:
       SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
         description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
+      SKILL_HUB_SHOPIFY_CLIENT_ID:
+        required: false
+        description: "Dev Dashboard Client ID for long-running connection."
+      SKILL_HUB_SHOPIFY_CLIENT_SECRET:
+        required: false
+        description: "Private Dev Dashboard Client Secret for long-running connection."
+      SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN:
+        required: false
+        description: "Private token for approved app configuration releases only."
     primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🔍"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
@@ -59,7 +77,8 @@ metadata:
 
 Use these paths:
 
-- `shopify_cli_oauth` for Admin audits and approved fixes
+- `shopify_cli_oauth` for quick Admin audits and approved fixes
+- `dev_dashboard_client_credentials` for long-running Admin audits and approved fixes
 - `public_storefront` for URL-only, read-only audits
 
 Rules:
@@ -76,6 +95,7 @@ Use the bundled helper instead of ad hoc GraphQL or shell glue:
 
 ```text
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method shopify_cli_oauth --env skill-hub.env
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method dev_dashboard_client_credentials --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs init-env --method public_storefront --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs connection-check --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
@@ -93,5 +113,5 @@ node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs apply --env
 3. Gather product evidence and live Google and Amazon intent evidence.
 4. Score the current product or batch.
 5. Generate one HTML report in the current working directory.
-6. If connected mode (CLI OAuth) is active, preview one write bundle and apply it only after approval.
+6. If a connected mode is active, preview one write bundle and apply it only after approval.
 7. Verify the updated products and clean temp files.

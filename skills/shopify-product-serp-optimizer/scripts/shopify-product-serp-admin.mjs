@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { assertRequiredScopes, devDashboardGraphql, isDevDashboardMode, mergeRuntimeEnv } from "./lib/shopify-dev-dashboard-auth.mjs";
 
 const DEFAULT_ENV = "skill-hub.env";
 const DEFAULT_VERSION_CANDIDATES = ["2026-04", "2026-01", "2025-10", "2025-07"];
@@ -25,7 +26,7 @@ function printUsage() {
   console.log(`Usage: node shopify-product-serp-admin.mjs <command> [options]
 
 Commands:
-  init-env           --method shopify_cli_oauth|public_storefront --env skill-hub.env
+  init-env           --method shopify_cli_oauth|dev_dashboard_client_credentials|public_storefront --env skill-hub.env
   connection-check   --env skill-hub.env
   product            --env skill-hub.env --handle <handle> | --id <gid>
   collection-preview --env skill-hub.env --handle <handle>
@@ -83,22 +84,10 @@ function parseEnv(text) {
 }
 
 async function loadEnv(file) {
-  let text = await fs.readFile(file, "utf8").catch(() => null);
-  if (!text) {
-    const fallback = ".env";
-    text = await fs.readFile(fallback, "utf8").catch(() => null);
-    if (text) {
-      const parsed = parseEnv(text);
-      const mapped = {};
-      if (parsed.SHOPIFY_TEST_STORE_DOMAIN) mapped.SKILL_HUB_SHOPIFY_STORE_DOMAIN = parsed.SHOPIFY_TEST_STORE_DOMAIN;
-      if (parsed.SHOPIFY_ADMIN_API_ACCESS_TOKEN) mapped.SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN = parsed.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
-      if (parsed.SHOPIFY_DEV_APP_CLIENT_ID) mapped.SKILL_HUB_SHOPIFY_CLIENT_ID = parsed.SHOPIFY_DEV_APP_CLIENT_ID;
-      Object.assign(parsed, mapped);
-      return parsed;
-    }
-    fail(`Missing env file: ${file}. Also checked fallback .env. Current working directory: ${process.cwd()}. Run init-env first, or pass --env "<PATH>\\skill-hub.env".`);
-  }
-  return parseEnv(text);
+  const text = await fs.readFile(file, "utf8").catch(() => null);
+  const env = mergeRuntimeEnv(text ? parseEnv(text) : {});
+  if (!text && !env.SKILL_HUB_SHOPIFY_STORE_DOMAIN) fail(`Missing env file: ${file}. Current working directory: ${process.cwd()}. Run init-env first, or pass --env "<PATH>\\skill-hub.env".`);
+  return env;
 }
 
 function normalizeDomain(value) {
@@ -127,13 +116,14 @@ async function initEnv(args) {
   const method = args.method || "shopify_cli_oauth";
   const envFile = args.env || DEFAULT_ENV;
   const force = args.force || args.f || false;
-  if (!["shopify_cli_oauth", "public_storefront"].includes(method)) {
-    fail("--method must be shopify_cli_oauth or public_storefront");
+  if (!["shopify_cli_oauth", "dev_dashboard_client_credentials", "public_storefront"].includes(method)) {
+    fail("--method must be shopify_cli_oauth, dev_dashboard_client_credentials, or public_storefront");
   }
   const scopes = args.scopes || DEFAULT_SCOPES;
   
   const templates = {
     shopify_cli_oauth: `# Skill Hub shared Shopify configuration\n# Shopify CLI stores the local OAuth authorization. Do not add API keys here.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=shopify_cli_oauth\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=\n`,
+    dev_dashboard_client_credentials: `# Private long-running Shopify connection. Never commit or paste these values into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_client_credentials\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=\nSKILL_HUB_SHOPIFY_CLIENT_ID=\nSKILL_HUB_SHOPIFY_CLIENT_SECRET=\n# Optional: only for approved app permission releases, never for store API calls.\nSKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=\n`,
     public_storefront: `# Skill Hub shared Shopify configuration\n# Keep this file private. Do not commit it or paste tokens into chat.\n\nSKILL_HUB_SHOPIFY_ACCESS_METHOD=public_storefront\nSKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com\n`,
   };
   
@@ -327,12 +317,23 @@ async function resolveAdmin(env) {
     return { mode: "cli", shop, env };
   }
 
-  fail(`Unsupported access method: ${method}. Use shopify_cli_oauth or public_storefront.`);
+  if (method === "dev_dashboard_client_credentials") {
+    const shop = await resolveShopifyDomain(rawInput);
+    if (!shop) fail("Could not find your store's .myshopify.com domain. Provide the Shopify admin URL or .myshopify.com address.");
+    const result = await devDashboardGraphql(env, shop, "query SkillHubSerpConnectionCheck { shop { name myshopifyDomain } }");
+    assertRequiredScopes(result.scopes, DEFAULT_SCOPES);
+    return { mode: "dev_dashboard_client_credentials", shop, env, version: result.version };
+  }
+
+  fail(`Unsupported access method: ${method}. Use shopify_cli_oauth, dev_dashboard_client_credentials, or public_storefront.`);
 }
 
 async function gql(client, query, variables = {}) {
   if (client.mode === "public_storefront") {
-    fail("GraphQL queries are not available in public_storefront mode. This command requires Admin API access (Path A or B).");
+    fail("GraphQL queries are not available in public_storefront mode. Use quick browser connection or long-running connection for Admin access.");
+  }
+  if (client.mode === "dev_dashboard_client_credentials") {
+    return (await devDashboardGraphql(client.env, client.shop, query, variables)).data;
   }
   const allowMutations = /(^|\n)\s*mutation\b/i.test(query);
   const result = await shopifyCliFetch({ env: client.env, shop: client.shop, query, variables, allowMutations });
@@ -463,7 +464,7 @@ async function productCommand(args) {
     return;
   }
   
-  // API modes (Path A and B)
+  // Connected Admin modes
   const data = await gql(client, PRODUCT_QUERY, { identifier }).catch((error) => {
     fail(`Shopify API error when reading product: ${error.message}. Check that the product exists and your token has read_products scope. Provided identifier: ${JSON.stringify(identifier)}`);
   });
@@ -1475,7 +1476,7 @@ async function applyCommand(args) {
   const client = await resolveAdmin(env);
   
   if (client.mode === "public_storefront") {
-    fail("Apply/write operations are not available in public_storefront mode. This is a read-only mode. To write changes, use your Admin API token (Path A or B) instead.");
+    fail("Apply/write operations are not available in public_storefront mode. This is a read-only mode. Choose quick browser connection or long-running connection to write approved changes.");
   }
   
   const changes = validatePlan(plan);

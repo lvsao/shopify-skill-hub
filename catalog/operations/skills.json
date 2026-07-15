@@ -357,6 +357,71 @@
         }
       ],
       "prerequisites": []
+    },
+    {
+      "name": "yuntu-yw-shipping",
+      "displayName": "YunExpress & Yanwen Shipping",
+      "displayName_zh": "云途物流与燕文物流",
+      "path": "../../skills/yuntu-yw-shipping",
+      "tags": ["shipping", "yunexpress", "yanwen"],
+      "integrations": ["yunexpress", "yanwen", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Check parcels and rates, and safely prepare YunExpress or Yanwen shipping orders with your own carrier account.",
+        "zh": "使用自己的承运商账号查询云途或燕文包裹、报价，并安全地准备发货订单。"
+      },
+      "longDescription": {
+        "en": "Use your own YunExpress or Yanwen carrier account to look up parcels, shipping channels, warehouse options, rates, billable weight, labels, and order status. The skill validates the connection before use and shows a redacted plan before it creates, changes, or cancels anything. It does not need Shopify login and never dispatches a shipment without the merchant's explicit confirmation.",
+        "zh": "使用自己的云途或燕文承运商账号查询包裹、运输渠道、仓库选项、报价、计费重量、面单和订单状态。使用前会先验证连接；任何创建、修改或取消操作前都会展示已脱敏的计划。它不需要 Shopify 登录，也不会在商户明确确认前发货。"
+      },
+      "introduction": {
+        "en": "One safe carrier workflow for YunExpress and Yanwen: check first, preview changes, then confirm before dispatch.",
+        "zh": "一个安全处理云途与燕文物流的工作流：先查询、再预览，确认后才发货。"
+      },
+      "features": [
+        {
+          "id": "parcel-tracking",
+          "title": { "en": "Parcel and order lookup", "zh": "包裹与订单查询" },
+          "description": {
+            "en": "Look up a waybill, order, tracking history, shipping channel, or carrier-side status with the merchant's own account.",
+            "zh": "通过商户自己的账号查询运单、订单、轨迹、运输渠道和承运商侧状态。"
+          },
+          "badge": { "en": "Read-only first", "zh": "先只读查询" },
+          "icon": "Search"
+        },
+        {
+          "id": "rates-and-options",
+          "title": { "en": "Rates and shipping options", "zh": "报价与运输选项" },
+          "description": {
+            "en": "Compare supported channels, destination coverage, billable weight, delivery estimates, and point-in-time carrier quotes.",
+            "zh": "比较可用渠道、目的地覆盖、计费重量、预计时效和实时承运商报价。"
+          },
+          "badge": { "en": "Carrier data", "zh": "承运商数据" },
+          "icon": "Scale"
+        },
+        {
+          "id": "safe-order-preparation",
+          "title": { "en": "Safe shipping-order preparation", "zh": "安全准备发货订单" },
+          "description": {
+            "en": "Validate a shipment payload and show a redacted preview before an order, label, cancellation, or other carrier change is sent.",
+            "zh": "校验发货数据，并在发送订单、面单、取消或其他承运商变更前展示脱敏预览。"
+          },
+          "badge": { "en": "Approval required", "zh": "需要确认" },
+          "icon": "ShieldCheck"
+        },
+        {
+          "id": "dual-carrier-workflow",
+          "title": { "en": "YunExpress and Yanwen", "zh": "云途与燕文双承运商" },
+          "description": {
+            "en": "Choose the relevant carrier workflow without mixing credentials, test environments, or operational data.",
+            "zh": "按需选择承运商流程，不混用凭据、测试环境或业务数据。"
+          },
+          "badge": { "en": "Separate credentials", "zh": "凭据分离" },
+          "icon": "Truck"
+        }
+      ],
+      "prerequisites": []
     }
   ]
 }

@@ -3,7 +3,7 @@ name: "optimize-shopify-image-alt"
 slug: "optimize-shopify-image-alt"
 displayName: "Optimize Shopify Alt Text"
 description: "Audit and safely improve Shopify image alt text for product media, collection images, article featured images, and article inline images. Use when a merchant wants image-specific alt text review, batch planning, visual inspection when available, or approved Shopify alt text updates."
-version: 2.0.0
+version: 2.1.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -12,6 +12,15 @@ required_environment_variables:
     prompt: "Provide the Shopify admin URL or .myshopify.com domain."
     help: "Store it in the private working-directory skill-hub.env file."
     required_for: "Shopify connection checks and approved alt-text updates."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_ID
+    help: "Optional private value for the long-running Dev Dashboard connection."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_SECRET
+    help: "Optional private value for the long-running Dev Dashboard connection; never commit or paste into chat."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN
+    help: "Optional private token used only for approved app configuration releases."
+    required_for: "Approved permission-release workflow only."
 metadata:
   openclaw:
     requires:
@@ -27,6 +36,15 @@ metadata:
       SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
         description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
+      SKILL_HUB_SHOPIFY_CLIENT_ID:
+        required: false
+        description: "Dev Dashboard Client ID for long-running connection."
+      SKILL_HUB_SHOPIFY_CLIENT_SECRET:
+        required: false
+        description: "Private Dev Dashboard Client Secret for long-running connection."
+      SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN:
+        required: false
+        description: "Private token for approved app configuration releases only."
     primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🖼️"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
@@ -46,13 +64,18 @@ metadata:
 - Never edit anything except image alt text. For article bodies, only update inline `<img alt="">` attributes.
 - Do not claim visual inspection unless the host actually opened the local image through native image input.
 - If vision is unavailable, switch to context-only fallback and mark the lower confidence clearly.
-- Keep artifacts clean: `skill-hub.env` contains only the store address and connection method; temp downloads and machine-readable plans must be deleted after use.
+- Keep artifacts clean: `skill-hub.env` is private and may contain the selected connection method and long-running credentials; temp downloads and machine-readable plans must be deleted after use.
 - Keep alt text concise. Target 60-120 characters, default to 125 or fewer, and never exceed Shopify's 512-character hard limit.
 
 ## Read First
 
 - `references/onboarding-guide.md` for shared Shopify setup
 - `references/alt-text-rules.md` for wording, length, and duplicate rules
+
+## Connection Modes
+
+- Recommend `shopify_cli_oauth` for a quick browser connection.
+- Use `dev_dashboard_client_credentials` only when the merchant requests a trusted long-running connection for their own store.
 
 ## Supported Surfaces
 
@@ -78,7 +101,7 @@ node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs scan --env skil
 
 ## Workflow
 
-1. Follow shared Shopify CLI OAuth onboarding when `skill-hub.env` is missing, incomplete, or the stored CLI authorization is unavailable.
+1. Follow shared onboarding when connection is missing: recommend quick Shopify CLI connection first; use the Dev Dashboard long-running path only when the merchant chooses it.
 2. Run `connection-check`.
 3. Use `target` for specific requests or `scan` for broad requests.
 4. If vision is needed, run `vision-sample` and verify the model can describe pixel facts from a local file.

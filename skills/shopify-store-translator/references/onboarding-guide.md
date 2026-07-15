@@ -1,22 +1,33 @@
-# Shopify CLI OAuth Onboarding
+# Connect Your Store
 
-Connect this skill with Shopify CLI OAuth. Do not request an Admin API key, Client ID, app secret, or automation token.
+Ask for a Shopify admin link or `.myshopify.com` address only when translations need store access.
 
-1. Ask for a Shopify admin URL or `.myshopify.com` domain; normalize it to `<handle>.myshopify.com`.
-2. Check `node --version` and `shopify version`. Install Node.js and Shopify CLI 3.93.0+ if either is unavailable.
-3. Create private working-directory `skill-hub.env` containing only:
+## Quick connection (recommended)
 
-```text
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=shopify_cli_oauth
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=<handle>.myshopify.com
-```
-
-4. Tell the merchant that a Shopify CLI Connector App permission page will open, then run:
+Check Node.js and Shopify CLI 3.93.0+, create private `skill-hub.env`, tell the merchant a Shopify permission page will open, then run:
 
 ```text
-shopify store auth --store <handle>.myshopify.com --scopes read_locales,write_locales,read_markets,write_markets,read_translations,write_translations --json
+shopify store auth --store <shop>.myshopify.com --scopes read_locales,write_locales,read_markets,write_markets,read_translations,write_translations --json
 ```
 
-5. Wait for approval, then run `connection-check`. Shopify CLI retains the local OAuth grant; re-authorize only if it is missing, expired, revoked, or lacks these scopes.
+Wait for the merchant to click **Install**, then run `connection-check`. Reopen authorization only if access expires, is revoked, or lacks the listed permissions.
 
-Always show the translation candidate preview and obtain explicit approval before enabling a locale, changing a Market, or registering translations.
+## Long-running connection
+
+For a trusted agent that continuously serves the merchant’s own store, use **Developer Dashboard** → **Apps** → **Create app** → **Start from Dev Dashboard**. In the first released version, paste this comma-separated list into the permissions field:
+
+```text
+read_locales,write_locales,read_markets,write_markets,read_translations,write_translations
+```
+
+Copy Client ID and Client Secret from **Settings** into private local/server configuration, install the app from **Home**, and set `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_client_credentials`. The helper refreshes short-lived API access itself; do not paste secrets or access tokens into chat.
+
+An advanced merchant may enable all permissions, but explain that it greatly enlarges what an approved agent can do. Empty permissions are allowed but block store work until updated.
+
+## Later permissions
+
+When an active task needs more access, show the exact copyable list and reason, then request approval. The optional App Automation Token only publishes the app configuration and expires; it is never a store-data credential. Keep synchronized app configuration only in private `.skill-hub/`. After release, the merchant must approve the app’s pending update in Shopify admin before retrying the read-only connection check.
+
+After explicit approval, the agent may run `shopify app config link` and `shopify app config validate --json` only in that private directory. It may inject the Automation Token solely for an independently approved `shopify app deploy --allow-updates` release.
+
+Connection never replaces preview and explicit approval before enabling languages, changing Markets, or registering translations.

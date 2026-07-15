@@ -9,6 +9,8 @@ agents.md
 .env.*
 !.env.example
 skill-hub.env
+yunexpress-shipping.env
+yanwen-shipping.env
 .shopify-skills/
 .skill-hub/
 *.local

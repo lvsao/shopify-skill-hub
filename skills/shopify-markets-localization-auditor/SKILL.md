@@ -3,7 +3,7 @@ name: "shopify-markets-localization-auditor"
 slug: "shopify-markets-localization-auditor"
 displayName: "Shopify Markets Localization Auditor"
 description: "Audit Shopify international setup across Markets, languages, shipping coverage, storefront localization, international SEO basics, and category-fit expansion opportunities with a plain-language HTML report and approval-based fixes. Use when a merchant wants to review or improve Markets, language readiness, local buying experience, or international growth direction. Do not use for theme coding, feed work, ad strategy, or generic translation writing."
-version: 2.0.0
+version: 2.1.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -12,6 +12,15 @@ required_environment_variables:
     prompt: "Provide the Shopify admin URL or .myshopify.com domain."
     help: "Store it in the private working-directory skill-hub.env file."
     required_for: "Shopify Markets and localization checks or approved fixes."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_ID
+    help: "Optional private value for long-running Dev Dashboard connection."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_SECRET
+    help: "Optional private value; never commit or paste into chat."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN
+    help: "Optional private token for approved permission releases only."
+    required_for: "Approved permission-release workflow only."
 metadata:
   openclaw:
     requires:
@@ -27,6 +36,15 @@ metadata:
       SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
         description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
+      SKILL_HUB_SHOPIFY_CLIENT_ID:
+        required: false
+        description: "Dev Dashboard Client ID for long-running connection."
+      SKILL_HUB_SHOPIFY_CLIENT_SECRET:
+        required: false
+        description: "Private Dev Dashboard Client Secret for long-running connection."
+      SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN:
+        required: false
+        description: "Private token for approved app configuration releases only."
     primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🌐"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
@@ -56,6 +74,11 @@ metadata:
 - `references/api-surfaces.md` before interpreting Markets, locales, translations, shipping, and storefront checks
 - `references/audit-rules.md` before scoring findings or building fix plans
 - `references/business-research-method.md` before writing any international business recommendation
+
+## Connection Modes
+
+- Recommend `shopify_cli_oauth` for a quick browser connection.
+- Use `dev_dashboard_client_credentials` only when the merchant requests a trusted long-running connection for their own store.
 
 ## Scope
 
@@ -108,7 +131,7 @@ node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs a
 6. If the report will include international business recommendations, first identify the store's business type using API data and storefront-visible evidence such as `shop.name`, `shop.description`, collections, products, and at least one product-detail page when possible.
 7. Then run external market research for the store's actual category before writing any business advice. Prefer the newest credible sources and use the method and constraints in `references/business-research-method.md`.
 8. Build the plain-language HTML report in the current working directory.
-9. If the store uses Path A or B, prepare one preview fix bundle.
+9. If a store connection is active, prepare one preview fix bundle.
 10. Execute fixes only after explicit approval.
 11. Verify changed fields and clean temp files.
 
