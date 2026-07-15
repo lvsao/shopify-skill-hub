@@ -3,7 +3,7 @@ name: "shopify-store-translator"
 slug: "shopify-store-translator"
 displayName: "Shopify Store Translator"
 description: "Translate Shopify store resources into a target language with preview-first review, market checks, and approved writes. Use for direct API translation, outdated translation audits, or Shopify CSV translation workflows."
-version: 2.0.0
+version: 2.1.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -12,13 +12,20 @@ required_environment_variables:
     prompt: "Provide the Shopify admin URL or .myshopify.com domain."
     help: "Stored in the private working-directory skill-hub.env file."
     required_for: "All Shopify reads and approved writes"
+  - name: SKILL_HUB_SHOPIFY_CLIENT_ID
+    help: "Optional private value for long-running Dev Dashboard connection."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_SECRET
+    help: "Optional private value; never commit or paste into chat."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN
+    help: "Optional private token for approved permission releases only."
+    required_for: "Approved permission-release workflow only."
 metadata:
   openclaw:
     requires:
       env:
         - SKILL_HUB_SHOPIFY_STORE_DOMAIN
-        - SHOPIFY_TEST_STORE_DOMAIN
-        - SKILL_HUB_SHOPIFY_CLI_JS
       bins:
         - node
         - shopify
@@ -26,12 +33,18 @@ metadata:
       SKILL_HUB_SHOPIFY_STORE_DOMAIN:
         required: true
         description: "Shopify admin URL or .myshopify.com store domain."
-      SHOPIFY_TEST_STORE_DOMAIN:
-        required: false
-        description: "Optional local test-store fallback; never commit its value."
       SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
         description: "Optional explicit Shopify CLI JS entrypoint when the CLI is not on PATH."
+      SKILL_HUB_SHOPIFY_CLIENT_ID:
+        required: false
+        description: "Dev Dashboard Client ID for long-running connection."
+      SKILL_HUB_SHOPIFY_CLIENT_SECRET:
+        required: false
+        description: "Private Dev Dashboard Client Secret for long-running connection."
+      SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN:
+        required: false
+        description: "Private token for approved app configuration releases only."
     primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🔤"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
@@ -72,13 +85,18 @@ metadata:
   - preserve required columns and structure
   - re-import through Shopify's native flow if the user chooses CSV
 
+## Connection Modes
+
+- Recommend `shopify_cli_oauth` for a quick browser connection.
+- Use `dev_dashboard_client_credentials` only when the merchant requests a trusted long-running connection for their own store.
+
 ## Exclusions
 
 This skill does not change currency, pricing, tax, duties, shipping, theme code, redirects, menus, or market country structure. It prepares and writes translations only after explicit approval.
 
 ## Required Order
 
-1. Use shared onboarding only if `skill-hub.env` is missing or incomplete.
+1. Use shared onboarding only when no working connection is available; recommend quick browser connection first and use long-running connection only on request.
 2. Run locale and market checks before translating.
 3. Fetch only the resource types the user asked for unless they explicitly want a full-store run.
 4. Translate the fetched fields into a `translation-candidates.json` file containing `{ resourceId, key, translation }` entries.

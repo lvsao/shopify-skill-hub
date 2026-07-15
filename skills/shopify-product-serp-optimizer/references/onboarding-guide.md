@@ -1,63 +1,37 @@
 # Onboarding
 
-Present exactly two choices to the merchant:
+Offer three clear paths.
 
----
+## 1. Quick connection (recommended for store changes)
 
-## Option 1 — Connect store (recommended)
+Ask for a Shopify admin link or `.myshopify.com` address, install Shopify CLI 3.93.0+ if needed, create private `skill-hub.env`, then open the permission page directly:
 
-Full Shopify CLI OAuth access. Read SERP data and apply approved changes.
+```text
+shopify store auth --store <shop>.myshopify.com --scopes read_products,write_products,read_files,write_files --json
+```
 
-### 1. Get a store address
+Wait for the merchant to click **Install**, then run `connection-check`. Re-authorize only when the CLI grant is missing, expired, revoked, or insufficient.
 
-Accept any of these forms:
+## 2. Long-running connection
 
-- `https://admin.shopify.com/store/your-store`
-- `your-store.myshopify.com`
-- `https://your-store.myshopify.com/admin`
-- A plain storefront URL such as `https://www.example.com`
+For a trusted local/server agent on the merchant’s own store: open **Developer Dashboard** → **Apps** → **Create app** → **Start from Dev Dashboard**. In the first version, enter this copyable comma-separated scope list and release it:
 
-#### Resolve the permanent Shopify domain
+```text
+read_products,write_products,read_files,write_files
+```
 
-- For an Admin URL or `.myshopify.com` domain, extract the handle directly.
-- For a plain storefront URL, the helper fetches the page HTML and searches for `Shopify.shop = "<handle>.myshopify.com"` to resolve the permanent domain. The merchant does not need to do this manually.
-- If resolution fails, tell the merchant the domain could not be identified and ask for the Shopify admin URL or `.myshopify.com` domain. Never guess a domain and never ask for an API key as a fallback.
+Copy Client ID and Client Secret from **Settings** into private configuration, install the app from **Home**, and set `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_client_credentials`. The helper automatically requests a fresh short-lived connection when needed. Do not paste Client Secret or temporary access tokens into chat.
 
-### 2. Connection flow
+Advanced merchants may enable all permissions, but clearly explain the increased risk. Empty permissions are allowed but cannot perform store work.
 
-1. Check `shopify version`. If Shopify CLI is missing, run `npm install -g @shopify/cli@latest` to install. If below 3.93.0, upgrade with the same command.
-2. Run `init-env`:
-   ```text
-   node <skill-path>/scripts/shopify-product-serp-admin.mjs init-env --method shopify_cli_oauth --env skill-hub.env
-   ```
-3. Tell the merchant: "A Shopify permission page is opening in your browser. Review the requested permissions and click Install. I'll wait here until it finishes."
-4. **Run the authorization directly.** Do not ask the merchant to copy a token or run a second terminal command:
-   ```text
-   shopify store auth --store <handle>.myshopify.com --scopes read_products,write_products,read_files,write_files --json
-   ```
-5. Wait for the command to exit. Shopify CLI stores the OAuth authorization locally for later `shopify store execute` calls.
-6. Run `connection-check`. On success, proceed to audit and preview workflow.
+## 3. Read-only website review
 
----
+No login or credentials. Use `public_storefront` and a storefront/product URL. Generate a report only; never offer writes.
 
-## Option 2 — Read-only mode
+## Permission update and recovery
 
-No login, no keys. Just provide a store URL or product URL. Generates a read-only HTML report. No writes.
+Request additional permissions only for the active task and only after showing a copyable list and obtaining approval. The optional Automation Token is only for publishing app configuration; it cannot access store data and must be rotated. Store the synchronized app configuration only under private `.skill-hub/`. After release, the merchant approves the pending update in Shopify admin, then the agent reruns `connection-check`.
 
-1. Ask the merchant for a storefront URL or a product URL.
-2. Run `init-env`:
-   ```text
-   node <skill-path>/scripts/shopify-product-serp-admin.mjs init-env --method public_storefront --env skill-hub.env
-   ```
-3. `connection-check` tests the public JSON endpoint for accessibility.
-4. On success, proceed to analysis and generate a read-only HTML report. No write operations are offered.
+After explicit approval, the agent may link and validate the existing app only under private `.skill-hub/`; after a separate release approval it may inject the Automation Token solely for `shopify app deploy --path <private-.skill-hub-app-dir> --allow-updates`.
 
----
-
-## Hard rules
-
-- Never request an API key, Client ID, app secret, or automation token.
-- OAuth grants API access only, not write approval. Keep the existing preview → explicit merchant approval → `apply --execute` boundary.
-- If authorization is missing, expired, revoked, or lacks required permissions, rerun `shopify store auth` with the exact scopes above.
-- If the CLI is missing, classify as `CLI_NOT_FOUND`. If browser authorization does not complete, report `CLI_AUTH_REQUIRED` and retry only after the merchant is ready.
-- Read-only mode never writes.
+Every connected mode still requires preview → explicit approval → `apply --execute`; read-only mode never writes.

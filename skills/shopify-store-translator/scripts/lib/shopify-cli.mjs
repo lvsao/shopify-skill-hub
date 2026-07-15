@@ -2,9 +2,13 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { assertRequiredScopes, devDashboardGraphql, isDevDashboardMode, mergeRuntimeEnv } from './shopify-dev-dashboard-auth.mjs';
+
+const REQUIRED_SCOPES = 'read_locales,write_locales,read_markets,write_markets,read_translations,write_translations';
+let currentEnv = {};
 
 export function loadSkillHubEnv(envPath) {
-  const candidates = envPath ? [resolve(envPath)] : [resolve('skill-hub.env'), resolve('.env')];
+  const candidates = envPath ? [resolve(envPath)] : [resolve('skill-hub.env')];
   const env = {};
   for (const file of candidates) {
     if (!existsSync(file)) continue;
@@ -16,10 +20,11 @@ export function loadSkillHubEnv(envPath) {
     }
     break;
   }
-  if (!env.SKILL_HUB_SHOPIFY_STORE_DOMAIN && env.SHOPIFY_TEST_STORE_DOMAIN) {
-    env.SKILL_HUB_SHOPIFY_STORE_DOMAIN = env.SHOPIFY_TEST_STORE_DOMAIN;
-  }
-  return env;
+  const merged = mergeRuntimeEnv(env);
+  if (!Object.keys(env).length && !merged.SKILL_HUB_SHOPIFY_STORE_DOMAIN) throw new Error('Missing skill-hub.env and Shopify runtime environment variables.');
+  if (!['shopify_cli_oauth', 'dev_dashboard_client_credentials'].includes(merged.SKILL_HUB_SHOPIFY_ACCESS_METHOD || 'shopify_cli_oauth')) throw new Error('Unsupported SKILL_HUB_SHOPIFY_ACCESS_METHOD. Use shopify_cli_oauth or dev_dashboard_client_credentials.');
+  currentEnv = merged;
+  return merged;
 }
 
 export function resolveAdminHost(domain) {
@@ -58,7 +63,12 @@ function runShopifyCli(args, options) {
   }
 }
 
-export function shopifyGraphql(host, query, variables = {}) {
+export async function shopifyGraphql(host, query, variables = {}) {
+  if (isDevDashboardMode(currentEnv)) {
+    const result = await devDashboardGraphql(currentEnv, host, query, variables);
+    assertRequiredScopes(result.scopes, REQUIRED_SCOPES);
+    return result.data;
+  }
   const directory = mkdtempSync(join(tmpdir(), 'skill-hub-shopify-cli-'));
   const queryFile = join(directory, 'query.graphql');
   const variableFile = join(directory, 'variables.json');

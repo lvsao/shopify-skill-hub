@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import os from "node:os";
 import path from "node:path";
+import { assertRequiredScopes, devDashboardGraphql, isDevDashboardMode, mergeRuntimeEnv } from "./shopify-dev-dashboard-auth.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -19,16 +20,17 @@ export function parseEnv(text) {
 
 export async function loadShopifyEnv(envPath) {
   const text = await readFile(envPath, "utf8").catch(() => null);
-  if (!text) throw new Error(`Missing env file: ${envPath}. Run from the folder containing skill-hub.env, or pass --env <path-to-skill-hub.env>.`);
-  const env = parseEnv(text);
-  const rawDomain = env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || env.SHOPIFY_STORE_DOMAIN || env.SHOPIFY_TEST_STORE_DOMAIN;
+  const env = mergeRuntimeEnv(text ? parseEnv(text) : {});
+  if (!text && !env.SKILL_HUB_SHOPIFY_STORE_DOMAIN) throw new Error(`Missing env file: ${envPath}. Run from the folder containing skill-hub.env, pass --env <path-to-skill-hub.env>, or provide private runtime environment variables.`);
+  if (!["shopify_cli_oauth", "dev_dashboard_client_credentials"].includes(env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || "shopify_cli_oauth")) throw new Error("Unsupported SKILL_HUB_SHOPIFY_ACCESS_METHOD. Use shopify_cli_oauth or dev_dashboard_client_credentials.");
+  const rawDomain = env.SKILL_HUB_SHOPIFY_STORE_DOMAIN;
   if (!rawDomain) throw new Error(`Missing SHOPIFY_STORE_DOMAIN in ${envPath}.`);
   const adminMatch = rawDomain.match(/admin\.shopify\.com\/store\/([^/\s?&]+)/i);
   const host = adminMatch ? `${adminMatch[1].toLowerCase()}.myshopify.com` : normalizeShopDomain(rawDomain);
   if (!/^[a-z0-9][-a-z0-9]*\.myshopify\.com$/i.test(host)) {
     throw new Error("Invalid store address. Provide a Shopify admin URL or .myshopify.com domain.");
   }
-  return { ...env, SHOPIFY_STORE_DOMAIN: host, SHOPIFY_API_DOMAIN: host, SHOPIFY_TRANSPORT: "shopify_cli" };
+  return { ...env, SHOPIFY_STORE_DOMAIN: host, SHOPIFY_API_DOMAIN: host, SHOPIFY_TRANSPORT: isDevDashboardMode(env) ? "dev_dashboard_client_credentials" : "shopify_cli" };
 }
 
 function normalizeShopDomain(value) {
@@ -63,6 +65,11 @@ function classifyCliError(error, detail = "") {
 }
 
 export async function shopifyCliGraphql(env, query, variables = {}) {
+  if (isDevDashboardMode(env)) {
+    const result = await devDashboardGraphql(env, env.SHOPIFY_API_DOMAIN, query, variables);
+    assertRequiredScopes(result.scopes, "read_products,read_content,write_content,read_files,write_files");
+    return result.data;
+  }
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "skill-hub-shopify-cli-"));
   const queryFile = path.join(tempDir, "query.graphql");
   const variableFile = path.join(tempDir, "variables.json");

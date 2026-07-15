@@ -1,0 +1,4 @@
+interface:
+  display_name: "云途物流 & 燕文物流 Shipping"
+  short_description: "云途与燕文的查单、报价、制单和面单工具"
+  default_prompt: "Use $yuntu-yw-shipping to track a YunExpress or Yanwen parcel, check a rate, or safely prepare a carrier order."

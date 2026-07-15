@@ -89,10 +89,14 @@ async function cmdInitEnv() {
     return;
   }
   const content = `# Skill Hub shared Shopify configuration
-# Shopify CLI stores the local OAuth authorization. Do not add API keys here.
+# Quick browser connection is the default. For a long-running agent, change the
+# method and add the Client ID and Client Secret in this private file.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=shopify_cli_oauth
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=
+# SKILL_HUB_SHOPIFY_CLIENT_ID=
+# SKILL_HUB_SHOPIFY_CLIENT_SECRET=
+# SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=
 `;
   writeFileSync(envPath, content);
   console.log(`Created ${envPath}. Add your Shopify admin URL or .myshopify.com domain.`);

@@ -3,7 +3,7 @@ name: "wechat-to-shopify-blog"
 slug: "wechat-to-shopify-blog"
 displayName: "WeChat to Shopify Blog"
 description: "Convert an owned or authorized WeChat Official Account article into a Shopify blog draft. Use when the user provides a `mp.weixin.qq.com` URL and wants extraction, image filtering, Shopify-hosted uploads, English adaptation, blog selection, and draft-only article creation."
-version: 2.0.0
+version: 2.1.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -12,6 +12,15 @@ required_environment_variables:
     prompt: "Provide the Shopify admin URL or .myshopify.com domain."
     help: "Store it in the private working-directory skill-hub.env file."
     required_for: "Shopify context checks, uploads, and approved blog draft creation."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_ID
+    help: "Optional private value for long-running Dev Dashboard connection."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_CLIENT_SECRET
+    help: "Optional private value; never commit or paste into chat."
+    required_for: "Long-running connection only."
+  - name: SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN
+    help: "Optional private token for approved permission releases only."
+    required_for: "Approved permission-release workflow only."
 metadata:
   openclaw:
     requires:
@@ -27,6 +36,15 @@ metadata:
       SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
         description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
+      SKILL_HUB_SHOPIFY_CLIENT_ID:
+        required: false
+        description: "Dev Dashboard Client ID for long-running connection."
+      SKILL_HUB_SHOPIFY_CLIENT_SECRET:
+        required: false
+        description: "Private Dev Dashboard Client Secret for long-running connection."
+      SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN:
+        required: false
+        description: "Private token for approved app configuration releases only."
     primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "📰"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
@@ -56,6 +74,11 @@ metadata:
 
 - `references/onboarding-guide.md` for Shopify setup
 
+## Connection Modes
+
+- Recommend `shopify_cli_oauth` for a quick browser connection.
+- Use `dev_dashboard_client_credentials` only when the merchant requests a trusted long-running connection for their own store.
+
 ## User Input
 
 Ask for:
@@ -69,7 +92,7 @@ Ask for:
 
 ## Required Order
 
-1. Use shared onboarding only when `skill-hub.env` is missing or incomplete.
+1. Use shared onboarding only when no working connection is available; recommend quick browser connection first and use long-running connection only on request.
 2. Run the lightweight Shopify connection check.
 3. Load store context with `shopify-context.mjs`.
 4. Fetch and parse the WeChat article.

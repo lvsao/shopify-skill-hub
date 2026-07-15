@@ -25,7 +25,10 @@
     "gmc",
     "compliance",
     "audit",
-    "media"
+    "media",
+    "shipping",
+    "yunexpress",
+    "yanwen"
   ],
   "integrations": [
     "shopify",
@@ -37,6 +40,8 @@
     "instagram",
     "chatgpt",
     "claude",
-    "codex"
+    "codex",
+    "yunexpress",
+    "yanwen"
   ]
 }

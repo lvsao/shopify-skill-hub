@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createInterface } from "node:readline";
+import { assertRequiredScopes, devDashboardGraphql, isDevDashboardMode, mergeRuntimeEnv } from "./lib/shopify-dev-dashboard-auth.mjs";
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -154,10 +155,14 @@ async function initEnv(args) {
   const envFile = args.env || DEFAULT_ENV;
   let gitignoreCreated = false;
   const body = `# Skill Hub shared Shopify configuration
-# Shopify CLI stores the local OAuth authorization. Do not add API keys here.
+# Quick browser connection is the default. For a long-running agent, select
+# dev_dashboard_client_credentials and add the Client ID and Client Secret.
 
 SKILL_HUB_SHOPIFY_ACCESS_METHOD=shopify_cli_oauth
 SKILL_HUB_SHOPIFY_STORE_DOMAIN=
+# SKILL_HUB_SHOPIFY_CLIENT_ID=
+# SKILL_HUB_SHOPIFY_CLIENT_SECRET=
+# SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN=
 `;
 
   const alreadyExists = existsSync(envFile);
@@ -239,62 +244,6 @@ function validateSafeUrl(value) {
   } catch (err) {
     throw new Error(`Invalid or unsafe URL "${value}": ${err.message}`);
   }
-}
-
-function candidateApiVersions(preferredVersion) {
-  const versions = [];
-  if (preferredVersion) versions.push(preferredVersion);
-  const now = new Date();
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth() + 1;
-  const quarterMonth = [1, 4, 7, 10].filter((value) => value <= month).pop() || 1;
-  for (let offset = 0; offset < 8; offset += 1) {
-    const quarterIndex = [1, 4, 7, 10].indexOf(quarterMonth) - offset;
-    const candidateYear = year + Math.floor(quarterIndex / 4);
-    const candidateMonth = [1, 4, 7, 10][((quarterIndex % 4) + 4) % 4];
-    versions.push(`${candidateYear}-${String(candidateMonth).padStart(2, "0")}`);
-  }
-  return [...new Set(versions)];
-}
-
-async function probeAdminEndpoint(host, version, token, redirect = "follow") {
-  const endpoint = `https://${host}/admin/api/${version}/graphql.json`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    redirect,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": token,
-    },
-    body: JSON.stringify({ query: "query SkillHubVersionProbe { shop { myshopifyDomain } }" }),
-  });
-
-  let json = null;
-  try {
-    json = await response.json();
-  } catch {}
-
-  return {
-    ok: response.ok && !json?.errors,
-    status: response.status,
-    location: response.headers.get("location"),
-    version: response.headers.get("x-shopify-api-version") || version,
-  };
-}
-
-async function resolveAdminEndpoint(env, preferredVersion) {
-  const host = env.SHOPIFY_STORE_DOMAIN;
-  if (!host.endsWith(".myshopify.com") || host.includes("/")) {
-    throw new Error(`Invalid store domain: "${host}". Only official *.myshopify.com domains are allowed.`);
-  }
-  const versions = candidateApiVersions(preferredVersion);
-
-  for (const version of versions) {
-    const probe = await probeAdminEndpoint(host, version, env.SHOPIFY_ADMIN_API_ACCESS_TOKEN);
-    if (probe.ok) return { host, version: probe.version };
-  }
-
-  throw new Error("Could not resolve a usable Shopify Admin API endpoint from the provided store domain and Admin API token.");
 }
 
 async function pathExists(filePath) {
@@ -483,11 +432,12 @@ async function shopifyCliBulkQuery(env, query, onNode) {
 
 async function loadEnv(envPath) {
   const text = await readFile(envPath, "utf8").catch(() => null);
-  if (!text) {
+  const env = mergeRuntimeEnv(text ? parseEnv(text) : {});
+  if (!text && !env.SKILL_HUB_SHOPIFY_STORE_DOMAIN) {
     throw new Error(`Missing env file: ${envPath}. Current working directory: ${process.cwd()}. The env must be in the user's working directory, not the installed skill directory.`);
   }
-  const env = parseEnv(text);
-  env.SHOPIFY_STORE_DOMAIN = env.SKILL_HUB_SHOPIFY_STORE_DOMAIN || env.SHOPIFY_STORE_DOMAIN || env.SHOPIFY_TEST_STORE_DOMAIN;
+  if (!["shopify_cli_oauth", "dev_dashboard_client_credentials"].includes(env.SKILL_HUB_SHOPIFY_ACCESS_METHOD || "shopify_cli_oauth")) throw new Error("Unsupported SKILL_HUB_SHOPIFY_ACCESS_METHOD. Use shopify_cli_oauth or dev_dashboard_client_credentials.");
+  env.SHOPIFY_STORE_DOMAIN = env.SKILL_HUB_SHOPIFY_STORE_DOMAIN;
   if (!env.SHOPIFY_STORE_DOMAIN) throw new Error(`Missing SHOPIFY_STORE_DOMAIN in ${envPath}.`);
 
   env.SHOPIFY_STORE_DOMAIN = normalizeDomain(env.SHOPIFY_STORE_DOMAIN);
@@ -501,12 +451,17 @@ async function loadEnv(envPath) {
     }
   }
   env.SHOPIFY_API_DOMAIN = env.SHOPIFY_STORE_DOMAIN;
-  env.SHOPIFY_API_VERSION = "shopify-cli";
-  env.SHOPIFY_TRANSPORT = "shopify_cli";
+  env.SHOPIFY_API_VERSION = env.SKILL_HUB_SHOPIFY_API_VERSION || (isDevDashboardMode(env) ? "2026-04" : "shopify-cli");
+  env.SHOPIFY_TRANSPORT = isDevDashboardMode(env) ? "dev_dashboard_client_credentials" : "shopify_cli";
   return env;
 }
 
 async function graphql(env, query, variables = {}) {
+  if (isDevDashboardMode(env)) {
+    const result = await devDashboardGraphql(env, env.SHOPIFY_API_DOMAIN, query, variables);
+    assertRequiredScopes(result.scopes, REQUIRED_SCOPES);
+    return result.data;
+  }
   return shopifyCliGraphql(env, query, variables);
 }
 
@@ -1675,7 +1630,9 @@ async function cmdAudit(args) {
   const overview = normalizeOverview(raw);
   const requestedLocales = parseLocales(args.locales);
   const localesToAudit = chooseLocalesForAudit(overview, requestedLocales);
-  const useBulk = args.transport === "bulk" || (args.transport === "auto" && localesToAudit.length >= BULK_LOCALE_THRESHOLD);
+  const requestedBulk = args.transport === "bulk" || (args.transport === "auto" && localesToAudit.length >= BULK_LOCALE_THRESHOLD);
+  const useBulk = requestedBulk && !isDevDashboardMode(env);
+  if (requestedBulk && isDevDashboardMode(env)) console.error("[audit] Long-running connection uses standard queries because Shopify CLI bulk mode needs browser authorization.");
   const transport = useBulk ? "bulk" : "standard";
   if (args.resume && !args.output) throw new Error("--resume requires --output so the audit checkpoint can be found.");
   const checkpointPath = args.output ? checkpointPathFor(args.output) : null;
