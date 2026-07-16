@@ -2,8 +2,8 @@
 name: "shopify-product-serp-optimizer"
 slug: "shopify-product-serp-optimizer"
 displayName: "Shopify Product SERP Optimizer"
-description: "Audit and improve Shopify product SERP performance with five-product batches, evidence-backed metadata recommendations, HTML reports, and one approval bundle for safe writes. Use for product-page search snippet work, not technical SEO, translations, redirects, theme work, or generic content strategy."
-version: 2.1.0
+description: "Audit and improve Shopify product SERP performance with five-product batches, evidence-backed metadata recommendations, product image Alt Text checks, HTML reports, and one approval bundle for safe writes. Use for product-page search snippet work, not technical SEO, translations, redirects, theme work, or generic content strategy."
+version: 2.1.1
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -63,6 +63,7 @@ metadata:
 - Treat this as a product-page SERP skill. Do not drift into technical SEO, redirects, translations, theme edits, or schema repair.
 - Keep one approval bundle per product or current batch. Preview first, then execute once after approval.
 - Safe writes may include `title`, `descriptionHtml`, `seo.title`, `seo.description`, and approved product image alt text.
+- Product image Alt Text is an in-scope optional module: use a vision model when available for pixel-grounded candidates; without one, keep candidates context-only, lower-confidence, and never claim visual evidence.
 - Do not edit `handle`, tags, variants, price, collections, theme files, redirects, translations, or app settings.
 - Use evidence, not guesswork. Unsupported suggestions must be marked as blocked or hypothesis-only.
 

@@ -138,6 +138,38 @@ function normalizePrerequisites(prerequisites = [], skillName) {
   });
 }
 
+const SYSTEM_BADGE_IDS = [
+  "shopify-store-access",
+  "external-api-credential",
+  "vision-model",
+];
+const SYSTEM_BADGE_STATUSES = new Set(["required", "optional", "not_required"]);
+
+function normalizeBadges(badges, skillName) {
+  if (!Array.isArray(badges) || badges.length !== SYSTEM_BADGE_IDS.length) {
+    throw new Error(`${skillName}.badges must contain exactly ${SYSTEM_BADGE_IDS.length} system badges.`);
+  }
+
+  const seen = new Set();
+  return badges.map((badge, index) => {
+    const pathLabel = `${skillName}.badges[${index}]`;
+    if (!badge || typeof badge !== "object" || Array.isArray(badge)) {
+      throw new Error(`${pathLabel} must be an object.`);
+    }
+    if (typeof badge.id !== "string" || !SYSTEM_BADGE_IDS.includes(badge.id)) {
+      throw new Error(`${pathLabel}.id must be one of: ${SYSTEM_BADGE_IDS.join(", ")}.`);
+    }
+    if (seen.has(badge.id)) {
+      throw new Error(`${skillName}.badges contains duplicate id ${badge.id}.`);
+    }
+    seen.add(badge.id);
+    if (typeof badge.status !== "string" || !SYSTEM_BADGE_STATUSES.has(badge.status)) {
+      throw new Error(`${pathLabel}.status must be required, optional, or not_required.`);
+    }
+    return { id: badge.id, status: badge.status };
+  });
+}
+
 function sha(text) {
   return createHash("sha256").update(text).digest("hex");
 }
@@ -318,6 +350,7 @@ async function collectSkills() {
       }
       const features = normalizeFeatures(item.features, slug);
       const prerequisites = normalizePrerequisites(item.prerequisites, slug);
+      const badges = normalizeBadges(item.badges, slug);
 
       if (item.introduction !== undefined) {
         assertLocalizedText(item.introduction, `${slug}.introduction`);
@@ -359,6 +392,7 @@ async function collectSkills() {
           introduction: item.introduction || null,
           features,
           prerequisites,
+          badges,
           tags: item.tags || [],
           integrations: item.integrations || [],
         },
