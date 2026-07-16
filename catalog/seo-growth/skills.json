@@ -240,24 +240,44 @@
       },
       "features": [
         {
-          "id": "article-quality-audit",
-          "title": { "en": "Article quality audit", "zh": "文章质量审计" },
+          "id": "reading-experience-accessibility",
+          "title": { "en": "Reading experience & accessibility", "zh": "阅读体验与无障碍" },
           "description": {
-            "en": "Checks content clarity, HTML structure, links, images, accessibility, and on-page SEO signals.",
-            "zh": "检查内容清晰度、HTML 结构、链接、图片、无障碍和页面 SEO 信号。"
+            "en": "Reviews clarity, heading hierarchy, lists, clickable TOC, FAQ/HowTo structure, mobile readability, and accessibility.",
+            "zh": "检查内容清晰度、标题层级、列表、可点击 TOC、FAQ/HowTo 结构、移动端阅读和无障碍体验。"
           },
-          "badge": { "en": "Evidence-backed", "zh": "证据支撑" },
-          "icon": "FileSearch"
+          "badge": { "en": "Reader-first", "zh": "读者体验" },
+          "icon": "SearchCheck"
         },
         {
-          "id": "preview-first-updates",
-          "title": { "en": "Preview-first updates", "zh": "先预览再更新" },
+          "id": "technical-seo-html",
+          "title": { "en": "Technical SEO & HTML", "zh": "技术 SEO 与 HTML" },
           "description": {
-            "en": "Produces a storefront-style preview and changes only the fields the merchant explicitly approves.",
-            "zh": "生成店铺样式预览，只更新商户明确批准的字段。"
+            "en": "Checks semantic HTML, headings, internal and external links, link health, image alt text, metadata signals, and JSON-LD.",
+            "zh": "检查语义化 HTML、标题结构、内外链及连通性、图片 Alt、基础 SEO 标签和 JSON-LD。"
           },
-          "badge": { "en": "Controlled write", "zh": "受控写入" },
-          "icon": "FileCheck2"
+          "badge": { "en": "Technical signals", "zh": "技术信号" },
+          "icon": "Sparkles"
+        },
+        {
+          "id": "content-quality-eeat",
+          "title": { "en": "Content quality & E-E-A-T", "zh": "内容质量与 E-E-A-T" },
+          "description": {
+            "en": "Finds spelling, grammar, intent, completeness, unsupported claims, source gaps, and author-trust issues without inventing evidence.",
+            "zh": "检查拼写语法、搜索意图、内容完整度、无依据声明、来源缺口和作者信任信号，不凭空制造证据。"
+          },
+          "badge": { "en": "Evidence-backed", "zh": "证据支撑" },
+          "icon": "PenLine"
+        },
+        {
+          "id": "preview-first-publishing",
+          "title": { "en": "Preview-first publishing", "zh": "先预览再推送" },
+          "description": {
+            "en": "Combines the audit, change list, and storefront-style preview; writes only approved fields, then verifies the saved Article.",
+            "zh": "合并审计报告、修改清单和店铺样式预览；只推送批准字段，并在写入后复核 Article。"
+          },
+          "badge": { "en": "Controlled publishing", "zh": "受控发布" },
+          "icon": "Store"
         }
       ],
       "prerequisites": [],
