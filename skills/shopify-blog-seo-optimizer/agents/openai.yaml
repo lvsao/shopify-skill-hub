@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Blog SEO Optimizer"
+  short_description: "Audit Shopify articles, research E-E-A-T gaps, and preview approved HTML improvements"
+  default_prompt: "Use $shopify-blog-seo-optimizer to audit this Shopify article, research E-E-A-T evidence, generate the combined report and storefront preview, and prepare a preview-first update bundle."
