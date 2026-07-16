@@ -75,7 +75,12 @@
           "icon": "Link"
         }
       ],
-      "prerequisites": []
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "not_required" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "not_required" }
+      ]
     },
     {
       "name": "shopify-store-translator",
@@ -178,14 +183,19 @@
           "icon": "FileSpreadsheet"
         }
       ],
-      "prerequisites": []
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "required" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "not_required" }
+      ]
     },
     {
       "name": "shopify-markets-localization-auditor",
       "displayName": "Shopify Localization & Markets Auditor",
       "displayName_zh": "Shopify 国际化与 Markets 审计",
       "path": "../../skills/shopify-markets-localization-auditor",
-      "tags": ["shopify", "markets", "translation", "audit"],
+      "tags": ["shopify", "markets", "translation"],
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
       "status": "PUBLISHED",
@@ -281,7 +291,12 @@
           "icon": "FileCheck"
         }
       ],
-      "prerequisites": []
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "required" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "not_required" }
+      ]
     },
     {
       "name": "shopify-product-images-downloader",
@@ -356,7 +371,12 @@
           "icon": "FileSignature"
         }
       ],
-      "prerequisites": []
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "not_required" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "not_required" }
+      ]
     },
     {
       "name": "yuntu-yw-shipping",
@@ -421,7 +441,12 @@
           "icon": "Truck"
         }
       ],
-      "prerequisites": []
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "not_required" },
+        { "id": "external-api-credential", "status": "required" },
+        { "id": "vision-model", "status": "not_required" }
+      ]
     }
   ]
 }

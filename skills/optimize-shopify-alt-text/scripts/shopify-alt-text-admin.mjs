@@ -1001,7 +1001,9 @@ function validatePlan(plan) {
     if (!change.id) errors.push(`changes[${index}].id is required`);
     if (typeof change.alt !== "string" || !change.alt.trim()) errors.push(`changes[${index}].alt is required`);
     if (change.alt && change.alt.length > HARD_ALT_LIMIT) errors.push(`changes[${index}].alt exceeds ${HARD_ALT_LIMIT} characters`);
-    if (change.source === "vision") {
+    if (change.source !== "vision") {
+      errors.push(`changes[${index}].source must be "vision"; Alt Text optimization requires a verified vision model`);
+    } else {
       const evidenceParts = String(change.visualEvidence || "")
         .split(/[.;,\n]+/)
         .map((part) => part.trim())
@@ -1009,9 +1011,6 @@ function validatePlan(plan) {
       if (evidenceParts.length < 3) {
         errors.push(`changes[${index}].visualEvidence must include at least 3 pixel-derived facts when source is "vision"`);
       }
-    }
-    if (change.source === "context_only" && change.action !== "approved_context_only") {
-      errors.push(`changes[${index}] is context_only and must be marked action:"approved_context_only" after explicit user approval before apply`);
     }
   }
   if (errors.length) fail(errors.join("\n"));

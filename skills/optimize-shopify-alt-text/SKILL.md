@@ -2,8 +2,8 @@
 name: "optimize-shopify-image-alt"
 slug: "optimize-shopify-image-alt"
 displayName: "Optimize Shopify Alt Text"
-description: "Audit and safely improve Shopify image alt text for product media, collection images, article featured images, and article inline images. Use when a merchant wants image-specific alt text review, batch planning, visual inspection when available, or approved Shopify alt text updates."
-version: 2.1.0
+description: "Audit and safely improve Shopify image alt text for product media, collection images, article featured images, and article inline images. Use when a merchant wants image-specific alt text review, batch planning, required visual inspection, or approved Shopify alt text updates."
+version: 2.2.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -63,7 +63,7 @@ metadata:
 - Preview every proposed write first. Use `--execute` only after explicit approval.
 - Never edit anything except image alt text. For article bodies, only update inline `<img alt="">` attributes.
 - Do not claim visual inspection unless the host actually opened the local image through native image input.
-- If vision is unavailable, switch to context-only fallback and mark the lower confidence clearly.
+- A working vision model is required for Alt Text generation and optimization. If the vision probe fails, stop with `VISION_MODEL_REQUIRED`; do not generate context-only candidates or write changes.
 - Keep artifacts clean: `skill-hub.env` is private and may contain the selected connection method and long-running credentials; temp downloads and machine-readable plans must be deleted after use.
 - Keep alt text concise. Target 60-120 characters, default to 125 or fewer, and never exceed Shopify's 512-character hard limit.
 
@@ -104,9 +104,9 @@ node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs scan --env skil
 1. Follow shared onboarding when connection is missing: recommend quick Shopify CLI connection first; use the Dev Dashboard long-running path only when the merchant chooses it.
 2. Run `connection-check`.
 3. Use `target` for specific requests or `scan` for broad requests.
-4. If vision is needed, run `vision-sample` and verify the model can describe pixel facts from a local file.
+4. Run `vision-sample` and verify the model can describe pixel facts from a local file. Stop with `VISION_MODEL_REQUIRED` if this fails.
 5. Review the current batch against `references/alt-text-rules.md`.
-6. Build one preview plan with source labels such as `vision` or `context_only`.
+6. Build one preview plan with source label `vision` and concrete pixel evidence for every candidate.
 7. Run `apply` without `--execute` for the preview packet.
 8. After approval, rerun `apply --execute`.
 9. Verify counts or the named target, then clean temp files.
@@ -128,4 +128,4 @@ node <absolute-path-to-skill>/scripts/shopify-alt-text-admin.mjs apply --env ski
 
 - Output should stay conversational plus preview JSON or stdout from the helper.
 - After execution, verify the updated target with `target` or `scan`.
-- Report any `context_only` items separately.
+- If the vision probe fails, report `VISION_MODEL_REQUIRED` and stop the optimization workflow; do not report context-only candidates as a completed result.

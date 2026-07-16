@@ -103,19 +103,11 @@
           "icon": "SearchCheck"
         }
       ],
-      "prerequisites": [
-        {
-          "id": "multimodal-model",
-          "label": {
-            "en": "Multimodal model required",
-            "zh": "需要多模态大模型"
-          },
-          "badge": {
-            "en": "Image understanding",
-            "zh": "图片识别"
-          },
-          "icon": "Sparkles"
-        }
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "required" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "required" }
       ]
     }
   ]

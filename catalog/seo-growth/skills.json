@@ -13,12 +13,12 @@
         "zh": "审查并优化 Shopify 图片 alt text"
       },
       "longDescription": {
-        "en": "Scan Shopify product media, collection featured images, article featured images, and article inline images, then prepare a reviewable alt text optimization plan. The workflow first tests whether the active AI agent can truly inspect images, uses multimodal image understanding when available, falls back to Shopify fields when it is not, enforces Shopify alt text length limits, checks for repeated or keyword-stuffed text, and applies only approved updates.",
-        "zh": "扫描 Shopify 商品媒体、集合封面图、博客文章封面图和文章正文图片，并生成可审核的 alt text 优化计划。这个 workflow 会先测试当前 AI agent 是否真的能识别图片；可用时使用多模态图片理解，不可用时回退到 Shopify 字段上下文；同时强制检查 Shopify alt text 字符限制、重复文案和关键词堆叠，并且只执行用户批准的更新。"
+        "en": "Scan Shopify product media, collection featured images, article featured images, and article inline images, then prepare a reviewable alt text optimization plan. The workflow first verifies that the active AI agent can truly inspect images, requires multimodal image understanding for candidates, enforces Shopify alt text length limits, checks for repeated or keyword-stuffed text, and applies only approved updates.",
+        "zh": "扫描 Shopify 商品媒体、集合封面图、博客文章封面图和文章正文图片，并生成可审核的 alt text 优化计划。这个 workflow 会先验证当前 AI agent 能否真正识别图片；生成候选内容必须使用多模态图片理解，同时检查 Shopify alt text 字符限制、重复文案和关键词堆叠，并且只执行用户批准的更新。"
       },
       "introduction": {
-        "en": "Optimize Shopify image alt text with a preview-first workflow that can use real image understanding when available and safe context-only fallback when it is not.",
-        "zh": "用先预览再执行的流程优化 Shopify 图片 alt text：可用时使用真实图片识别，不可用时安全回退到店铺字段上下文。"
+        "en": "Optimize Shopify image alt text with a preview-first workflow that requires real image understanding before generating or applying candidates.",
+        "zh": "用先预览再执行的流程优化 Shopify 图片 alt text：生成或写入候选内容前必须完成真实图片理解。"
       },
       "features": [
         {
@@ -28,7 +28,7 @@
             "zh": "基于图片识别的 alt text"
           },
           "description": {
-            "en": "Tests whether the active AI model can inspect local images, then uses downloaded product, collection, and article images to generate grounded descriptions when possible.",
+            "en": "Verifies that the active AI model can inspect local images, then uses downloaded product, collection, and article images to generate grounded descriptions from pixel evidence.",
             "zh": "先测试当前 AI 模型是否能识别本地图片；通过后再下载商品、集合和文章图片，基于真实画面生成更可靠的描述。"
           },
           "badge": {
@@ -36,22 +36,6 @@
             "zh": "多模态"
           },
           "icon": "ScanEye"
-        },
-        {
-          "id": "context-only-fallback",
-          "title": {
-            "en": "Context-only fallback",
-            "zh": "字段上下文回退"
-          },
-          "description": {
-            "en": "When image recognition is unavailable, generates lower-confidence candidates from product, collection, article, filename, and nearby HTML context without pretending to see the image.",
-            "zh": "当无法识别图片时，只使用商品、集合、文章、文件名和附近 HTML 上下文生成低置信度候选，不假装看过图片。"
-          },
-          "badge": {
-            "en": "Safe fallback",
-            "zh": "安全回退"
-          },
-          "icon": "ShieldCheck"
         },
         {
           "id": "inventory-and-batches",
@@ -102,19 +86,11 @@
           "icon": "FileCheck2"
         }
       ],
-      "prerequisites": [
-        {
-          "id": "multimodal-model",
-          "label": {
-            "en": "Multimodal model required",
-            "zh": "需要多模态大模型"
-          },
-          "badge": {
-            "en": "Image understanding",
-            "zh": "图片识别"
-          },
-          "icon": "Sparkles"
-        }
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "required" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "required" }
       ]
     },
     {
@@ -130,8 +106,8 @@
         "zh": "用 AI 驱动的 SERP 优化与精致 HTML 报告，提升商品搜索可见度"
       },
       "longDescription": {
-        "en": "Turn your Shopify catalog into a scalable product SEO growth engine. This skill analyzes product-level SERP opportunities, maps real buyer intent to your product evidence, and delivers polished HTML audits your team can review and execute fast. The methodology is refined with globally trusted SEO best-practice knowledge from Google documentation, Moz, Semrush, and Ahrefs, so your optimization decisions stay practical, modern, and conversion-oriented.",
-        "zh": "把你的 Shopify 商品目录升级为可持续增长的搜索流量引擎。该技能会分析商品级 SERP 机会，将真实买家搜索意图与商品证据精准匹配，并输出可直接评审与落地的精致 HTML 审计报告。方法论基于 Google 官方文档、Moz、Semrush、Ahrefs 等全球顶级 SEO 最佳实践打磨，让你的优化决策更贴近当下搜索生态，并更聚焦转化结果。"
+        "en": "Turn your Shopify catalog into a scalable product SEO growth engine. This skill analyzes product-level SERP opportunities, product image Alt Text signals, and real buyer intent, then delivers polished HTML audits your team can review and execute fast. The methodology is refined with globally trusted SEO best-practice knowledge from Google documentation, Moz, Semrush, and Ahrefs, so your optimization decisions stay practical, modern, and conversion-oriented.",
+        "zh": "把你的 Shopify 商品目录升级为可持续增长的搜索流量引擎。该技能会分析商品级 SERP 机会、商品图片 Alt Text 信号和真实买家搜索意图，并输出可直接评审与落地的精致 HTML 审计报告。方法论基于 Google 官方文档、Moz、Semrush、Ahrefs 等全球顶级 SEO 最佳实践打磨，让你的优化决策更贴近当下搜索生态，并更聚焦转化结果。"
       },
       "introduction": {
         "en": "Convert unclear product SEO requests into a clear growth roadmap, premium HTML audits, and high-impact SERP improvements your team can launch with confidence.",
@@ -235,7 +211,12 @@
           "icon": "SearchCheck"
         }
       ],
-      "prerequisites": []
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "optional" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "optional" }
+      ]
     }
   ]
 }

@@ -287,6 +287,8 @@ Use this skill's built-in product-image alt text workflow when:
 - the active model can inspect product images directly
 - a context-only fallback is needed because direct image inspection failed
 
+Vision is optional for the overall SERP skill. Without a vision model, the skill may still audit and optimize product titles, descriptions, SEO fields, and context-only Alt Text candidates at lower confidence. It must never claim image understanding or mark a candidate as `source: "vision"` without current-run pixel evidence.
+
 Do not claim image understanding unless the image workflow actually inspected pixels during the current run.
 
 Read `alt-text-rules.md` before generating or reviewing alt text candidates.
