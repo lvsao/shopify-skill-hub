@@ -60,6 +60,8 @@ Gap score:
 (missing + outdated) / eligible
 ```
 
+Use complete `translatableResources` pagination; do not sample. This is a field-based Shopify API score, not a translation-app coverage score. If a merchant compares the figures, explain the denominator: this skill counts current text fields / eligible text fields, while an app may count items or use a snapshot-based denominator.
+
 ## Query Transport And Rate Limits
 
 The Admin GraphQL API is rate-limited by calculated query cost, not by a fixed request count. The helper therefore:

@@ -3,7 +3,7 @@ name: "shopify-markets-localization-auditor"
 slug: "shopify-markets-localization-auditor"
 displayName: "Shopify Markets Localization Auditor"
 description: "Audit Shopify international setup across Markets, languages, shipping coverage, storefront localization, international SEO basics, and category-fit expansion opportunities with a plain-language HTML report and approval-based fixes. Use when a merchant wants to review or improve Markets, language readiness, local buying experience, or international growth direction. Do not use for theme coding, feed work, ad strategy, or generic translation writing."
-version: 2.1.0
+version: 2.1.1
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -20,7 +20,7 @@ required_environment_variables:
     required_for: "Long-running connection only."
   - name: SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN
     help: "Optional private token for approved permission releases only."
-    required_for: "Approved permission-release workflow only."
+    required_for: "Approved permission-release workflow only; configure during Dev Dashboard setup when unattended releases are desired."
 metadata:
   openclaw:
     requires:
@@ -33,6 +33,12 @@ metadata:
       SKILL_HUB_SHOPIFY_STORE_DOMAIN:
         required: true
         description: "Shopify admin URL or .myshopify.com store domain."
+      SKILL_HUB_SHOPIFY_ACCESS_METHOD:
+        required: false
+        description: "Optional connection mode: shopify_cli_oauth (default) or dev_dashboard_client_credentials."
+      SKILL_HUB_SHOPIFY_API_VERSION:
+        required: false
+        description: "Optional Shopify Admin API version override."
       SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
         description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
@@ -44,7 +50,7 @@ metadata:
         description: "Private Dev Dashboard Client Secret for long-running connection."
       SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN:
         required: false
-        description: "Private token for approved app configuration releases only."
+        description: "Optional private token for approved Dev Dashboard app permission releases; never a store API credential."
     primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🌐"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
@@ -75,10 +81,22 @@ metadata:
 - `references/audit-rules.md` before scoring findings or building fix plans
 - `references/business-research-method.md` before writing any international business recommendation
 
+### Connection errors
+
+Only after a request fails; keep the selected access method.
+- Network (`fetch failed`, `ETIMEDOUT`, `ECONNRESET`, `ENETUNREACH`): never guess proxy ports. If the runtime is configured to use an approved proxy, retry once; otherwise ask the merchant to expose one to this process.
+- `407`: fix proxy credentials in the runtime secret store; never paste them in chat.
+- `CLI_NOT_FOUND` / `ENOENT`: resolve the configured CLI entry or platform command; this is a launcher error.
+- `401/403` / `invalid_client`: check store, credentials, and app installation.
+- `SCOPE_UPDATE_REQUIRED`: show missing scopes, get approval, approve in Shopify, refresh token, retry.
+- `shop_not_permitted`: use an app permitted for this store; do not loop. GraphQL errors: fix query/input; do not retry blindly.
+- Suggest another access method only after this path fails and the user agrees.
+
 ## Connection Modes
 
 - Recommend `shopify_cli_oauth` for a quick browser connection.
 - Use `dev_dashboard_client_credentials` only when the merchant requests a trusted long-running connection for their own store.
+- During Dev Dashboard onboarding, ask whether unattended future permission releases are desired; if yes, configure the optional Automation Token privately. Follow the two-consent upgrade flow in `references/onboarding-guide.md`; never silently broaden scopes.
 
 ## Scope
 
@@ -135,67 +153,10 @@ node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs a
 10. Execute fixes only after explicit approval.
 11. Verify changed fields and clean temp files.
 
-## How To Measure Locale Readiness
+## Measurement And Report References
 
-Use the full `translatableResources` pagination flow. Do not sample.
-
-Rules:
-
-- Count only resource types listed in `references/api-surfaces.md`.
-- Skip non-text payloads and `handle`.
-- `current` means a translation exists and `outdated` is `false`.
-- `outdated` means a translation exists but Shopify marks it stale.
-- `missing` means the translation does not exist.
-- The readiness percentage is:
-
-```text
-current / eligible fields
-```
-
-- The gap percentage is:
-
-```text
-(missing + outdated) / eligible fields
-```
-
-This means a locale can show `80% ready` even when some strings are present but stale.
-
-Important:
-
-- This readiness score is a field-based Shopify API audit score, not a translation-app progress score.
-- Do not present it as "the same number" as any app-side coverage widget unless the other system is confirmed to use the same resource scope, exclusion rules, and denominator.
-- If the user also uses a translation app, explain the denominator in plain language:
-  - this skill = translated up-to-date text fields / eligible text fields
-  - many translation apps = translated items / total items, snapshot-based coverage, or another internal metric
-
-## Report Rules
-
-- Keep the report sections short and obvious.
-- Use these section names conceptually:
-  - `Overall view`
-  - `Strengths`
-  - `Priority fixes`
-  - `Improve next`
-  - `Languages`
-  - `Markets`
-  - `Shipping`
-  - `Storefront`
-  - `International growth ideas`
-  - `Approval-only fixes`
-- Render the final report in the user's current conversation language. Do not hardcode one output language in the skill rules.
-- The script's `--lang auto` follows the machine locale (`zh*` becomes `zh-CN`; all other locales become `en`). Pass `--lang zh-CN` or `--lang en` when the conversation language differs from the machine.
-- Every issue must answer:
-  - what is wrong
-  - why it matters
-  - what to do next
-- Avoid terms like `webPresence`, `alternateLocales`, `translatableResource`, or `digest` in the customer-facing report unless there is no plain-language substitute.
-- Explain URL strategy in plain language:
-  - shared root domain only
-  - subfolder
-  - separate domain or subdomain
-- Do not claim a precise result for storefront selector visibility or Shopify automatic redirection in this skill. Mention them only as low-priority reminders for manual review.
-- Do not write generic market advice. International growth ideas must be tied to the store's actual category, product use case, and buying context.
-- Separate `evidence` from `inference` when the category advice depends on external research.
+- Use the full `translatableResources` pagination flow; do not sample. `references/api-surfaces.md` defines eligible fields, readiness/gap math, and how to explain a Shopify API coverage score without conflating it with translation-app metrics.
+- `references/audit-rules.md` defines the customer-facing report structure, plain-language terminology, language selection, and evidence-versus-inference rules.
 
 ## Supported Fixes
 

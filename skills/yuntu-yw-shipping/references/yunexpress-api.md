@@ -4,7 +4,7 @@ Use this reference with `scripts/yunexpress_shipping.py`. OMS 1.4.5 specifies UT
 
 ## Configuration and safety
 
-Set these only in a private local env file: `YUNTU_CUSTOMER_CODE`, `YUNTU_API_SECRET`, and `YUNTU_OMS_BASE_URL`. The API document has distinct UAT and production endpoints. Use the base URL selected by the merchant; credentials are environment-specific. Never commit either env file or a request containing personal data.
+Set these only in a private local env file: `YUNTU_CUSTOMER_CODE`, `YUNTU_API_SECRET`, and `YUNTU_OMS_BASE_URL`. Set `YUNTU_OMS_BASE_URL=http://oms.api.yunexpress.com` for production; the helper appends its `/api/...` route. The API document has a distinct UAT endpoint: use only the UAT base URL supplied by YunExpress with matching UAT credentials. Never commit either env file or a request containing personal data.
 
 The specification documents a test account and UAT endpoint. It may be useful for read-only quotation checks, and a known test credential can return accurate quote pricing. Do not place that credential in this skill, use it to create operational shipments, or assume it has merchant permissions.
 

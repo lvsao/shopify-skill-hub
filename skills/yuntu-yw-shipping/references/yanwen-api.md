@@ -1,10 +1,16 @@
 # Yanwen (YW56) API reference
 
+## Base URLs
+
+- Production order API: `https://open.yw56.com.cn/api/order`
+- Test order API: `https://open-fat.yw56.com.cn/api/order`
+- Tracking API: `http://api.track.yw56.com.cn/api/tracking`
+
 Use this reference with `scripts/yanwen_shipping.py`. Yanwen order APIs use POST and UTF-8 JSON. Put `user_id`, `method`, `format=json`, millisecond `timestamp`, `version=V1.0`, and `sign` in the query string; send compact JSON as the body. The signature is lowercase MD5 of `apiToken + user_id + compact-data + format + method + timestamp + version + apiToken`. A normal successful response has `success: true` and `code: "0"`.
 
 ## Onboarding and connection
 
-For small-parcel services, sign in to Yanwen, choose **小包专线** > **账号管理** > **制单账号管理** > **新增制单账号**, then save the new 制单账号 as `YANWEN_USER_ID` and its key as `YANWEN_API_TOKEN` in a private `yanwen-shipping.env`. Set `YANWEN_API_BASE_URL` to the matching production or test order endpoint provided by Yanwen. Do not copy keys into payload JSON, source files, or Git.
+For small-parcel services, sign in to Yanwen, choose **小包专线** > **账号管理** > **制单账号管理** > **新增制单账号**, then save the new 制单账号 as `YANWEN_USER_ID` and its key as `YANWEN_API_TOKEN` in a private `yanwen-shipping.env`. Set `YANWEN_API_BASE_URL=https://open.yw56.com.cn/api/order` for production, or `https://open-fat.yw56.com.cn/api/order` for testing. Do not copy keys into payload JSON, source files, or Git.
 
 Run `check` first. A valid signature does not guarantee the account can create shipments: Yanwen can reject writes for a frozen account. Do not retry or substitute another account; ask the merchant to have Yanwen sales/support activate the 制单账号.
 

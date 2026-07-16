@@ -3,7 +3,7 @@ name: "yuntu-yw-shipping"
 slug: "yuntu-yw-shipping"
 displayName: "云途物流 & 燕文物流 Shipping"
 description: "YunExpress（云途物流）与 Yanwen（燕文物流）的跨境物流查单、报价和制单工具。Use when an ecommerce seller asks to track a YunExpress or Yanwen package, check where a parcel is, look up a waybill/order, shipping channel, warehouse, delivery method, route, price or billable weight, or prepare a shipping order, label, cancellation, or other carrier request for Shopify, Amazon, TikTok Shop, Temu, an independent store, or another ecommerce order. It does not need Shopify login and does not register carrier accounts, automatically dispatch shipments, or write to a carrier without the merchant's credentials, a redacted preview, and explicit approval."
-version: 1.0.0
+version: 1.0.1
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -18,7 +18,7 @@ required_environment_variables:
     required_for: "All authenticated YunExpress OMS API calls."
   - name: YUNTU_OMS_BASE_URL
     prompt: "Provide the OMS base URL for the intended environment."
-    help: "Use the production or UAT URL provided by YunExpress; do not guess or mix credentials between them."
+    help: "Production: http://oms.api.yunexpress.com. For UAT, use only the matching URL supplied by YunExpress; do not mix credentials between environments."
     required_for: "All authenticated YunExpress OMS API calls."
   - name: YANWEN_USER_ID
     prompt: "Provide the Yanwen shipping-account number from 制单账号管理."
@@ -30,7 +30,7 @@ required_environment_variables:
     required_for: "All authenticated Yanwen small-parcel, tracking, and rate API calls."
   - name: YANWEN_API_BASE_URL
     prompt: "Provide the Yanwen production or test order API base URL."
-    help: "Use only the matching URL supplied by Yanwen for the selected environment."
+    help: "Production: https://open.yw56.com.cn/api/order. Test: https://open-fat.yw56.com.cn/api/order."
     required_for: "All authenticated Yanwen order API calls."
 metadata:
   openclaw:
@@ -84,7 +84,7 @@ Ask the merchant to obtain their own credentials:
 1. Sign in to YunExpress.
 2. Select **专线** (or **B2B**) in the left navigation.
 3. Open **API寄件**, then select **API**.
-4. Copy **客户代码** and **API密钥** into their private `yunexpress-shipping.env` using `init-env` below. Ask whether they are using production or UAT, then set the matching OMS base URL supplied by YunExpress.
+4. Copy **客户代码** and **API密钥** into their private `yunexpress-shipping.env` using `init-env` below. Set `YUNTU_OMS_BASE_URL=http://oms.api.yunexpress.com` for production. For UAT, use only the UAT URL supplied by YunExpress with matching UAT credentials.
 
 Run the read-only check before all other work. It validates authentication by loading countries, product methods, goods types, and a quote; it never creates an order.
 
@@ -95,7 +95,7 @@ Ask the merchant to obtain their own Yanwen **制单账号** and secret:
 1. Sign in to the Yanwen customer centre.
 2. Select **小包专线**.
 3. Open **账号管理**, then **制单账号管理**.
-4. Select **新增制单账号** and copy the resulting **制单账号** and **密钥** into private `yanwen-shipping.env` using `yanwen_shipping.py init-env`.
+4. Select **新增制单账号** and copy the resulting **制单账号** and **密钥** into private `yanwen-shipping.env` using `yanwen_shipping.py init-env`. Use `https://open.yw56.com.cn/api/order` for production or `https://open-fat.yw56.com.cn/api/order` for Yanwen testing.
 
 Run `check` before quoting, tracking, or creating a Yanwen order. A Yanwen shipping account can be frozen even when its signature is valid; report the carrier error and direct the merchant to Yanwen sales or support instead of retrying a create request.
 

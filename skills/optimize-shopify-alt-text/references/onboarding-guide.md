@@ -1,54 +1,71 @@
+<!-- GENERATED FILE: edit shared/shopify-admin-onboarding/core.md or manifest.json, then run node scripts/sync-onboarding.mjs --write. -->
+<!-- onboarding-contract: 1.0.0; source-sha256: c358ff6fc801a7cd871c30174af725fb867bd457c6e16a7d2eb24a04f066dfe8 -->
 # Connect Your Store
 
-Offer a connection only when store data or an approved update is needed. Ask for a Shopify admin link or `.myshopify.com` address; accept a normal storefront URL only when the helper can safely resolve its permanent Shopify address.
+Offer a connection only when store data or an approved alt-text update is needed.
 
-## Choice 1 — Quick connection (recommended)
+## Choose the smallest access path
 
-This is best for a first try or a one-off task. The merchant provides no secret.
+No connection is needed for planning from merchant-supplied local images; do not create `skill-hub.env` for that path.
 
-1. Check Shopify CLI 3.93.0+ and install or upgrade it if necessary.
-2. Create the private working-directory `skill-hub.env` with `init-env`; it stores the store address and chosen method, never a CLI token.
-3. Say: “A Shopify permission page is opening. Please review it and click Install; I will continue when it finishes.”
-4. Run:
+### Quick connection (recommended)
+
+Use this for a first run or occasional work. The merchant supplies a store address, never an access token or API secret.
+
+1. Ensure Shopify CLI 3.93.0+ is available.
+2. Create private `skill-hub.env` in the merchant's working directory with the skill's `init-env` command. Keep it ignored by Git; never place it in the skill folder.
+3. Explain that Shopify will open a browser permission page, then run:
 
 ```text
 shopify store auth --store <shop>.myshopify.com --scopes read_products,write_products,read_content,write_content,read_files,write_files --json
 ```
 
-5. Run `connection-check`. If access expires, is revoked, or lacks a needed permission, repeat this browser step. Never ask the merchant to copy an access token.
+4. Wait for the merchant to approve the browser permission page, then run the skill's read-only `connection-check`.
 
-## Choice 2 — Long-running connection
+If the CLI grant expires, is revoked, or lacks access, repeat this browser step with the exact active-task scopes. CLI mode never uses the Automation Token.
 
-Use this only for the merchant’s own store and a trusted local or server agent. It lets the agent request a fresh short-lived connection automatically; the Client Secret remains private.
+### Long-running connection
 
-1. In Shopify admin, open the store switcher/name menu and choose **Developer Dashboard**. Labels can vary slightly by admin version.
-2. Choose **Apps** → **Create app** → **Start from Dev Dashboard**, name the app, then open **Versions** and create the first version.
-3. In the permissions field, enter this exact copyable list. Shopify asks for a comma-separated list:
+Use this only for a trusted local or server agent operating on the merchant's own store.
+
+1. In Shopify admin, open **Developer Dashboard** → **Apps** → **Create app** → **Start from Dev Dashboard**.
+2. Create the first app version with this exact, copyable comma-separated scope list:
 
 ```text
 read_products,write_products,read_content,write_content,read_files,write_files
 ```
 
-4. Set the app URL to Shopify’s default app home if no app page is needed, then **Release** the version.
-5. In **Settings**, copy the Client ID and Client Secret directly into private configuration. Do not paste either into chat, source code, or a repository.
-6. From **Home**, choose **Install app**, select the merchant’s own store, and approve the installation.
-7. Set `SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_client_credentials` plus the store domain, Client ID, and Client Secret in `skill-hub.env`, or provide the same values as private server environment variables. The helper requests and refreshes temporary API access automatically.
+3. Release the version, copy the Client ID and Client Secret from **Settings** into private local/server configuration, then install the app from **Home** to the merchant's own store.
+4. Configure the private runtime values:
 
-Advanced merchants may choose all permissions, but explain that it gives any approved agent a much larger operating area. Empty permissions are allowed, but the app cannot do store work until permissions are added.
+```text
+SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_client_credentials
+SKILL_HUB_SHOPIFY_STORE_DOMAIN=<shop>.myshopify.com
+SKILL_HUB_SHOPIFY_CLIENT_ID=<private-client-id>
+SKILL_HUB_SHOPIFY_CLIENT_SECRET=<private-client-secret>
+```
 
-## Adding a permission later
+The helper exchanges the client credentials for short-lived API access in memory. Never save, display, or paste the access token in chat.
 
-Only request a permission required by the active task. Show the exact copyable list and reason, then get explicit approval before changing app configuration.
+If the merchant wants this trusted agent to release future approved permission updates without supplying another credential, configure `SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN` privately now. It is optional for current scopes, cannot read store data, expires after 1, 3, or 6 months, and never grants merchant consent.
 
-For controlled automation, first synchronize the existing app configuration only inside private `.skill-hub/`; never do this in the Skills repository. `SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN` is optional and only permits Shopify CLI to publish that app’s configuration—it cannot access store data. It expires and must be rotated.
+Advanced merchants may enable all permissions only after a plain-language warning about the wider access. Empty permissions are valid but block store work until updated.
 
-After the merchant explicitly approves synchronization, the agent may run `shopify app config link --path <private-.skill-hub-app-dir> --client-id <client-id>`, then `shopify app config validate --path <private-.skill-hub-app-dir> --json`. After separately approving the exact scope release, inject the Automation Token only for `shopify app deploy --path <private-.skill-hub-app-dir> --allow-updates`. Never run these commands from the Skills repository or expose their secret values.
+## Permission upgrades
 
-After a release, tell the merchant to open the app in Shopify admin and approve the pending permission update. Wait for that confirmation, then rerun the read-only connection check. Do not assume a newly released permission works immediately.
+CLI mode: rerun `shopify store auth` with the exact missing scopes and wait for browser approval.
 
-## Safety and recovery
+Dev Dashboard mode is a two-consent flow:
 
-- Connection never replaces the existing preview → explicit approval → `apply --execute` rule.
-- If long-running connection reports `DEV_DASHBOARD_STORE_NOT_PERMITTED`, the app and store are not in the same Shopify organization; use quick connection instead.
-- If it reports `SCOPE_UPDATE_REQUIRED`, show the listed permissions and follow the approval flow. Do not silently broaden access.
-- Keep all secrets in private local/server configuration. Never display them in commands, reports, logs, or committed files.
+1. Show only the missing scopes, the merchant-language reason, and the full copyable scope list.
+2. Obtain approval for those exact scopes. If declined, continue only with a path supported by the current access.
+3. Obtain separate approval to publish the app change. Only then synchronize the merchant's existing app under private `.skill-hub/` with `shopify app config link --path <private-.skill-hub-app-dir> --client-id <client-id>`; preserve unknown settings and never synthesize a replacement configuration.
+4. Run `shopify app config validate --path <private-.skill-hub-app-dir> --json`. Inject `SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN` as `SHOPIFY_APP_AUTOMATION_TOKEN` only into the child process that runs `shopify app deploy --path <private-.skill-hub-app-dir> --allow-updates`. Never place it in arguments, files, logs, or GraphQL requests.
+5. Tell the merchant to open the installed app in Shopify admin and approve the pending **Update/Approve permissions** action. Publishing a version does not grant consent.
+6. Wait for propagation, refresh the short-lived token, and rerun a read-only connection check. If the scope remains absent, report `SCOPE_UPDATE_PENDING` and stop; never redeploy repeatedly.
+
+“Silent automation” means private credential injection after approval; it never means silent scope expansion or consent.
+
+## Safety boundary
+
+Connection never replaces this skill's preview → explicit approval → `apply --execute` boundary. Optimize only image alt text.

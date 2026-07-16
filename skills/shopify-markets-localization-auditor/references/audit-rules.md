@@ -110,6 +110,15 @@ Use this wording style:
 - `As a manual follow-up, check whether the storefront has a country/language switcher and whether Shopify automatic redirection is enabled in admin.`
 - `Because this store sells pet travel products, country prioritization should consider driving habits, small-home urban living, and demand for safety and portability instead of pet population alone.`
 
+## Customer-Facing Report Rules
+
+- Use short, plain-language sections for overall view, strengths, priority fixes, improve next, languages, markets, shipping, storefront, international growth ideas, and approval-only fixes.
+- Render in the conversation language. `--lang auto` follows the machine locale; pass `zh-CN` or `en` when it differs from the conversation.
+- Every issue explains what is wrong, why it matters, and what to do next.
+- Prefer plain language over `webPresence`, `alternateLocales`, `translatableResource`, or `digest`. Explain URL strategy as shared root domain, subfolder, or separate domain/subdomain.
+- Treat storefront selector visibility and automatic redirection as manual follow-ups, not precise automated findings.
+- Tie international recommendations to the actual category, product use case, and buying context. Separate evidence from inference whenever external research informs the recommendation.
+
 ## Fix Plan Rules
 
 The fix bundle must be short and reviewable.
