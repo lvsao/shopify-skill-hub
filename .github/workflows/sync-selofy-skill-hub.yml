@@ -25,6 +25,7 @@ jobs:
 
       - name: Validate sync payload
         run: |
+          node scripts/sync-onboarding.mjs --check
           node scripts/release-preflight.mjs
           node scripts/build-sync-payload.mjs > skill-hub-sync-payload.json
 

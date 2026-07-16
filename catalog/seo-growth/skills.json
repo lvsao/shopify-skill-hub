@@ -222,7 +222,7 @@
       "name": "shopify-blog-seo-optimizer",
       "displayName": "Shopify Blog SEO Optimizer",
       "path": "../../skills/shopify-blog-seo-optimizer",
-      "tags": ["shopify", "seo", "blog", "content"],
+      "tags": ["shopify", "seo", "blog"],
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
       "status": "PUBLISHED",

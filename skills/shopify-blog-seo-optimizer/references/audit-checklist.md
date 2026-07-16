@@ -28,6 +28,7 @@
 - No scripts, event handlers, forms, iframes, unsafe URLs, or invisible keyword blocks.
 - Images have useful alt text; decorative images use an empty alt only when truly decorative.
 - Links have usable hrefs, descriptive text, and no obvious broken destinations.
+- Run bounded, read-only connectivity checks for up to 30 absolute HTTP(S) links. Record status, redirects, timeouts, and skipped links; a blocked HEAD request is not automatically a broken link when a safe GET succeeds.
 - Lists use list elements; headings are not used only for visual bolding.
 - Empty paragraphs and duplicate IDs are removed or reported.
 - Shopify normalization risk is noted; never require byte-for-byte round trips.

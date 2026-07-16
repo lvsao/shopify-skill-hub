@@ -3,7 +3,7 @@ name: "shopify-product-serp-optimizer"
 slug: "shopify-product-serp-optimizer"
 displayName: "Shopify Product SERP Optimizer"
 description: "Audit and improve Shopify product SERP performance with five-product batches, evidence-backed metadata recommendations, product image Alt Text checks, HTML reports, and one approval bundle for safe writes. Use for product-page search snippet work, not technical SEO, translations, redirects, theme work, or generic content strategy."
-version: 2.1.1
+version: 2.1.2
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -20,7 +20,7 @@ required_environment_variables:
     required_for: "Long-running connection only."
   - name: SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN
     help: "Optional private token for approved permission releases only."
-    required_for: "Approved permission-release workflow only."
+    required_for: "Approved permission-release workflow only; configure during Dev Dashboard setup when unattended releases are desired."
 metadata:
   openclaw:
     requires:
@@ -33,6 +33,12 @@ metadata:
       SKILL_HUB_SHOPIFY_STORE_DOMAIN:
         required: true
         description: "Shopify admin URL or .myshopify.com store domain."
+      SKILL_HUB_SHOPIFY_ACCESS_METHOD:
+        required: false
+        description: "Optional connection mode: shopify_cli_oauth (default), dev_dashboard_client_credentials, or public_storefront."
+      SKILL_HUB_SHOPIFY_API_VERSION:
+        required: false
+        description: "Optional Shopify Admin API version override for connected modes."
       SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
         description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
@@ -44,7 +50,7 @@ metadata:
         description: "Private Dev Dashboard Client Secret for long-running connection."
       SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN:
         required: false
-        description: "Private token for approved app configuration releases only."
+        description: "Optional private token for approved Dev Dashboard app permission releases; never a store API credential."
     primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🔍"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
@@ -74,6 +80,17 @@ metadata:
 - `references/alt-text-rules.md` when image alt text is in scope
 - `references/public-data-extraction.md` only for read-only (public storefront) mode
 
+### Connection errors
+
+Only after a request fails; keep the selected access method.
+- Network (`fetch failed`, `ETIMEDOUT`, `ECONNRESET`, `ENETUNREACH`): never guess proxy ports. If the runtime is configured to use an approved proxy, retry once; otherwise ask the merchant to expose one to this process.
+- `407`: fix proxy credentials in the runtime secret store; never paste them in chat.
+- `CLI_NOT_FOUND` / `ENOENT`: resolve the configured CLI entry or platform command; this is a launcher error.
+- `401/403` / `invalid_client`: check store, credentials, and app installation.
+- `SCOPE_UPDATE_REQUIRED`: show missing scopes, get approval, approve in Shopify, refresh token, retry.
+- `shop_not_permitted`: use an app permitted for this store; do not loop. GraphQL errors: fix query/input; do not retry blindly.
+- Suggest another access method only after this path fails and the user agrees.
+
 ## Scope Selection Flow
 
 Use these paths:
@@ -89,6 +106,7 @@ Rules:
 3. If the user gives a collection, use it only as narrowing context.
 4. If the request is vague, scan products and build a five-product batch plan.
 5. Read-only mode: generate the report but do not offer writes.
+6. During Dev Dashboard onboarding, ask whether unattended future permission releases are desired; if yes, configure the optional Automation Token privately. Follow the two-consent upgrade flow in `references/onboarding-guide.md`; never silently broaden scopes.
 
 ## Bundled Script
 

@@ -79,7 +79,7 @@ def main():
     if args.command == "init-env":
         path = Path(args.env)
         if path.exists(): raise ValueError(f"Refusing to overwrite {path}.")
-        path.write_text("# Keep this private and ignored by Git.\nYANWEN_USER_ID=\nYANWEN_API_TOKEN=\nYANWEN_API_BASE_URL=\n", encoding="utf-8"); print(f"Created private template: {path}"); return
+        path.write_text("# Keep this private and ignored by Git. Replace with https://open-fat.yw56.com.cn/api/order only for Yanwen testing.\nYANWEN_USER_ID=\nYANWEN_API_TOKEN=\nYANWEN_API_BASE_URL=https://open.yw56.com.cn/api/order\n", encoding="utf-8"); print(f"Created private template: {path}"); return
     env = load_env(Path(args.env))
     if args.command == "check":
         result = {}

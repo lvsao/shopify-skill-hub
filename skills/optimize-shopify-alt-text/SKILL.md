@@ -3,7 +3,7 @@ name: "optimize-shopify-image-alt"
 slug: "optimize-shopify-image-alt"
 displayName: "Optimize Shopify Alt Text"
 description: "Audit and safely improve Shopify image alt text for product media, collection images, article featured images, and article inline images. Use when a merchant wants image-specific alt text review, batch planning, required visual inspection, or approved Shopify alt text updates."
-version: 2.2.0
+version: 2.2.1
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -20,7 +20,7 @@ required_environment_variables:
     required_for: "Long-running connection only."
   - name: SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN
     help: "Optional private token used only for approved app configuration releases."
-    required_for: "Approved permission-release workflow only."
+    required_for: "Approved permission-release workflow only; configure during Dev Dashboard setup when unattended releases are desired."
 metadata:
   openclaw:
     requires:
@@ -33,6 +33,12 @@ metadata:
       SKILL_HUB_SHOPIFY_STORE_DOMAIN:
         required: true
         description: "Shopify admin URL or .myshopify.com store domain."
+      SKILL_HUB_SHOPIFY_ACCESS_METHOD:
+        required: false
+        description: "Optional connection mode: shopify_cli_oauth (default) or dev_dashboard_client_credentials."
+      SKILL_HUB_SHOPIFY_API_VERSION:
+        required: false
+        description: "Optional Shopify Admin API version override."
       SKILL_HUB_SHOPIFY_CLI_JS:
         required: false
         description: "Optional Shopify CLI entrypoint when the CLI is not on PATH."
@@ -44,7 +50,7 @@ metadata:
         description: "Private Dev Dashboard Client Secret for long-running connection."
       SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN:
         required: false
-        description: "Private token for approved app configuration releases only."
+        description: "Optional private token for approved Dev Dashboard app permission releases; never a store API credential."
     primaryEnv: SKILL_HUB_SHOPIFY_STORE_DOMAIN
     emoji: "🖼️"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
@@ -72,10 +78,22 @@ metadata:
 - `references/onboarding-guide.md` for shared Shopify setup
 - `references/alt-text-rules.md` for wording, length, and duplicate rules
 
+### Connection errors
+
+Only after a request fails; keep the selected access method.
+- Network (`fetch failed`, `ETIMEDOUT`, `ECONNRESET`, `ENETUNREACH`): never guess proxy ports. If the runtime is configured to use an approved proxy, retry once; otherwise ask the merchant to expose one to this process.
+- `407`: fix proxy credentials in the runtime secret store; never paste them in chat.
+- `CLI_NOT_FOUND` / `ENOENT`: resolve the configured CLI entry or platform command; this is a launcher error.
+- `401/403` / `invalid_client`: check store, credentials, and app installation.
+- `SCOPE_UPDATE_REQUIRED`: show missing scopes, get approval, approve in Shopify, refresh token, retry.
+- `shop_not_permitted`: use an app permitted for this store; do not loop. GraphQL errors: fix query/input; do not retry blindly.
+- Suggest another access method only after this path fails and the user agrees.
+
 ## Connection Modes
 
 - Recommend `shopify_cli_oauth` for a quick browser connection.
 - Use `dev_dashboard_client_credentials` only when the merchant requests a trusted long-running connection for their own store.
+- During Dev Dashboard onboarding, ask whether unattended future permission releases are desired; if yes, configure the optional Automation Token privately. Follow the two-consent upgrade flow in `references/onboarding-guide.md`; never silently broaden scopes.
 
 ## Supported Surfaces
 

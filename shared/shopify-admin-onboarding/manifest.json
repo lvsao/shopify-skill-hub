@@ -1,0 +1,47 @@
+{
+  "contractVersion": "1.0.0",
+  "skills": [
+    {
+      "path": "skills/optimize-shopify-alt-text/references/onboarding-guide.md",
+      "intro": "Offer a connection only when store data or an approved alt-text update is needed.",
+      "publicAccess": "No connection is needed for planning from merchant-supplied local images; do not create `skill-hub.env` for that path.",
+      "scopes": "read_products,write_products,read_content,write_content,read_files,write_files",
+      "workflowBoundary": "Connection never replaces this skill's preview → explicit approval → `apply --execute` boundary. Optimize only image alt text."
+    },
+    {
+      "path": "skills/shopify-blog-seo-optimizer/references/onboarding-guide.md",
+      "intro": "Use this guide for the first Shopify connection before an Article audit or approved update.",
+      "publicAccess": "This skill needs Admin access; a public Article URL is only a locator, not an authorization path.",
+      "scopes": "read_content,write_content",
+      "workflowBoundary": "Read access is required before Article lookup. A missing write scope may still allow audit and report generation, but it blocks `apply --execute`."
+    },
+    {
+      "path": "skills/shopify-markets-localization-auditor/references/onboarding-guide.md",
+      "intro": "Connect only when the audit needs Shopify Admin evidence or the merchant requests an approved supported fix.",
+      "publicAccess": "A storefront-only review may inspect public signals without Admin authorization; it must not offer API fixes.",
+      "scopes": "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations,read_shipping,read_legal_policies,read_products",
+      "workflowBoundary": "Connection never replaces the preview → explicit approval → `apply --execute` boundary. This skill may apply only its documented V1 fixes."
+    },
+    {
+      "path": "skills/shopify-product-serp-optimizer/references/onboarding-guide.md",
+      "intro": "Use Admin access for connected audits and approved fixes; select public storefront mode for a URL-only report.",
+      "publicAccess": "**Public storefront mode:** no Shopify credential or Admin authorization is needed. A private local config may retain the non-secret target domain for repeatable read-only commands; it must never offer writes.",
+      "scopes": "read_products,write_products,read_files,write_files",
+      "workflowBoundary": "Every connected write still requires preview → explicit approval → `apply --execute`. Public storefront mode is report-only."
+    },
+    {
+      "path": "skills/shopify-store-translator/references/onboarding-guide.md",
+      "intro": "Connect only when the requested translation or locale/market review needs Shopify Admin data.",
+      "publicAccess": "CSV preparation can stay local; do not request a store connection until the merchant wants Admin reads or writes.",
+      "scopes": "read_locales,write_locales,read_markets,write_markets,read_translations,write_translations",
+      "workflowBoundary": "Connection never replaces the skill's preview and explicit approval boundary before enabling languages, changing Markets, or registering translations."
+    },
+    {
+      "path": "skills/wechat-to-shopify-blog/references/onboarding-guide.md",
+      "intro": "Use store access only after the merchant supplies an owned or authorized WeChat source and requests a Shopify draft.",
+      "publicAccess": "WeChat extraction and draft planning can remain local. Do not create `skill-hub.env` until Shopify context, uploads, or draft creation are requested.",
+      "scopes": "read_products,read_content,write_content,read_files,write_files",
+      "workflowBoundary": "Authorization never replaces preview → explicit approval → image upload and draft-write boundaries. This skill creates drafts only and never publishes."
+    }
+  ]
+}

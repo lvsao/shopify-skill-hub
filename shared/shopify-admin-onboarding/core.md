@@ -1,12 +1,10 @@
-<!-- GENERATED FILE: edit shared/shopify-admin-onboarding/core.md or manifest.json, then run node scripts/sync-onboarding.mjs --write. -->
-<!-- onboarding-contract: 1.0.0; source-sha256: 0d96f6d59e5701b4d513454be4e695266fcfe5879aaba09b46ed9521372826a6 -->
 # Connect Your Store
 
-Use store access only after the merchant supplies an owned or authorized WeChat source and requests a Shopify draft.
+{{intro}}
 
 ## Choose the smallest access path
 
-WeChat extraction and draft planning can remain local. Do not create `skill-hub.env` until Shopify context, uploads, or draft creation are requested.
+{{publicAccess}}
 
 ### Quick connection (recommended)
 
@@ -17,7 +15,7 @@ Use this for a first run or occasional work. The merchant supplies a store addre
 3. Explain that Shopify will open a browser permission page, then run:
 
 ```text
-shopify store auth --store <shop>.myshopify.com --scopes read_products,read_content,write_content,read_files,write_files --json
+shopify store auth --store <shop>.myshopify.com --scopes {{scopes}} --json
 ```
 
 4. Wait for the merchant to approve the browser permission page, then run the skill's read-only `connection-check`.
@@ -32,7 +30,7 @@ Use this only for a trusted local or server agent operating on the merchant's ow
 2. Create the first app version with this exact, copyable comma-separated scope list:
 
 ```text
-read_products,read_content,write_content,read_files,write_files
+{{scopes}}
 ```
 
 3. Release the version, copy the Client ID and Client Secret from **Settings** into private local/server configuration, then install the app from **Home** to the merchant's own store.
@@ -68,4 +66,4 @@ Dev Dashboard mode is a two-consent flow:
 
 ## Safety boundary
 
-Authorization never replaces preview → explicit approval → image upload and draft-write boundaries. This skill creates drafts only and never publishes.
+{{workflowBoundary}}

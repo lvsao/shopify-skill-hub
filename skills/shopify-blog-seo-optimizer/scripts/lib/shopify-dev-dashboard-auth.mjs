@@ -12,6 +12,7 @@ const CONFIG_KEYS = [
   "SKILL_HUB_SHOPIFY_STORE_DOMAIN",
   "SKILL_HUB_SHOPIFY_CLIENT_ID",
   "SKILL_HUB_SHOPIFY_CLIENT_SECRET",
+  "SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN",
   "SKILL_HUB_SHOPIFY_CLI_JS",
 ];
 
@@ -44,8 +45,7 @@ export async function loadShopifyConfig(envPath) {
 }
 
 export function isDirectMode(env) {
-  return env.SKILL_HUB_SHOPIFY_ACCESS_METHOD === "dev_dashboard_client_credentials"
-    || Boolean(env.SKILL_HUB_SHOPIFY_CLIENT_ID && env.SKILL_HUB_SHOPIFY_CLIENT_SECRET);
+  return env.SKILL_HUB_SHOPIFY_ACCESS_METHOD === "dev_dashboard_client_credentials";
 }
 
 function requireClientCredentials(env) {
@@ -84,13 +84,40 @@ async function getClientCredentialsToken(env) {
 export function assertRequiredScopes(granted, required) {
   const available = new Set(granted || []);
   const missing = String(required || "").split(",").map((value) => value.trim()).filter(Boolean).filter((value) => !available.has(value));
-  if (missing.length) throw new Error(`SCOPE_UPDATE_REQUIRED: missing ${missing.join(",")}. Request only these scopes, approve them, then retry.`);
+  if (missing.length) throw new Error(`SCOPE_UPDATE_REQUIRED: missing ${missing.join(",")}. Show the exact list and reason, obtain scope approval and separate app-release approval, publish only through the private Automation Token flow, then wait for Shopify admin Update/Approve permissions before retrying connection-check.`);
 }
 
 export function assertAnyScope(granted, alternatives) {
   const available = new Set(granted || []);
   if (alternatives.some((scope) => available.has(scope))) return;
-  throw new Error(`SCOPE_UPDATE_REQUIRED: grant one of ${alternatives.join(" or ")}, approve it, then retry.`);
+  throw new Error(`SCOPE_UPDATE_REQUIRED: grant one of ${alternatives.join(" or ")}. Show the reason, obtain scope and separate app-release approval, wait for Shopify admin Update/Approve permissions, then retry.`);
+}
+
+export async function connectionStatus(env) {
+  if (isDirectMode(env)) {
+    const accessToken = await getClientCredentialsToken(env);
+    const readScopes = ["read_content", "read_online_store_pages"];
+    const writeScopes = ["write_content", "write_online_store_pages"];
+    return {
+      mode: "dev_dashboard_client_credentials",
+      storeDomain: env.SHOPIFY_STORE_DOMAIN,
+      apiVersion: env.SHOPIFY_API_VERSION,
+      grantedScopeCount: accessToken.scopes.length,
+      scopeStatus: {
+        read: { granted: readScopes.filter((scope) => accessToken.scopes.includes(scope)), acceptable: readScopes },
+        write: { granted: writeScopes.filter((scope) => accessToken.scopes.includes(scope)), acceptable: writeScopes },
+      },
+      tokenExpiresAt: new Date(accessToken.expiresAt).toISOString(),
+    };
+  }
+  return {
+    mode: "shopify_cli_oauth",
+    storeDomain: env.SHOPIFY_STORE_DOMAIN,
+    apiVersion: env.SHOPIFY_API_VERSION,
+    grantedScopeCount: null,
+    scopeStatus: { read: { granted: null, acceptable: ["read_content", "read_online_store_pages"] }, write: { granted: null, acceptable: ["write_content", "write_online_store_pages"] } },
+    nextStep: `Run shopify store auth --store ${env.SHOPIFY_STORE_DOMAIN} --scopes read_content,write_content`,
+  };
 }
 
 async function cliInvocation(env) {

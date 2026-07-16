@@ -108,7 +108,7 @@ def main():
     if args.command == "init-env":
         path = Path(args.env)
         if path.exists(): raise ValueError(f"Refusing to overwrite existing {path}.")
-        path.write_text("# Keep this file private and ignored by Git.\nYUNTU_CUSTOMER_CODE=\nYUNTU_API_SECRET=\nYUNTU_OMS_BASE_URL=\n", encoding="utf-8")
+        path.write_text("# Keep this file private and ignored by Git. Use the YunExpress-supplied UAT URL for UAT.\nYUNTU_CUSTOMER_CODE=\nYUNTU_API_SECRET=\nYUNTU_OMS_BASE_URL=http://oms.api.yunexpress.com\n", encoding="utf-8")
         print(f"Created private template: {path}"); return
     env = load_env(Path(args.env))
     if args.command == "check":
