@@ -56,6 +56,7 @@ metadata:
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, SEO, Images, AltText]
+    category: productivity
     related_skills: [shopify-product-serp-optimizer]
 ---
 

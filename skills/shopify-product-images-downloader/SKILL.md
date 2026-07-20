@@ -7,15 +7,22 @@ version: 2.0.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
+required_environment_variables: []
 metadata:
   openclaw:
     requires:
       bins:
         - node
+    dependencies:
+      - name: sharp
+        version: "0.35.3"
+        optional_for: "Only required when --webp=true; original-format downloads do not need sharp."
     emoji: "📥"
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, Images, Download, Backup]
+    category: productivity
+    related_skills: []
 ---
 
 # Shopify Product Images Downloader
@@ -29,6 +36,8 @@ metadata:
 - Keep the workflow read-only against the store. This skill only downloads public assets.
 
 ## Workflow
+
+WebP conversion requires the pinned `sharp` 0.35.3 prerequisite declared in `package.json`. The script never installs dependencies at runtime; if `sharp` is unavailable, download original images or install the pinned prerequisite before retrying `--webp=true`.
 
 1. Ask for the store URL and optional filter:
    - `all`

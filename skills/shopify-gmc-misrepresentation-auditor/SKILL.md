@@ -7,6 +7,7 @@ version: 2.0.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
+required_environment_variables: []
 metadata:
   openclaw:
     requires:
@@ -16,6 +17,8 @@ metadata:
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, GMC, Compliance, Audit]
+    category: productivity
+    related_skills: []
 ---
 
 # Shopify GMC Misrepresentation Auditor

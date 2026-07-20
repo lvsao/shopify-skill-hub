@@ -7,6 +7,7 @@ version: 2.0.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
+required_environment_variables: []
 metadata:
   openclaw:
     requires:
@@ -16,6 +17,7 @@ metadata:
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, Themes, Apps, Audit, Research]
+    category: productivity
     related_skills: [shopify-gmc-misrepresentation-auditor]
 ---
 
@@ -44,7 +46,7 @@ Scan any public Shopify store and generate a visual HTML report with theme detai
 ## Script Entry Point
 
 ```text
-node <absolute-path-to-skill>/scripts/store-scanner.mjs <url>
+node <absolute-path-to-skill>/scripts/store-scanner.mjs <url> --output <report.html>
 ```
 
 ## Output

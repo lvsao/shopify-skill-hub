@@ -56,6 +56,7 @@ metadata:
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, WeChat, Content, Blog, Bilingual]
+    category: productivity
     related_skills: [shopify-store-translator]
 ---
 

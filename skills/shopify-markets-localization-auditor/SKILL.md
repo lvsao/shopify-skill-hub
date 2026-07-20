@@ -56,6 +56,7 @@ metadata:
     homepage: "https://github.com/lvsao/shopify-skill-hub"
   hermes:
     tags: [Shopify, Ecommerce, Markets, Localization, International, SEO]
+    category: productivity
     related_skills: [shopify-store-translator]
 ---
 
