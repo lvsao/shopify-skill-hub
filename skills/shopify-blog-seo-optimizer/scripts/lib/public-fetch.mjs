@@ -56,7 +56,8 @@ export function validatePublicUrl(raw, { allowedHosts = [] } = {}) {
 export async function assertPublicDestination(raw, options = {}) {
   const parsed = validatePublicUrl(raw, options);
   if (net.isIP(parsed.hostname)) return parsed;
-  const addresses = await dns.lookup(parsed.hostname, { all: true, verbatim: true });
+  const lookup = options.lookup || dns.lookup;
+  const addresses = await lookup(parsed.hostname, { all: true, verbatim: true });
   if (!addresses.length || addresses.some(({ address }) => isBlockedIp(address))) {
     throw new Error(`DNS resolved to a private, local, or invalid destination: ${parsed.hostname}`);
   }

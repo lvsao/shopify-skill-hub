@@ -1,0 +1,4 @@
+interface:
+  display_name: "SEO Backlink Opportunity Finder"
+  short_description: "Find new external backlink prospects from public research."
+  default_prompt: "Use $seo-backlink-opportunity-finder to find new external backlink prospects for my public website, with existing-link reclamation separated."

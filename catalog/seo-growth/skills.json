@@ -286,6 +286,86 @@
         { "id": "external-api-credential", "status": "not_required" },
         { "id": "vision-model", "status": "optional" }
       ]
+    },
+    {
+      "name": "seo-backlink-opportunity-finder",
+      "displayName": "SEO Backlink Opportunity Finder",
+      "displayName_zh": "SEO 外链机会发现器",
+      "path": "../../skills/seo-backlink-opportunity-finder",
+      "tags": ["seo", "backlinks", "shopify"],
+      "integrations": ["chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Find new external backlink prospects from public research.",
+        "zh": "从公开调研中寻找新的外部外链机会。"
+      },
+      "longDescription": {
+    "en": "Researches only public information to find new external backlink prospects: comparable brands' referring pages, relevant publishers, resources, listings, partnerships, and showcases. Existing links and unlinked mentions are kept in a separate capped reclamation queue, with a target, evidence source, route, and next action for every candidate.",
+    "zh": "只研究公开信息，重点寻找新的外部外链机会：竞品获得链接的来源页、相关媒体、资源页、行业平台、合作与展示机会。已有链接和未加链接的提及会单独放入有数量上限的修复队列，每条候选都说明目标页面、证据来源、获取路径和下一步动作，而不是泛泛建议“做测评”或“找博客”。"
+      },
+      "introduction": {
+        "en": "Use your own public content and comparable brands' public link paths to uncover new, relevant backlink prospects in one research run; existing links remain a separate reclamation queue.",
+        "zh": "从自身公开内容和竞品公开外链路径中，一次性找出新的相关外链机会；已有链接会单独进入修复队列。"
+      },
+      "features": [
+        {
+          "id": "actionable-opportunity-list",
+          "title": { "en": "Many actionable opportunities at once", "zh": "一次性找到几十条可执行机会" },
+          "description": {
+            "en": "Every opportunity includes a specific target page or site, relevant angle, acquisition route, next action, and risk note.",
+            "zh": "每条机会都给出具体目标页面或网站、匹配角度、获取路径、下一步动作和风险提醒。"
+          },
+          "badge": { "en": "Action ready", "zh": "直接行动" },
+          "icon": "ListChecks"
+        },
+        {
+          "id": "own-site-discovery",
+          "title": { "en": "Start from your own website", "zh": "从自己网站开始挖掘" },
+          "description": {
+        "en": "Use your public content to find new pages worth citing, while keeping existing mentions and missing links in a separate reclamation queue.",
+        "zh": "从公开内容中寻找值得外部页面引用的新机会，并将已有提及和漏链单独放入修复队列。"
+          },
+          "badge": { "en": "Own-site route", "zh": "自身路径" },
+          "icon": "Globe"
+        },
+        {
+          "id": "competitor-link-paths",
+          "title": { "en": "Trace competitors' public link paths", "zh": "追踪竞品公开外链路径" },
+          "description": {
+            "en": "Research comparable brands' referring pages and separate repeatable opportunities from one-off mentions that cannot be reproduced.",
+            "zh": "调研同类品牌获得链接的来源页面，区分可复制的机会与无法复刻的一次性提及。"
+          },
+          "badge": { "en": "Competitor path", "zh": "竞品路径" },
+          "icon": "Link"
+        },
+        {
+          "id": "broad-research-coverage",
+          "title": { "en": "Broader research, no shortcuts", "zh": "全面搜寻，不走捷径" },
+          "description": {
+            "en": "Cover editorial sites, expert resources, business media, partnerships, showcases, reputable listings, creators, and link-reclamation routes instead of stopping at review blogs.",
+            "zh": "除测评博客外，还系统覆盖媒体、专家资源、商业媒体、合作伙伴、展示与奖项、可靠免费收录、创作者和漏链修复等路径。"
+          },
+          "badge": { "en": "Broad research", "zh": "全面调研" },
+          "icon": "SearchCheck"
+        },
+        {
+          "id": "quality-filtered-outreach",
+          "title": { "en": "Quality-filtered outreach queue", "zh": "筛选后的外联清单" },
+          "description": {
+            "en": "Keep realistic, relevant routes and clearly exclude paid ranking links, spam directories, and other shortcuts that could damage trust.",
+            "zh": "保留真实、相关的获取路径，并明确排除买排名链接、垃圾目录和其他可能伤害品牌信任的捷径。"
+          },
+          "badge": { "en": "No spam", "zh": "拒绝垃圾外链" },
+          "icon": "ShieldCheck"
+        }
+      ],
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "not_required" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "optional" }
+      ]
     }
   ]
 }

@@ -23,9 +23,11 @@ Never claim an exact frontend match when the real page was not accessible.
 - Make TOC links scroll to the candidate headings.
 - Make FAQ disclosure controls usable without JavaScript when possible, such as `<details>`; the report renderer may convert a candidate FAQ section into disclosure controls for preview only.
 - Keep the audit report and preview in the same standalone HTML file.
-- Escape report data and treat fetched storefront content as untrusted data.
+- Escape report data and treat fetched storefront content as untrusted data. The generated report must set a restrictive Content Security Policy: no scripts, plugins, forms, frames, or base-URL overrides; inline CSS and required article images/media are the only permitted resources.
 - Do not load third-party scripts, remote tracking, or hidden network calls in the report.
 - Do not expose access tokens, client secrets, private store data, or raw API responses.
+
+The report preview passes article HTML through the deterministic sanitizer before insertion. The CSP is an independent defense-in-depth boundary for the local `file://` report and must remain in place even when the sanitizer changes.
 
 ## Preview sections
 

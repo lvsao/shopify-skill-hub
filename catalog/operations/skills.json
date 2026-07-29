@@ -447,6 +447,93 @@
         { "id": "external-api-credential", "status": "required" },
         { "id": "vision-model", "status": "not_required" }
       ]
+    },
+    {
+      "name": "shopify-checkout-payment-connection-check",
+      "displayName": "Shopify Checkout & Payment Connection Check",
+      "displayName_zh": "Shopify 结账与支付连通性检查",
+      "path": "../../skills/shopify-checkout-payment-connection-check",
+      "tags": ["shopify", "checkout", "payments"],
+      "integrations": ["shopify", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Test the journey from cart to payment before customers find a broken checkout.",
+        "zh": "在顾客遇到问题前，实测从购物车到付款的整条下单链路。"
+      },
+      "longDescription": {
+        "en": "Run a safe, no-purchase walkthrough from a sellable product to checkout. It checks cart entry, delivery choices for your target regions, and the payment methods a customer can actually reach; with store approval, it also compares setup status and recent payment outcomes to pinpoint what is blocking orders.",
+        "zh": "用一次不付款、不创建订单的真实下单演练，检查可售商品能否加入购物车、进入结账、获得目标地区的配送方案，以及顾客实际能进入哪些付款方式。连接 Shopify 店铺后，进一步结合支付设置状态和近期交易结果，定位阻断下单、配送受限或支付失败上升的原因。"
+      },
+      "introduction": {
+        "en": "Before customers find a problem, test the complete journey from cart to payment and find the checkout, delivery, or payment setting that is costing you orders.",
+        "zh": "在顾客遇到问题前，实测从购物车到付款的整条下单链路，发现结账、配送和支付设置中正在造成弃单的环节。"
+      },
+      "features": [
+        {
+          "id": "real-checkout-walkthrough",
+          "title": { "en": "Real checkout walkthrough", "zh": "真实顾客下单演练" },
+          "description": {
+            "en": "Start with a purchasable item and reach checkout to verify the key pre-purchase steps, without submitting an order or charging a card.",
+            "zh": "从一件可售商品开始进入购物车和结账页，检查顾客是否能走完购买前的关键步骤；全程不提交订单、不扣款。"
+          },
+          "badge": { "en": "No charge", "zh": "不扣款" },
+          "icon": "ShoppingBag"
+        },
+        {
+          "id": "delivery-coverage",
+          "title": { "en": "Delivery coverage and rate details", "zh": "配送覆盖与运费呈现" },
+          "description": {
+            "en": "Test a destination you choose and review the delivery choices, prices, and delivery messages a customer actually sees. Find markets where delivery is unavailable or incomplete.",
+            "zh": "按你选择的国家或地区测试收货地址，核对顾客实际可选的配送方式、运费和送达说明，找出无法配送或信息不完整的市场。"
+          },
+          "badge": { "en": "Market check", "zh": "市场检查" },
+          "icon": "Truck"
+        },
+        {
+          "id": "payment-entry-connectivity",
+          "title": { "en": "Payment entry connectivity", "zh": "支付入口连通性" },
+          "description": {
+            "en": "Review the cards, wallets, PayPal, and other configured payment options shown at checkout. Confirm a safe handoff where possible without login, payment details, or a charge.",
+            "zh": "核对结账页展示的银行卡、钱包、PayPal 和其他已配置付款方式；在不登录、不填写支付信息、不扣款的前提下，确认能否安全进入相应付款入口。"
+          },
+          "badge": { "en": "Safe handoff", "zh": "安全跳转" },
+          "icon": "Link"
+        },
+        {
+          "id": "setup-and-payment-signals",
+          "title": { "en": "Payment setup and failure signals", "zh": "支付设置与失败趋势" },
+          "description": {
+            "en": "With store permission, compare the payment setup with recent aggregated transaction outcomes to spot unusual failure patterns without exposing customer or payment details.",
+            "zh": "获得店铺授权后，将支付设置与近期汇总交易结果对照，识别异常失败趋势；不会展示顾客信息或支付信息。"
+          },
+          "badge": { "en": "Store signals", "zh": "店铺信号" },
+          "icon": "SearchCheck"
+        },
+        {
+          "id": "abandonment-priority",
+          "title": { "en": "Prioritized abandonment fixes", "zh": "按弃单风险排优先级" },
+          "description": {
+            "en": "Separate checkout blocks, unavailable delivery, payment-entry issues, and unusual failure signals so the issues most likely to stop a purchase are addressed first.",
+            "zh": "将无法进入结账、目标地区无法配送、支付入口受阻和异常失败趋势分开呈现，优先处理最直接影响成交的问题。"
+          },
+          "badge": { "en": "Fix first", "zh": "优先修复" },
+          "icon": "ListChecks"
+        }
+      ],
+      "prerequisites": [
+        {
+          "id": "shopify-store-access",
+          "label": { "en": "Shopify store connection", "zh": "Shopify 店铺连接" },
+          "badge": { "en": "Required", "zh": "必需" },
+          "icon": "Store"
+        }
+      ],
+      "badges": [
+        { "id": "shopify-store-access", "status": "required" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "optional" }
+      ]
     }
   ]
 }

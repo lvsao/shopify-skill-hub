@@ -8,6 +8,7 @@ const DEFAULT_ENV = "skill-hub.env";
 const REQUIRED_READ_SCOPES = ["read_content", "read_online_store_pages"];
 const REQUIRED_WRITE_SCOPES = ["write_content", "write_online_store_pages"];
 const ARTICLE_FIELDS = `id title handle body summary isPublished publishedAt updatedAt author { name } blog { id title handle } image { altText url }`;
+const REPORT_CONTENT_SECURITY_POLICY = "default-src 'none'; style-src 'unsafe-inline'; img-src * data:; media-src * data:; object-src 'none'; base-uri 'none'; form-action 'none';";
 
 function usage() {
   console.log(`Usage:
@@ -57,20 +58,20 @@ function safeArticleHtml(value) {
   return String(value || "")
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<(iframe|object|embed|form|input|button|textarea|select)\b[\s\S]*?>[\s\S]*?<\/\1>/gi, "")
-    .replace(/<(iframe|object|embed|form|input|button|textarea|select)\b[^>]*\/?\s*>/gi, "")
+    .replace(/<(iframe|object|embed|form|input|button|textarea|select|template|svg|math)\b[\s\S]*?>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<(iframe|object|embed|form|input|button|textarea|select|template|svg|math|link|meta|base)\b[^>]*\/?\s*>/gi, "")
     .replace(/\s+on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(/\s+(?:style|srcdoc|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(/javascript:/gi, "")
     .replace(/<(html|head|body|main)\b[^>]*>|<\/(html|head|body|main)>/gi, "")
     .replace(/\s(href|src)\s*=\s*(["'])\s*([^"']*)\2/gi, (full, attribute, quote, target) => {
       const value = String(target).trim();
-      const safe = /^(?:https?:\/\/|\/|#|mailto:)/i.test(value) && !/^https?:\/\/[^\s/]+\/(?:\/|%2f)?(?:etc|proc|sys)(?:\/|$)/i.test(value);
+      const safe = /^(?:https?:\/\/|\/(?!\/)|#|mailto:)/i.test(value) && !/^https?:\/\/[^\s/]+\/(?:\/|%2f)?(?:etc|proc|sys)(?:\/|$)/i.test(value);
       return ` ${attribute}=${quote}${safe ? value : "#"}${quote}`;
     })
     .replace(/\s(href|src)\s*=\s*([^\s>]+)/gi, (full, attribute, target) => {
       const value = String(target).replace(/["']/g, "").trim();
-      const safe = /^(?:https?:\/\/|\/|#|mailto:)/i.test(value);
+      const safe = /^(?:https?:\/\/|\/(?!\/)|#|mailto:)/i.test(value);
       return ` ${attribute}=\"${safe ? value : "#"}\"`;
     });
 }
@@ -295,7 +296,7 @@ function renderReport(plan) {
   const imageMarkup = article.image?.url ? `<img src="${escapeHtml(safeReportUrl(article.image.url))}" alt="${escapeHtml(article.image.altText || "")}">` : "";
   const summaryMarkup = candidate.summary || article.summary ? `<p><strong>${escapeHtml(candidate.summary || article.summary)}</strong></p>` : "";
   const previewNote = preview.note || "The report uses a responsive Shopify-style shell. The access state above determines whether the real storefront was verified.";
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shopify Blog SEO Audit — ${escapeHtml(article.title || "Article")}</title><style>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${REPORT_CONTENT_SECURITY_POLICY}"><title>Shopify Blog SEO Audit — ${escapeHtml(article.title || "Article")}</title><style>
 body{margin:0;background:#f4f5f7;color:#1f2933;font:15px/1.6 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1180px;margin:auto;padding:28px}.badge{display:inline-block;background:#fff3cd;color:#7a4b00;border:1px solid #e7c66b;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700}.hero,.panel,.storefront{background:white;border:1px solid #dfe3e8;border-radius:16px;box-shadow:0 8px 30px #1f29330d}.hero{padding:28px;margin-bottom:18px}.hero h1{font-size:32px;line-height:1.2;margin:10px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel{padding:22px;margin:18px 0}.panel h2{margin-top:0}.metric{display:inline-block;border:1px solid #dfe3e8;border-radius:12px;padding:10px 14px;margin:4px 6px 4px 0;background:#fafbfc}.metric strong{display:block;font-size:22px}.warn{color:#8a4b00;background:#fff8e6;border-left:4px solid #e7a900;padding:10px 14px}.bad{color:#9b1c1c;background:#fff0f0;border-left:4px solid #d14343;padding:10px 14px}table{border-collapse:collapse;width:100%}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #e5e7eb;padding:10px}th{background:#f8fafc}.storefront{overflow:hidden}.store-head{padding:16px 24px;border-bottom:1px solid #e5e7eb;color:#667085}.article{max-width:760px;margin:auto;padding:34px 24px 60px}.article h1{font-size:40px;line-height:1.15}.article h2{margin-top:36px}.article img{max-width:100%;height:auto;border-radius:10px}.article nav{border:1px solid #dfe3e8;background:#f8fafc;padding:14px 18px;border-radius:10px}.article details{border-top:1px solid #e5e7eb;padding:12px 0}.article summary{cursor:pointer;font-weight:700}.article a{color:#1769aa}.article blockquote{border-left:4px solid #cbd5e1;padding-left:16px;color:#52606d}@media(max-width:760px){.wrap{padding:14px}.grid{grid-template-columns:1fr}.hero h1{font-size:26px}.article h1{font-size:30px}}
   </style></head><body><main class="wrap"><section class="hero"><span class="badge">Preview only — not published</span><h1>${escapeHtml(article.title || "Untitled Article")}</h1><p>${escapeHtml(article.storefrontUrl || preview.storefrontUrl || "Storefront URL not available")}</p><div class="metric"><small>Audit status</small><strong>${escapeHtml(plan.status || "Draft")}</strong></div><div class="metric"><small>E-E-A-T</small><strong>${escapeHtml(eeat.score ?? "Research")}</strong></div><div class="metric"><small>Preview mode</small><strong>${escapeHtml(preview.mode || "theme-like-fallback")}</strong></div><div class="metric"><small>Frontend access</small><strong>${escapeHtml(preview.accessState || "unknown")}</strong></div><p class="warn">${escapeHtml(previewNote)}</p></section><div class="grid"><section class="panel"><h2>What changed</h2><ul>${changes}</ul></section><section class="panel"><h2>Research and E-E-A-T</h2><ul>${research}</ul>${eeatWarning}</section></div><section class="panel"><h2>Audit findings</h2><table><thead><tr><th>Priority</th><th>Area</th><th>Problem</th><th>Recommendation</th></tr></thead><tbody>${findings}</tbody></table></section><section class="storefront"><div class="store-head">Shopify storefront preview · ${escapeHtml(preview.mode || "theme-like-fallback")}</div><article class="article"><h1>${escapeHtml(article.title || "Untitled Article")}</h1>${imageMarkup}${summaryMarkup}${body}</article></section><section class="panel"><h2>Approval bundle</h2><p>Proposed fields: ${escapeHtml(Object.keys(candidate.updates || { body: true }).join(", ") || "body")}. Fields not listed remain unchanged.</p><p class="warn">This report is a review artifact. The skill must receive explicit approval before applying changes.</p></section></main></body></html>`;
 }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Checkout & Payment Connection Check"
+  short_description: "Check cart-to-payment flow before customers find issues."
+  default_prompt: "Use $shopify-checkout-payment-connection-check to inspect my Shopify checkout, delivery choices, and payment connection without placing an order."

@@ -42,6 +42,13 @@
       "publicAccess": "WeChat extraction and draft planning can remain local. Do not create `skill-hub.env` until Shopify context, uploads, or draft creation are requested.",
       "scopes": "read_products,read_content,write_content,read_files,write_files",
       "workflowBoundary": "Authorization never replaces preview → explicit approval → image upload and draft-write boundaries. This skill creates drafts only and never publishes."
+    },
+    {
+      "path": "skills/shopify-checkout-payment-connection-check/references/onboarding-guide.md",
+      "intro": "Use this guide before the connected checkout, delivery, and payment checks.",
+      "publicAccess": "This skill needs Shopify Admin read access for payment and delivery evidence. The public storefront walkthrough supplements that evidence; it never replaces authorization.",
+      "scopes": "read_orders,read_shipping,read_shopify_payments_accounts",
+      "workflowBoundary": "The Admin-data portion is read-only and never creates an order, product, customer, or payment. The browser walkthrough may create a temporary unsubmitted checkout session, and always stops before payment confirmation."
     }
   ]
 }

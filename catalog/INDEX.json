@@ -27,6 +27,9 @@
     "audit",
     "media",
     "shipping",
+    "checkout",
+    "payments",
+    "backlinks",
     "yunexpress",
     "yanwen"
   ],
