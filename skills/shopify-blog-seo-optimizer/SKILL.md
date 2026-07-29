@@ -3,7 +3,7 @@ name: "shopify-blog-seo-optimizer"
 slug: "shopify-blog-seo-optimizer"
 displayName: "Shopify Blog SEO Optimizer"
 description: "Audit a Shopify Article, research content and E-E-A-T gaps, generate a reviewable HTML candidate, and produce one audit-plus-storefront-preview report before any approved update. Use when a merchant gives an Article URL, title, or Article ID and wants safer blog SEO and reading-experience improvements."
-version: 1.0.0
+version: 1.0.1
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
