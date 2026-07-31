@@ -1,240 +1,82 @@
 # Selofy Shopify Skill Hub
 
-[![skills.sh](https://skills.sh/b/lvsao/shopify-skill-hub)](https://skills.sh/lvsao/shopify-skill-hub)
-[![Skills](https://img.shields.io/badge/skills-7-2563eb)](./skills)
-[![Categories](https://img.shields.io/badge/categories-6-16a34a)](./catalog)
+[![使用 skills.sh 安装](https://img.shields.io/badge/install-skills.sh-2563eb)](https://skills.sh/lvsao/shopify-skill-hub)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 [![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
 
-面向 Shopify 和电商运营者的公开 AI agent skills。
+面向 Shopify 和电商运营者的开源 AI agent skills。
 
 语言：[English](./README.md) | 中文
 
-## 关于
-
-Selofy Shopify Skill Hub 是一个免费、开源的 AI agent skills 仓库，面向 Shopify 卖家。你可以用它安装透明、可审查的工作流，用于 Shopify 内容创作、SEO 增长、商品 feed 清理、店铺设置、社媒内容复用和日常电商运营。
-
-这个仓库是 Skill Hub 的公开内容源：
-
-- Skills 是可在 GitHub 审查的文件夹，不是隐藏 prompt。
-- Skills 可以包含小型原生脚本，让执行更安全、更稳定。
-- Shopify 写入必须先预览，并且只在用户批准后执行。
-- 新手引导应把 Shopify API 凭证保存在一个本地私有 env 文件中。
-- Skills 通过 `skills` CLI 安装，后续也可以同步到 Selofy Web。
+每个 skill 都是可在 GitHub 直接审查的文件夹，包含明确的触发场景、限制说明，以及先预览再写入 Shopify 的安全流程。
 
 ## 安装
 
-安装这个仓库里的全部公开 skills：
-
-```bash
-npx skills add lvsao/shopify-skill-hub
-```
-
-只安装某一个 skill，可以使用 `--skill`。例如，只安装 WeChat to Shopify Blog：
-
-```bash
-npx skills add lvsao/shopify-skill-hub --skill wechat-to-shopify-blog
-```
-
-只安装 Shopify alt text 优化 skill：
-
-```bash
-npx skills add lvsao/shopify-skill-hub --skill optimize-shopify-alt-text
-```
-
-只安装 Shopify 商品搜索结果优化 skill：
-
-```bash
-npx skills add lvsao/shopify-skill-hub --skill shopify-product-serp-optimizer
-```
-
-只安装 Shopify 主题与插件检测 skill：
-
-```bash
-npx skills add lvsao/shopify-skill-hub --skill shopify-theme-apps-detector
-```
-
-只安装 Shopify 商品图片下载器 skill：
-
-```bash
-npx skills add lvsao/shopify-skill-hub --skill shopify-product-images-downloader
-```
-
-安装前查看可用 skills：
+查看可用 skills：
 
 ```bash
 npx skills add lvsao/shopify-skill-hub --list
 ```
 
-维护者在本地修改仓库时，可以从当前 checkout 预览 skills：
+安装单个 skill：
 
 ```bash
-npx skills add . --list
+npx skills add lvsao/shopify-skill-hub --skill <skill-name>
 ```
 
-这个本地命令只适合维护者。普通用户应使用 GitHub 安装命令：`npx skills add lvsao/shopify-skill-hub`。
+安装全部公开 skills：
 
-## 当前 Skills
+```bash
+npx skills add lvsao/shopify-skill-hub
+```
 
-| Skill | 分类 | 用途 |
+## 当前 skills
+
+下表是当前公开 skill 索引，名称均链接到对应源码目录。
+
+| Skill | 分类 | 适用场景 |
 | --- | --- | --- |
-| `wechat-to-shopify-blog` | `content-creation` | 将已拥有或已授权的微信公众号文章转换为 Shopify 博客草稿，包括 Shopify Files 图片托管、品牌语气适配、博客选择和相关商品插入。 |
-| `optimize-shopify-alt-text` | `seo-growth` | 审查 Shopify 商品媒体、集合封面图、文章封面图和文章正文图片，并生成先预览再执行的 alt text 优化计划；可用时使用真实图片理解，不可用时安全回退到上下文字段。 |
-| `shopify-product-serp-optimizer` | `seo-growth` | 扫描 Shopify 商品，规划每批 5 个商品的搜索结果优化任务，生成结构清晰的 HTML 审查报告，并且只应用已批准的商品 SEO 元数据或已审核的媒体 alt 更新。 |
-| `shopify-store-translator` | `operations` | 将 Shopify 店铺所有资源（商品、集合、页面、博客、政策等）翻译成任意目标语言。检查语言和市场配置，完整翻译不缩略，生成 CSV 审计表供审核，验证编码无损坏，并引导完成带子文件夹 URL 的市场配置。 |
-| `shopify-gmc-misrepresentation-auditor` | `product-feed` | 爬取任意 Shopify 店铺，审查 Google Merchant Center 虚假陈述政策风险——无需 API Token。模拟 Google 爬虫视角，生成带证据的优先级 HTML 报告、需商家核实的手动检查清单（MC-01 至 MC-07）以及分阶段整改计划。 |
-| `shopify-theme-apps-detector` | `operations` | 扫描任意公开 Shopify 店铺，无需 API Token、无需登录，即可揭示其主题和所有可检测的 App。生成独立可视化 HTML 报告，包含 App Logo、App Store 链接、置信度徽章和可追溯证据链。适合竞品调研、代理商开发和电商市场情报。 |
-| `shopify-product-images-downloader` | `operations` | 从任意公开 Shopify 店铺下载所有商品图片——无需 API 授权。验证店铺后通过公开 JSON API 发现商品、获取每件商品的所有图片，并保存到按域名/商品名/文件名组织的文件夹结构。支持全店、按集合筛选和按单品下载。 |
+| [`wechat-to-shopify-blog`](./skills/wechat-to-shopify-blog) | 内容 | 将已拥有或已授权的微信公众号文章转换为 Shopify 博客草稿。 |
+| [`optimize-shopify-alt-text`](./skills/optimize-shopify-alt-text) | SEO | 审查并优化商品、集合和文章图片的 alt text。 |
+| [`shopify-product-serp-optimizer`](./skills/shopify-product-serp-optimizer) | SEO | 分批优化商品搜索结果摘要和 SEO 元数据。 |
+| [`shopify-blog-seo-optimizer`](./skills/shopify-blog-seo-optimizer) | SEO | 审查 Shopify 文章并准备可审核的 SEO 改进。 |
+| [`seo-backlink-opportunity-finder`](./skills/seo-backlink-opportunity-finder) | SEO | 研究有证据支持的外链机会，不承诺投放或收录。 |
+| [`shopify-gmc-misrepresentation-auditor`](./skills/shopify-gmc-misrepresentation-auditor) | 商品 Feed | 审查公开店铺页面的 Google Merchant Center 政策风险。 |
+| [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) | 运营 | 基于证据检测公开 Shopify 店铺的主题和插件。 |
+| [`shopify-store-translator`](./skills/shopify-store-translator) | 运营 | 用先预览、后批准的流程翻译 Shopify 店铺资源。 |
+| [`shopify-markets-localization-auditor`](./skills/shopify-markets-localization-auditor) | 运营 | 检查 Markets、语言、配送覆盖和国际 SEO 准备度。 |
+| [`shopify-product-images-downloader`](./skills/shopify-product-images-downloader) | 运营 | 下载公开 Shopify 店铺的商品图片。 |
+| [`shopify-checkout-payment-connection-check`](./skills/shopify-checkout-payment-connection-check) | 运营 | 不下单，检查结账、配送选项和支付配置。 |
+| [`yuntu-yw-shipping`](./skills/yuntu-yw-shipping) | 运营 | 查询、报价和准备云途或燕文物流请求。 |
 
-## Shopify API 权限与 Env 配置
+完整的描述、功能、集成和权限标记，请查看 [`catalog/`](./catalog) 中对应的条目。
 
-大多数 Skill Hub skills 需要有限的 Shopify Admin API 权限，才能读取店铺上下文或准备预览。主要有两种方式释放您店铺的 API 权限。如果您是新手，请放心，安装任意 skill 后，AI agents 都会从 0-1 引导您完成环境配置。请把凭证保存在当前工作目录里的一个私有本地文件中：
+## Shopify 权限与安全
 
-```text
-skill-hub.env
-```
-
-这个仓库目前使用两种环境文件格式。
-
-### Dev Dashboard app（recommanded）
-
-1. 创建 Shopify Partner 账号。
-2. 在 Dev Dashboard 创建 app。
-3. 在 `Distribution` 中选择 custom distribution，并安装到自己的店铺。
-4. 在 app settings 中复制 Client ID。
-5. 在 `skill-hub.env` 中使用店铺准确的 `.myshopify.com` 域名。
-
-教程：https://www.selofy.com/tutorials/ai-ecommerce/shopify-ai-agents-custom-app-skill
-
-最小模板：
-
-```text
-# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
-
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=dev_dashboard_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
-SKILL_HUB_SHOPIFY_CLIENT_ID=your-client-id
-```
-
-对于这个仓库当前使用的 Shopify CLI `store auth` 流程，不需要 `SKILL_HUB_SHOPIFY_CLIENT_SECRET`。Agent 会通过 Shopify CLI 应用所需 scopes，然后对目标店铺执行 `shopify store auth`。
-
-### Shopify 店铺 Settings custom app（Legacy Custom App）
-
-只有当你的店铺 Settings 仍允许创建 Legacy Custom App，并且你更希望直接使用 Admin token 路径时，再使用这种方式。
-
-教程：https://www.selofy.com/tutorials/ai-ecommerce/ai-agents-skills-shopify-operations
-
-最小模板：
-
-```text
-# Skill Hub shared Shopify configuration
-# Keep this file private. Do not commit it or paste tokens into chat.
-
-SKILL_HUB_SHOPIFY_ACCESS_METHOD=admin_custom_app
-SKILL_HUB_SHOPIFY_STORE_DOMAIN=your-store.com
-SKILL_HUB_SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxx
-```
-
-Skill 脚本会在调用 Admin GraphQL 前解析出正确的 Shopify Admin API host。
-
-Shopify 指南：[Create custom apps in Shopify](https://help.shopify.com/en/manual/apps/app-types/custom-apps)
-
-### 重要说明
-
-- `skill-hub.env` 是当前工作目录下多个 skills 共用的配置文件。
-- 不同 skill 需要的 Admin scopes 可能不同，但 env 文件结构不变。
-- Dev Dashboard 使用 `store domain + client id`，因为授权通过 Shopify CLI 完成。
-- Legacy Custom App 使用 `store domain + admin token`，因为 token 由店铺后台创建。
+- GMC 审查、主题/插件检测、商品图片下载和外链机会研究等公开网页 skill 不需要 Shopify 凭证。
+- 需要连接店铺的 skill 会在自己的 `SKILL.md` 中说明权限。流程应先读取和预览；写入 Shopify 必须经过明确批准。
+- 如果 skill 需要凭证，请将 [`examples/skill-hub.env.example`](./examples/skill-hub.env.example) 复制为工作目录中的私有 `skill-hub.env`。不要提交 token 或商家数据。
 
 ## 仓库结构
 
 ```text
-skills/
-  wechat-to-shopify-blog/
-    SKILL.md
-    agents/
-      openai.yaml
-    scripts/
-      shopify-context.mjs
-      related-product-block.mjs
-  optimize-shopify-alt-text/
-    SKILL.md
-    agents/
-      openai.yaml
-    references/
-      alt-text-rules.md
-    scripts/
-      shopify-alt-text-admin.mjs
-  shopify-product-serp-optimizer/
-    SKILL.md
-    agents/
-      openai.yaml
-    assets/
-      report-template.html
-    references/
-      serp-methodology.md
-    scripts/
-      shopify-product-serp-admin.mjs
-  shopify-theme-apps-detector/
-    SKILL.md
-    agents/
-      openai.yaml
-    assets/
-      report-template.html
-    references/
-      detection-principles.md
-    scripts/
-      store-scanner.mjs
-  shopify-product-images-downloader/
-    SKILL.md
-    agents/
-      openai.yaml
-    scripts/
-      shopify-image-downloader.mjs
-catalog/
-  INDEX.json
-  content-creation/
-    CATEGORY.md
-    skills.json
-  seo-growth/
-    CATEGORY.md
-    skills.json
-  product-feed/
-    CATEGORY.md
-    skills.json
-  store-setup/
-    CATEGORY.md
-    skills.json
-  social-media/
-    CATEGORY.md
-    skills.json
-  operations/
-    CATEGORY.md
-    skills.json
-examples/
-  skill-hub.env.example
-AGENTS.md
-LICENSE
-README.md
-README.zh-CN.md
+skills/    Skill 的核心说明和脚本
+catalog/   Skill Hub 与同步任务使用的公开元数据
+examples/  本地配置模板
+scripts/   校验和同步工具
 ```
 
-## 分类
+`catalog/` 是 Skill Hub 的公开元数据源。推送到 `main` 后，GitHub Actions 会先校验变更，再同步到 Selofy Web。
 
-分类以文件夹为先。每个分类都位于 `catalog/<category-slug>/`，方便用户在 GitHub 上自然浏览。`catalog/INDEX.json` 只是用于同步任务和 UI 工具的机器可读索引。
+## 参与维护
 
-Selofy Web 当前使用这些公开 Skill Hub 分类 slug：
+Skill 名称使用小写短横线格式。新增或修改 skill 时，请同时更新 skill 文件夹和 catalog 条目，然后运行：
 
-- `content-creation`
-- `seo-growth`
-- `product-feed`
-- `store-setup`
-- `social-media`
-- `operations`
-
-除非先更新 Selofy Web，否则请继续使用这些文件夹名和 slug。
+```bash
+node scripts/sync-onboarding.mjs --check
+node scripts/release-preflight.mjs
+```
 
 ## License
 
-MIT。这样公开 skills 更容易审查、复用、fork 和安装。
+MIT。

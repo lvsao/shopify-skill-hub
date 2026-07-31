@@ -364,7 +364,7 @@
       "badges": [
         { "id": "shopify-store-access", "status": "not_required" },
         { "id": "external-api-credential", "status": "not_required" },
-        { "id": "vision-model", "status": "optional" }
+        { "id": "vision-model", "status": "not_required" }
       ]
     }
   ]

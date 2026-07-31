@@ -16,10 +16,19 @@ function parseFrontmatter(text) {
   }, {});
 }
 
+function readmeSkillSlugs(text) {
+  return new Set([...text.matchAll(/\]\(\.\/skills\/([^\)\s]+)\)/g)].map((match) => match[1]));
+}
+
+function findSetDifference(expected, actual) {
+  return [...expected].filter((value) => !actual.has(value)).sort();
+}
+
 const errors = [];
 const catalogNames = new Set();
 const catalogItems = new Map();
 const publishedSlugs = new Set();
+const skillDirectories = new Set();
 const index = JSON.parse(await readFile(path.join(ROOT, "catalog", "INDEX.json"), "utf8"));
 for (const category of index.categories) {
   const catalog = JSON.parse(await readFile(path.join(ROOT, "catalog", category, "skills.json"), "utf8"));
@@ -38,6 +47,7 @@ const systemBadgeStatuses = new Set(["required", "optional", "not_required"]);
 
 for (const entry of await readdir(path.join(ROOT, "skills"), { withFileTypes: true })) {
   if (!entry.isDirectory()) continue;
+  skillDirectories.add(entry.name);
   const skillPath = path.join(ROOT, "skills", entry.name, "SKILL.md");
   const text = await readFile(skillPath, "utf8");
   const frontmatter = parseFrontmatter(text);
@@ -72,6 +82,22 @@ for (const entry of await readdir(path.join(ROOT, "skills"), { withFileTypes: tr
   }
   if (!text.includes("openclaw:")) errors.push(`${label}: missing metadata.openclaw.`);
   if (!text.includes("hermes:")) errors.push(`${label}: missing metadata.hermes.`);
+}
+
+for (const readmeName of ["README.md", "README.zh-CN.md"]) {
+  const readmePath = path.join(ROOT, readmeName);
+  const readmeSlugs = readmeSkillSlugs(await readFile(readmePath, "utf8"));
+  const missing = findSetDifference(skillDirectories, readmeSlugs);
+  const extra = findSetDifference(readmeSlugs, skillDirectories);
+  if (missing.length || extra.length) {
+    const details = [
+      missing.length ? `missing: ${missing.join(", ")}` : null,
+      extra.length ? `extra: ${extra.join(", ")}` : null,
+    ]
+      .filter(Boolean)
+      .join("; ");
+    errors.push(`${readmeName}: skill index does not match skills/ (${details}).`);
+  }
 }
 
 if (errors.length > 0) {
