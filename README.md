@@ -1,38 +1,57 @@
-# Selofy Shopify Skill Hub
+<h1 align="center">Selofy Shopify Skill Hub</h1>
 
-[![Install with skills.sh](https://img.shields.io/badge/install-skills.sh-2563eb)](https://skills.sh/lvsao/shopify-skill-hub)
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
-[![Shopify](https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white)](https://www.shopify.com/)
+<p align="center">
+  Preview-first AI skills for Shopify SEO, content, store audits, feeds, and operations.
+</p>
 
-Open-source AI agent skills for Shopify and ecommerce operators.
+<p align="center">
+  <a href="https://skills.sh/lvsao/shopify-skill-hub">Install with skills.sh</a>
+  ·
+  <a href="https://www.selofy.com/shopify-skill-hub">Open Skill Hub</a>
+  ·
+  <a href="./README.zh-CN.md">中文</a>
+</p>
 
-Language: English | [中文](./README.zh-CN.md)
+<p align="center">
+  <a href="https://skills.sh/lvsao/shopify-skill-hub"><img src="https://img.shields.io/badge/install-skills.sh-2563eb" alt="Install with skills.sh"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="MIT license"></a>
+  <a href="https://www.shopify.com/"><img src="https://img.shields.io/badge/built%20for-Shopify-7AB55C?logo=shopify&logoColor=white" alt="Built for Shopify"></a>
+</p>
 
-Every skill is a reviewable folder with a clear trigger, documented limits, and preview-first Shopify writes.
+Each skill is a reviewable folder with a clear trigger, documented limits, and approval-based Shopify writes.
 
-## Install
+## Pick a workflow
 
-List available skills:
+| If you want to… | Start here | What it covers |
+| --- | --- | --- |
+| Publish useful content | [`wechat-to-shopify-blog`](./skills/wechat-to-shopify-blog) · [Content catalog](./catalog/content-creation) | Turn an owned or authorized WeChat article into a Shopify blog draft. |
+| Improve organic traffic | [`optimize-shopify-alt-text`](./skills/optimize-shopify-alt-text) · [`shopify-product-serp-optimizer`](./skills/shopify-product-serp-optimizer) · [SEO catalog](./catalog/seo-growth) | Improve image alt text, product snippets, blog SEO, and backlink research. |
+| Check or operate a store | [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) · [`shopify-markets-localization-auditor`](./skills/shopify-markets-localization-auditor) · [Operations catalog](./catalog/operations) | Inspect themes, apps, Markets, languages, checkout, payments, and product media. |
+| Prepare feeds or shipments | [`shopify-gmc-misrepresentation-auditor`](./skills/shopify-gmc-misrepresentation-auditor) · [`yuntu-yw-shipping`](./skills/yuntu-yw-shipping) · [Feed catalog](./catalog/product-feed) | Review Google Merchant Center risks and prepare YunExpress or Yanwen requests. |
+
+## Quick start
 
 ```bash
+# Browse the available skills
 npx skills add lvsao/shopify-skill-hub --list
-```
 
-Install one skill:
-
-```bash
+# Install one skill
 npx skills add lvsao/shopify-skill-hub --skill <skill-name>
-```
 
-Install the full collection:
-
-```bash
+# Or install the full collection
 npx skills add lvsao/shopify-skill-hub
 ```
 
-## Current skills
+## How the workflow works
 
-The table below is the current public skill index; each name links to its source folder.
+| Choose | Preview | Approve |
+| --- | --- | --- |
+| Pick the skill that matches the task. | Read store context and produce a plan, report, or draft. | Review the proposed changes before anything writes to Shopify. |
+
+## Browse the full catalog
+
+<details>
+<summary>Show all public skills</summary>
 
 | Skill | Category | Use it for |
 | --- | --- | --- |
@@ -49,33 +68,34 @@ The table below is the current public skill index; each name links to its source
 | [`shopify-checkout-payment-connection-check`](./skills/shopify-checkout-payment-connection-check) | Operations | Inspect checkout, delivery choices, and payment setup without placing an order. |
 | [`yuntu-yw-shipping`](./skills/yuntu-yw-shipping) | Operations | Track, quote, and prepare YunExpress or Yanwen shipping requests. |
 
-For full descriptions, features, integrations, and access badges, see the matching entry in [`catalog/`](./catalog).
+For full descriptions, features, integrations, and access badges, see [`catalog/`](./catalog).
+</details>
 
-## Shopify access and safety
+## Access and safety
 
 - Public-web skills such as the GMC auditor, theme/app detector, image downloader, and backlink finder do not need Shopify credentials.
-- Store-connected skills explain their required access in `SKILL.md`. They should read and preview first; Shopify writes require explicit approval.
-- If a skill needs credentials, copy [`examples/skill-hub.env.example`](./examples/skill-hub.env.example) to a private `skill-hub.env` in your working directory. Never commit tokens or merchant data.
+- Store-connected skills explain their required access in `SKILL.md`. They read and preview first; Shopify writes require explicit approval.
+- If a skill needs credentials, copy [`examples/skill-hub.env.example`](./examples/skill-hub.env.example) to a private `skill-hub.env`. Never commit tokens or merchant data.
 
-## Repository map
+## Repository
 
 ```text
 skills/    Canonical skill instructions and scripts
-catalog/   Public metadata used by the Skill Hub and sync jobs
+catalog/   Public metadata used by Skill Hub and sync jobs
 examples/  Safe local configuration templates
 scripts/   Validation and sync tooling
 ```
 
 `catalog/` is the metadata source for the public Skill Hub. GitHub Actions validates changes and syncs the `main` branch to Selofy Web after a successful push.
 
-## Contributing
-
-Keep skill names lowercase and hyphenated. Add or update the skill folder and its catalog entry together, then run:
+To maintain the repository, update the skill folder and its catalog entry together, then run:
 
 ```bash
 node scripts/sync-onboarding.mjs --check
 node scripts/release-preflight.mjs
 ```
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contribution checklist and [`SECURITY.md`](./SECURITY.md) for reporting security issues.
 
 ## License
 
