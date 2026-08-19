@@ -26,7 +26,7 @@
 | --- | --- | --- |
 | 发布有价值的内容 | [`wechat-to-shopify-blog`](./skills/wechat-to-shopify-blog) · [内容目录](./catalog/content-creation) | 将已拥有或已授权的微信公众号文章转换为 Shopify 博客草稿。 |
 | 提升自然流量 | [`optimize-shopify-alt-text`](./skills/optimize-shopify-alt-text) · [`shopify-product-serp-optimizer`](./skills/shopify-product-serp-optimizer) · [SEO 目录](./catalog/seo-growth) | 优化图片 alt text、商品搜索摘要、博客 SEO，并研究外链机会。 |
-| 检查或运营店铺 | [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) · [`shopify-markets-localization-auditor`](./skills/shopify-markets-localization-auditor) · [运营目录](./catalog/operations) | 检查主题、插件、Markets、语言、结账、支付和商品媒体。 |
+| 检查或运营店铺 | [`shopify-operations-brief`](./skills/shopify-operations-brief) · [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) · [`shopify-markets-localization-auditor`](./skills/shopify-markets-localization-auditor) · [运营目录](./catalog/operations) | 查看销售、发货、库存提醒和店铺运营情况。 |
 | 准备商品 Feed 或物流 | [`shopify-gmc-misrepresentation-auditor`](./skills/shopify-gmc-misrepresentation-auditor) · [`yuntu-yw-shipping`](./skills/yuntu-yw-shipping) · [商品 Feed 目录](./catalog/product-feed) | 审查 Google Merchant Center 风险，准备云途或燕文物流请求。 |
 
 ## 快速开始
@@ -66,6 +66,7 @@ npx skills add lvsao/shopify-skill-hub
 | [`shopify-markets-localization-auditor`](./skills/shopify-markets-localization-auditor) | 运营 | 检查 Markets、语言、配送覆盖和国际 SEO 准备度。 |
 | [`shopify-product-images-downloader`](./skills/shopify-product-images-downloader) | 运营 | 下载公开 Shopify 店铺的商品图片。 |
 | [`shopify-checkout-payment-connection-check`](./skills/shopify-checkout-payment-connection-check) | 运营 | 不下单，检查结账、配送选项和支付配置。 |
+| [`shopify-operations-brief`](./skills/shopify-operations-brief) | 运营 | 生成只读店铺经营概览与私有 HTML 报告。 |
 | [`yuntu-yw-shipping`](./skills/yuntu-yw-shipping) | 运营 | 查询、报价和准备云途或燕文物流请求。 |
 
 完整的描述、功能、集成和权限标记，请查看 [`catalog/`](./catalog)。

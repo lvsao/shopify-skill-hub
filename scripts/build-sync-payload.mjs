@@ -38,11 +38,10 @@ const BLOCKED_PATH_PATTERNS = [
 ];
 
 function parseFrontmatter(text) {
-  if (!text.startsWith("---\n")) return {};
-  const end = text.indexOf("\n---", 4);
-  if (end === -1) return {};
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!match) return {};
 
-  const frontmatter = text.slice(4, end).trim();
+  const frontmatter = match[1].trim();
   const values = {};
   for (const line of frontmatter.split(/\r?\n/)) {
     const match = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);

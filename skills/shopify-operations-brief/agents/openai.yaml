@@ -1,0 +1,13 @@
+schema_version: "v1"
+display_name: "Shopify Operations Brief"
+description: "Turn Shopify orders into a clear report of sales, promotions, shipping speed, products customers buy together, low-stock reminders, and next steps."
+default_prompt: "Show me how my Shopify store performed recently and create an easy-to-read HTML report."
+categories:
+  - "operations"
+  - "analytics"
+tags:
+  - "shopify"
+  - "operations"
+  - "sales"
+  - "shipping"
+  - "reporting"

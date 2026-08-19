@@ -534,6 +534,165 @@
         { "id": "external-api-credential", "status": "not_required" },
         { "id": "vision-model", "status": "not_required" }
       ]
+    },
+    {
+      "name": "shopify-operations-brief",
+      "displayName": "Shopify Operations Brief",
+      "displayName_zh": "Shopify 店铺经营概览",
+      "path": "../../skills/shopify-operations-brief",
+      "tags": [
+        "shopify",
+        "operations",
+        "sales",
+        "shipping",
+        "inventory"
+      ],
+      "integrations": [
+        "shopify",
+        "chatgpt",
+        "claude",
+        "codex"
+      ],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "See recent sales, orders, promotions, shipping speed, and low-stock reminders in one clear HTML report, with practical next steps.",
+        "zh": "把最近的销售、订单、优惠、发货时效和热销库存，汇成一份一眼看懂的 HTML 报告，并告诉你下一步该做什么。"
+      },
+      "longDescription": {
+        "en": "Get a clear picture of how your store has been performing. The skill shows sales and orders, what customers buy together, how often discounts are used, how quickly orders are shipped, which products sold this period may need restocking, and what seasonal preparation may be useful. It creates a private, self-contained HTML report with plain-language next steps.",
+        "zh": "用一份清楚的报告，看懂店铺最近卖得怎么样。它展示销售额与订单、顾客常一起买什么、优惠用了多少、订单发货是否及时、本期热销品哪些快没货，以及近期要不要准备大促。最后生成一份私有、可直接打开的 HTML 报告，并给出说人话的下一步建议。"
+      },
+      "introduction": {
+        "en": "In a few minutes, see what sold, what customers bought together, whether promotions are used too often, whether orders are shipping on time, and whether products are running low — all in one HTML report.",
+        "zh": "几分钟看清：卖了多少、顾客常一起买什么、优惠是不是用太多了、订单有没有按时发出、热销品是否快没货——全部收进一份 HTML 报告。"
+      },
+      "features": [
+        {
+          "id": "basket-affinity",
+          "title": {
+            "en": "What customers buy together",
+            "zh": "顾客常一起买什么"
+          },
+          "description": {
+            "en": "Shows how often customers buy one item or several, and finds products that are often bought together so you can offer simple bundles or add-on suggestions.",
+            "zh": "看看顾客是只买 1 件还是一次买多件，找出常被一起加购的商品，方便做组合套餐或加购推荐。"
+          },
+          "badge": {
+            "en": "Product bundles",
+            "zh": "组合购买"
+          },
+          "icon": "ShoppingBag"
+        },
+        {
+          "id": "discount-elasticity",
+          "title": {
+            "en": "Promotion results",
+            "zh": "优惠活动效果"
+          },
+          "description": {
+            "en": "Compares the average value of orders with and without a discount, and shows which promo codes customers used most.",
+            "zh": "对比用券和原价订单的客单价，看看顾客最爱用哪些优惠码。"
+          },
+          "badge": {
+            "en": "Promotion check",
+            "zh": "优惠检查"
+          },
+          "icon": "Tag"
+        },
+        {
+          "id": "fulfillment-sla",
+          "title": {
+            "en": "Shipping speed and orders still to ship",
+            "zh": "发货时效与待发货"
+          },
+          "description": {
+            "en": "Shows how long orders take to ship and flags orders still unshipped after 24 or 48 hours, so you can follow up before customers complain.",
+            "zh": "看订单从下单到发货花多久，标出超 24 或 48 小时还没发的订单，方便及时催仓。"
+          },
+          "badge": {
+            "en": "Shipping reminder",
+            "zh": "发货提醒"
+          },
+          "icon": "Truck"
+        },
+        {
+          "id": "inventory-stockout",
+          "title": {
+            "en": "Low-stock reminders for products sold this period",
+            "zh": "热销商品库存预警"
+          },
+          "description": {
+            "en": "Checks available stock for products sold in the reporting period and calls out items that may need restocking soon.",
+            "zh": "只看本期卖出的商品，提前提醒哪些快没货，方便及早补货。"
+          },
+          "badge": {
+            "en": "Stock reminder",
+            "zh": "库存提醒"
+          },
+          "icon": "PackageCheck"
+        },
+        {
+          "id": "seasonal-todos",
+          "title": {
+            "en": "What to do next",
+            "zh": "建议接下来这样做"
+          },
+          "description": {
+            "en": "Sorts the next steps by urgency, from orders that need attention now to upcoming seasonal preparation, and explains each action plainly.",
+            "zh": "下一步建议按紧急度排好：现在要催的订单、本周能做的提量动作、提前备好的大促，每一项都讲清怎么做。"
+          },
+          "badge": {
+            "en": "Next steps",
+            "zh": "下一步建议"
+          },
+          "icon": "ListChecks"
+        },
+        {
+          "id": "html-dashboard",
+          "title": {
+            "en": "A private HTML report you can open directly",
+            "zh": "私人 HTML 报告，打开即用"
+          },
+          "description": {
+            "en": "Creates a responsive report in one file. It has no external dependencies and is available in Chinese or English.",
+            "zh": "生成一份单文件、打开即用的响应式报告，不依赖外部资源，支持中文和英文。"
+          },
+          "badge": {
+            "en": "Chinese and English",
+            "zh": "中英文"
+          },
+          "icon": "FileHtml"
+        }
+      ],
+      "prerequisites": [
+        {
+          "id": "shopify-store-access",
+          "label": {
+            "en": "Shopify store connection",
+            "zh": "Shopify 店铺连接"
+          },
+          "badge": {
+            "en": "Required",
+            "zh": "必需"
+          },
+          "icon": "Store"
+        }
+      ],
+      "badges": [
+        {
+          "id": "shopify-store-access",
+          "status": "required"
+        },
+        {
+          "id": "external-api-credential",
+          "status": "not_required"
+        },
+        {
+          "id": "vision-model",
+          "status": "not_required"
+        }
+      ]
     }
   ]
 }
