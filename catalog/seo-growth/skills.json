@@ -289,42 +289,42 @@
     },
     {
       "name": "seo-backlink-opportunity-finder",
-      "displayName": "SEO Backlink Opportunity Finder",
-      "displayName_zh": "SEO 外链机会发现器",
+      "displayName": "SEO Backlink Prospecting & Opportunity Finder",
+      "displayName_zh": "SEO 新外链机会开发器",
       "path": "../../skills/seo-backlink-opportunity-finder",
       "tags": ["seo", "backlinks", "shopify"],
       "integrations": ["chatgpt", "claude", "codex"],
       "public": true,
       "status": "PUBLISHED",
       "shortDescription": {
-        "en": "Find new external backlink prospects from public research.",
-        "zh": "从公开调研中寻找新的外部外链机会。"
+        "en": "Find new backlink prospects through category searches and comparable-brand link paths.",
+        "zh": "通过品类搜索和竞品外链路径寻找全新的外链机会。"
       },
       "longDescription": {
-    "en": "Researches only public information to find new external backlink prospects: comparable brands' referring pages, relevant publishers, resources, listings, partnerships, and showcases. Existing links and unlinked mentions are kept in a separate capped reclamation queue, with a target, evidence source, route, and next action for every candidate.",
-    "zh": "只研究公开信息，重点寻找新的外部外链机会：竞品获得链接的来源页、相关媒体、资源页、行业平台、合作与展示机会。已有链接和未加链接的提及会单独放入有数量上限的修复队列，每条候选都说明目标页面、证据来源、获取路径和下一步动作，而不是泛泛建议“做测评”或“找博客”。"
+    "en": "Starts from the target site's real category, use cases, audiences, markets, and content assets, expands them into backlink-intent searches, then traces comparable brands' public referring pages into specific, reproducible new prospects. Existing links and unlinked mentions are secondary and capped in a separate reclamation queue, with evidence, route, and next action for every candidate.",
+    "zh": "先从网站真实的品类、使用场景、受众、市场和内容资产出发，组合外链类型词进行大范围搜索，再追踪友商公开的外部引用页面，将可复制的路径转化为具体的新外链机会。已有外链和未加链接的提及只是次要的修复队列，并且有数量上限；每条机会都要提供证据、获取路径和下一步动作。"
       },
       "introduction": {
-        "en": "Use your own public content and comparable brands' public link paths to uncover new, relevant backlink prospects in one research run; existing links remain a separate reclamation queue.",
-        "zh": "从自身公开内容和竞品公开外链路径中，一次性找出新的相关外链机会；已有链接会单独进入修复队列。"
+        "en": "Use the target site's public content to extract real category and use-case language, then search for external pages that could newly cite or feature it.",
+        "zh": "从网站公开内容提取真实的品类和使用场景词，再寻找可能首次引用或介绍该网站的外部页面。"
       },
       "features": [
         {
           "id": "actionable-opportunity-list",
-          "title": { "en": "Many actionable opportunities at once", "zh": "一次性找到几十条可执行机会" },
+          "title": { "en": "New-prospect pipeline first", "zh": "新外链开发优先" },
           "description": {
-            "en": "Every opportunity includes a specific target page or site, relevant angle, acquisition route, next action, and risk note.",
-            "zh": "每条机会都给出具体目标页面或网站、匹配角度、获取路径、下一步动作和风险提醒。"
+            "en": "The main queue contains specific external pages or programs that the target does not already own, with a fit angle, route, next action, and risk note.",
+            "zh": "主队列只放目标网站尚未拥有的具体外部页面或项目，并给出匹配角度、获取路径、下一步动作和风险提醒。"
           },
           "badge": { "en": "Action ready", "zh": "直接行动" },
           "icon": "ListChecks"
         },
         {
           "id": "own-site-discovery",
-          "title": { "en": "Start from your own website", "zh": "从自己网站开始挖掘" },
+          "title": { "en": "Category plus backlink-intent search", "zh": "品类词组合外链类型词" },
           "description": {
-        "en": "Use your public content to find new pages worth citing, while keeping existing mentions and missing links in a separate reclamation queue.",
-        "zh": "从公开内容中寻找值得外部页面引用的新机会，并将已有提及和漏链单独放入修复队列。"
+        "en": "Combine real category, problem, audience, use-case, and market terms with resources, partners, reviews, media, events, creators, and replacement queries to uncover fresh source pages.",
+        "zh": "将真实的品类、问题、受众、场景和市场词，与资源页、合作、测评、媒体、活动、创作者和替换链接等外链类型词组合，寻找全新的来源页面。"
           },
           "badge": { "en": "Own-site route", "zh": "自身路径" },
           "icon": "Globe"
@@ -333,8 +333,8 @@
           "id": "competitor-link-paths",
           "title": { "en": "Trace competitors' public link paths", "zh": "追踪竞品公开外链路径" },
           "description": {
-            "en": "Research comparable brands' referring pages and separate repeatable opportunities from one-off mentions that cannot be reproduced.",
-            "zh": "调研同类品牌获得链接的来源页面，区分可复制的机会与无法复刻的一次性提及。"
+            "en": "Find comparable brands, inspect their public external referring pages, and turn only realistic, repeatable routes into new target prospects.",
+            "zh": "先寻找真正可比的友商，再检查友商公开的外部引用页面，只把真实、可复制的路径转化为新的目标机会。"
           },
           "badge": { "en": "Competitor path", "zh": "竞品路径" },
           "icon": "Link"
@@ -343,8 +343,8 @@
           "id": "broad-research-coverage",
           "title": { "en": "Broader research, no shortcuts", "zh": "全面搜寻，不走捷径" },
           "description": {
-            "en": "Cover editorial sites, expert resources, business media, partnerships, showcases, reputable listings, creators, and link-reclamation routes instead of stopping at review blogs.",
-            "zh": "除测评博客外，还系统覆盖媒体、专家资源、商业媒体、合作伙伴、展示与奖项、可靠免费收录、创作者和漏链修复等路径。"
+            "en": "Cover editorial sites, expert resources, business media, partnerships, showcases, reputable listings, creators, and replacement opportunities instead of stopping at review blogs or the target's own mentions.",
+            "zh": "不止搜索测评博客，也不把自己已有提及当作结果；系统覆盖媒体、专家资源、商业媒体、合作伙伴、展示与奖项、可靠收录、创作者和资源替换机会。"
           },
           "badge": { "en": "Broad research", "zh": "全面调研" },
           "icon": "SearchCheck"

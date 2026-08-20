@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const MAX_PER_DOMAIN = 3;
 const TIERS = Object.freeze({
-  full: Object.freeze({ minimumCandidates: 100, minimumDomains: 60, minimumLanes: 10, minimumNewProspects: 80 }),
-  minimum: Object.freeze({ minimumCandidates: 40, minimumDomains: 25, minimumLanes: 8, minimumNewProspects: 32 }),
+  full: Object.freeze({ minimumCandidates: 100, minimumDomains: 60, minimumLanes: 12, minimumNewProspects: 80, minimumMethodChecks: 8, minimumLaneChecks: 8 }),
+  minimum: Object.freeze({ minimumCandidates: 40, minimumDomains: 25, minimumLanes: 8, minimumNewProspects: 32, minimumMethodChecks: 4, minimumLaneChecks: 4 }),
 });
 const LANES = new Set([
   "own_mentions_and_reclamation",
@@ -26,6 +26,31 @@ const LANES = new Set([
 const ROUTES = new Set(["editorial_pitch", "resource_inclusion", "link_reclamation", "submission", "partnership", "showcase_or_award", "affiliate_or_creator", "other_disclosed"]);
 const EVIDENCE_STATES = new Set(["verified_existing_link", "verified_submission_route", "verified_relevant_editorial_target", "research_lead"]);
 const OPPORTUNITY_TYPES = new Set(["new_prospect", "existing_link_reclamation"]);
+const DISCOVERY_METHODS = new Set([
+  "category_led_prospecting",
+  "competitor_link_path_prospecting",
+  "comparable_brand_discovery",
+  "editorial_research",
+  "expert_reference_research",
+  "trade_media_research",
+  "partner_collaborator_research",
+  "event_award_research",
+  "listing_research",
+  "creator_affiliate_research",
+  "replacement_research",
+  "existing_mention_search",
+]);
+const MANDATORY_DISCOVERY_METHODS = new Set(["category_led_prospecting", "competitor_link_path_prospecting"]);
+const SEARCH_RESULT_HOSTS = new Set([
+  "google.com",
+  "www.google.com",
+  "bing.com",
+  "www.bing.com",
+  "search.yahoo.com",
+  "search.brave.com",
+  "duckduckgo.com",
+  "www.duckduckgo.com",
+]);
 
 function parseArgs(argv) {
   const args = {};
@@ -45,7 +70,7 @@ function usage() {
   node validate-opportunity-ledger.mjs --input opportunities.json [--tier full|minimum]
 
 Tiers:
-  full     100 candidates, 60 root domains, 10 coverage lanes, 80 new prospects (default)
+  full     100 candidates, 60 root domains, 12 coverage lanes, 80 new prospects (default)
   minimum  40 candidates, 25 root domains, 8 coverage lanes, 32 new prospects`);
 }
 
@@ -91,6 +116,12 @@ function normalizeRootDomain(value) {
   return isUnsafeLiteralHost(domain) ? "" : domain;
 }
 
+function isLikelySearchResultsUrl(url) {
+  const hostname = normalizeHost(url?.hostname);
+  if (!SEARCH_RESULT_HOSTS.has(hostname)) return false;
+  return url.pathname === "/search" || url.pathname.startsWith("/search/") || url.searchParams.has("q") || url.searchParams.has("query");
+}
+
 function hostMatchesRootDomain(hostname, rootDomain) {
   const host = normalizeHost(hostname);
   const root = normalizeRootDomain(rootDomain);
@@ -108,11 +139,63 @@ function asPublicUrl(value, field, index, errors) {
     const url = new URL(String(value || ""));
     if (!new Set(["http:", "https:"]).has(url.protocol) || !url.hostname) throw new Error("not public http(s)");
     if (isUnsafeLiteralHost(url.hostname)) throw new Error("local address");
+    if (field === "evidence_url" && isLikelySearchResultsUrl(url)) throw new Error("search results URL");
     return url;
   } catch (error) {
     errors.push(`candidate ${index}: ${field} must be a safe public http(s) URL.`);
     return null;
   }
+}
+
+function nonEmptyUniqueList(value) {
+  if (!Array.isArray(value)) return null;
+  const list = value.map((item) => String(item || "").trim()).filter(Boolean);
+  return list.length === value.length && new Set(list).size === list.length ? list : null;
+}
+
+function validateResearch(research, requirements, errors) {
+  if (!research || typeof research !== "object" || Array.isArray(research)) {
+    errors.push("Ledger research must declare the selected tier, seed map, method checks, lane checks, and omitted lanes.");
+    return { methodChecks: {}, laneChecks: {} };
+  }
+  if (String(research.tier || "").trim().toLowerCase() !== requirements.tier) errors.push(`research.tier must match the selected ${requirements.tier} tier.`);
+  const categorySeeds = nonEmptyUniqueList(research.category_seeds);
+  if (!categorySeeds || categorySeeds.length < 2) errors.push("research.category_seeds must contain at least two distinct run-local category/use-case seeds.");
+  const competitorDomains = nonEmptyUniqueList(research.competitor_domains);
+  if (competitorDomains === null) errors.push("research.competitor_domains must be an array of non-empty domains, or an empty array when hypotheses are recorded in the report.");
+  const methodChecks = research.method_checks;
+  if (!methodChecks || typeof methodChecks !== "object" || Array.isArray(methodChecks)) {
+    errors.push("research.method_checks must record checks for both mandatory discovery methods.");
+  }
+  const methodSummary = {};
+  for (const method of MANDATORY_DISCOVERY_METHODS) {
+    const checks = nonEmptyUniqueList(methodChecks?.[method]);
+    if (!checks || checks.length < requirements.minimumMethodChecks) errors.push(`research.method_checks.${method} needs at least ${requirements.minimumMethodChecks} distinct checks.`);
+    methodSummary[method] = checks?.length || 0;
+  }
+  const laneChecks = research.lane_checks;
+  if (!laneChecks || typeof laneChecks !== "object" || Array.isArray(laneChecks)) errors.push("research.lane_checks must record distinct checks for represented lanes.");
+  const laneSummary = {};
+  for (const [lane, checksValue] of Object.entries(laneChecks || {})) {
+    if (!LANES.has(lane)) {
+      errors.push(`research.lane_checks.${lane} is not in the approved coverage matrix.`);
+      continue;
+    }
+    const checks = nonEmptyUniqueList(checksValue);
+    if (!checks || checks.length < requirements.minimumLaneChecks) errors.push(`research.lane_checks.${lane} needs at least ${requirements.minimumLaneChecks} distinct checks.`);
+    laneSummary[lane] = checks?.length || 0;
+  }
+  const laneCheckCount = Object.keys(laneSummary).length;
+  if (laneCheckCount < requirements.minimumLanes) errors.push(`research.lane_checks must cover at least ${requirements.minimumLanes} lanes; received ${laneCheckCount}.`);
+  if (requirements.tier === "full" && laneCheckCount !== LANES.size) errors.push(`research.lane_checks must cover all ${LANES.size} lanes for the full tier.`);
+  const omittedLanes = nonEmptyUniqueList(research.omitted_lanes);
+  if (!omittedLanes) errors.push("research.omitted_lanes must be an array of lane names, empty for a complete full-tier run.");
+  else {
+    for (const lane of omittedLanes) if (!LANES.has(lane)) errors.push(`research.omitted_lanes.${lane} is not in the approved coverage matrix.`);
+    if (requirements.tier === "full" && omittedLanes.length > 0) errors.push("research.omitted_lanes must be empty for the full tier.");
+    if (requirements.tier === "minimum" && omittedLanes.some((lane) => Object.hasOwn(laneChecks || {}, lane))) errors.push("research.omitted_lanes cannot include a represented lane.");
+  }
+  return { methodChecks: methodSummary, laneChecks: laneSummary };
 }
 
 function requiredText(candidate, field, index, errors) {
@@ -126,16 +209,18 @@ function validate(ledger, options = {}) {
   if (!Array.isArray(candidates)) return { ok: false, errors: ["Ledger must be an object with target_root_domain and a candidates array."] };
   const targetRootDomain = normalizeRootDomain(ledger.target_root_domain);
   if (!targetRootDomain) errors.push("Ledger target_root_domain must be a safe public hostname.");
+  const researchSummary = validateResearch(ledger.research, requirements, errors);
   if (candidates.length < requirements.minimumCandidates) errors.push(`Expected at least ${requirements.minimumCandidates} candidates; received ${candidates.length}.`);
   const ids = new Set();
   const domains = new Map();
   const lanes = new Set();
   const states = {};
+  const discoveryMethods = {};
   let newProspectCount = 0;
   let existingReclamationCount = 0;
   candidates.forEach((candidate, arrayIndex) => {
     const index = arrayIndex + 1;
-    for (const field of ["id", "root_domain", "lane", "route", "evidence_state", "opportunity_type", "why_relevant", "next_action", "cost_or_disclosure", "quality_risk"]) requiredText(candidate, field, index, errors);
+    for (const field of ["id", "root_domain", "lane", "discovery_method", "route", "evidence_state", "opportunity_type", "why_relevant", "next_action", "cost_or_disclosure", "quality_risk"]) requiredText(candidate, field, index, errors);
     if (ids.has(candidate.id)) errors.push(`candidate ${index}: id must be unique.`);
     ids.add(candidate.id);
     const target = asPublicUrl(candidate.target_url, "target_url", index, errors);
@@ -148,6 +233,9 @@ function validate(ledger, options = {}) {
     if (rootDomain) domains.set(rootDomain, (domains.get(rootDomain) || 0) + 1);
     if (!LANES.has(candidate.lane)) errors.push(`candidate ${index}: lane is not in the approved coverage matrix.`);
     else lanes.add(candidate.lane);
+    const discoveryMethod = String(candidate.discovery_method || "").trim();
+    if (!DISCOVERY_METHODS.has(discoveryMethod)) errors.push(`candidate ${index}: discovery_method is invalid.`);
+    else discoveryMethods[discoveryMethod] = (discoveryMethods[discoveryMethod] || 0) + 1;
     if (!ROUTES.has(candidate.route)) errors.push(`candidate ${index}: route is not an approved acquisition route.`);
     if (!EVIDENCE_STATES.has(candidate.evidence_state)) errors.push(`candidate ${index}: evidence_state is invalid.`);
     else states[candidate.evidence_state] = (states[candidate.evidence_state] || 0) + 1;
@@ -156,21 +244,31 @@ function validate(ledger, options = {}) {
     else if (opportunityType === "new_prospect") {
       newProspectCount += 1;
       if (candidate.evidence_state === "verified_existing_link") errors.push(`candidate ${index}: new_prospect cannot use verified_existing_link evidence.`);
+      if (candidate.route === "link_reclamation") errors.push(`candidate ${index}: new_prospect cannot use the link_reclamation route.`);
+      if (discoveryMethod === "existing_mention_search") errors.push(`candidate ${index}: new_prospect cannot use existing_mention_search.`);
     } else {
       existingReclamationCount += 1;
       if (candidate.lane !== "own_mentions_and_reclamation") errors.push(`candidate ${index}: existing_link_reclamation must use the own_mentions_and_reclamation lane.`);
       if (candidate.route !== "link_reclamation") errors.push(`candidate ${index}: existing_link_reclamation must use the link_reclamation route.`);
+      if (discoveryMethod !== "existing_mention_search") errors.push(`candidate ${index}: existing_link_reclamation must use existing_mention_search.`);
+      if (!["verified_existing_link", "research_lead"].includes(candidate.evidence_state)) errors.push(`candidate ${index}: reclamation evidence_state must be verified_existing_link or research_lead.`);
     }
     if (String(candidate.evidence_state || "").startsWith("verified_") && !evidence) errors.push(`candidate ${index}: verified evidence requires a valid evidence_url.`);
   });
   if (domains.size < requirements.minimumDomains) errors.push(`Expected at least ${requirements.minimumDomains} root domains; received ${domains.size}.`);
   if (lanes.size < requirements.minimumLanes) errors.push(`Expected at least ${requirements.minimumLanes} coverage lanes; received ${lanes.size}.`);
+  for (const lane of lanes) if (!Object.hasOwn(researchSummary.laneChecks, lane)) errors.push(`candidate lane ${lane} is missing from research.lane_checks.`);
   if (newProspectCount < requirements.minimumNewProspects) errors.push(`Expected at least ${requirements.minimumNewProspects} new_prospect candidates; received ${newProspectCount}.`);
+  if (candidates.length > 0 && newProspectCount < candidates.length * 0.8) errors.push(`At least 80% of candidates must be new_prospect; received ${newProspectCount}/${candidates.length}.`);
+  if (existingReclamationCount > candidates.length * 0.2) errors.push(`existing_link_reclamation may not exceed 20% of candidates; received ${existingReclamationCount}/${candidates.length}.`);
+  for (const method of MANDATORY_DISCOVERY_METHODS) {
+    if (!discoveryMethods[method]) errors.push(`Candidates must include new prospects from ${method}.`);
+  }
   for (const [domain, count] of domains) if (count > MAX_PER_DOMAIN) errors.push(`${domain}: exceeds the maximum of ${MAX_PER_DOMAIN} candidates per root domain.`);
   return {
     ok: errors.length === 0,
     errors,
-    summary: { ...requirements, targetRootDomain, candidateCount: candidates.length, rootDomainCount: domains.size, laneCount: lanes.size, newProspectCount, existingReclamationCount, evidenceStates: states },
+    summary: { ...requirements, targetRootDomain, candidateCount: candidates.length, rootDomainCount: domains.size, laneCount: lanes.size, newProspectCount, existingReclamationCount, evidenceStates: states, discoveryMethods, research: researchSummary },
   };
 }
 
@@ -198,7 +296,9 @@ if (isDirectExecution()) {
 
 export {
   EVIDENCE_STATES,
+  DISCOVERY_METHODS,
   LANES,
+  MANDATORY_DISCOVERY_METHODS,
   MAX_PER_DOMAIN,
   OPPORTUNITY_TYPES,
   ROUTES,
@@ -206,6 +306,7 @@ export {
   asPublicUrl,
   hostMatchesRootDomain,
   isUnsafeLiteralHost,
+  isLikelySearchResultsUrl,
   normalizeHost,
   normalizeRootDomain,
   samePublicSite,

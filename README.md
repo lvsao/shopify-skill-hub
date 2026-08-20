@@ -59,7 +59,7 @@ npx skills add lvsao/shopify-skill-hub
 | [`optimize-shopify-alt-text`](./skills/optimize-shopify-alt-text) | SEO | Audit and improve product, collection, and article image alt text. |
 | [`shopify-product-serp-optimizer`](./skills/shopify-product-serp-optimizer) | SEO | Improve product search snippets and metadata in reviewable batches. |
 | [`shopify-blog-seo-optimizer`](./skills/shopify-blog-seo-optimizer) | SEO | Audit a Shopify article and prepare safer SEO improvements. |
-| [`seo-backlink-opportunity-finder`](./skills/seo-backlink-opportunity-finder) | SEO | Research evidence-backed backlink prospects without promising placements. |
+| [`seo-backlink-opportunity-finder`](./skills/seo-backlink-opportunity-finder) | SEO | Actively research new backlink prospects from category searches and comparable-brand link paths. |
 | [`shopify-gmc-misrepresentation-auditor`](./skills/shopify-gmc-misrepresentation-auditor) | Product feed | Audit public store pages for Google Merchant Center policy risks. |
 | [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) | Operations | Detect a public Shopify store's theme and apps with evidence. |
 | [`shopify-store-translator`](./skills/shopify-store-translator) | Operations | Translate Shopify resources with a preview-first, approval-based workflow. |

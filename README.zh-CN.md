@@ -59,7 +59,7 @@ npx skills add lvsao/shopify-skill-hub
 | [`optimize-shopify-alt-text`](./skills/optimize-shopify-alt-text) | SEO | 审查并优化商品、集合和文章图片的 alt text。 |
 | [`shopify-product-serp-optimizer`](./skills/shopify-product-serp-optimizer) | SEO | 分批优化商品搜索结果摘要和 SEO 元数据。 |
 | [`shopify-blog-seo-optimizer`](./skills/shopify-blog-seo-optimizer) | SEO | 审查 Shopify 文章并准备可审核的 SEO 改进。 |
-| [`seo-backlink-opportunity-finder`](./skills/seo-backlink-opportunity-finder) | SEO | 研究有证据支持的外链机会，不承诺投放或收录。 |
+| [`seo-backlink-opportunity-finder`](./skills/seo-backlink-opportunity-finder) | SEO | 通过品类搜索和竞品外链路径，主动开发全新的外链机会。 |
 | [`shopify-gmc-misrepresentation-auditor`](./skills/shopify-gmc-misrepresentation-auditor) | 商品 Feed | 审查公开店铺页面的 Google Merchant Center 政策风险。 |
 | [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) | 运营 | 基于证据检测公开 Shopify 店铺的主题和插件。 |
 | [`shopify-store-translator`](./skills/shopify-store-translator) | 运营 | 用先预览、后批准的流程翻译 Shopify 店铺资源。 |
