@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{REPORT_LANG}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,28 +7,31 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f4efe6;
-      --paper: rgba(255, 251, 245, 0.92);
-      --paper-strong: #fffdf9;
-      --ink: #1f1a16;
-      --muted: #71695f;
-      --line: rgba(50, 37, 22, 0.1);
-      --good: #1e6d56;
-      --good-soft: rgba(30, 109, 86, 0.09);
-      --warn: #9b641d;
-      --warn-soft: rgba(155, 100, 29, 0.11);
-      --bad: #9a3e2f;
-      --bad-soft: rgba(154, 62, 47, 0.1);
-      --accent: #0d5c70;
-      --accent-soft: rgba(13, 92, 112, 0.1);
-      --shadow: 0 24px 60px rgba(67, 46, 19, 0.08);
-      --radius-xl: 28px;
-      --radius-lg: 22px;
-      --radius-md: 16px;
-      --radius-sm: 12px;
+      --report-bg: #fafafa;
+      --report-surface: #ffffff;
+      --report-surface-subtle: #f8fafc;
+      --report-border: #e4e4e7;
+      --report-border-subtle: #f4f4f5;
+      --report-fg: #09090b;
+      --report-muted: #71717a;
+      --report-subtle: #a1a1aa;
+      --report-link: #2563eb;
+      --report-success-fg: #15803d; --report-success-bg: #f0fdf4; --report-success-border: #bbf7d0;
+      --report-danger-fg: #b91c1c; --report-danger-bg: #fef2f2; --report-danger-border: #fecaca;
+      --report-warning-fg: #b45309; --report-warning-bg: #fffbeb; --report-warning-border: #fde68a;
+      --report-info-fg: #1d4ed8; --report-info-bg: #eff6ff; --report-info-border: #bfdbfe;
+      --report-accent-fg: #6d28d9; --report-accent-bg: #faf5ff; --report-accent-border: #e9d5ff;
+      --bg: var(--report-bg); --paper: var(--report-surface); --paper-strong: var(--report-surface);
+      --ink: var(--report-fg); --muted: var(--report-muted); --line: var(--report-border);
+      --good: var(--report-success-fg); --good-soft: var(--report-success-bg);
+      --warn: var(--report-warning-fg); --warn-soft: var(--report-warning-bg);
+      --bad: var(--report-danger-fg); --bad-soft: var(--report-danger-bg);
+      --accent: var(--report-info-fg); --accent-soft: var(--report-info-bg);
+      --shadow: 0 1px 3px rgba(0, 0, 0, .04), 0 1px 2px -1px rgba(0, 0, 0, .04);
+      --radius-xl: 14px; --radius-lg: 10px; --radius-md: 10px; --radius-sm: 6px;
       --content: min(1200px, calc(100vw - 32px));
-      --sans: "Avenir Next", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-      --serif: "Iowan Old Style", "Source Han Serif SC", "Songti SC", Georgia, serif;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      --serif: var(--sans);
     }
 
     * { box-sizing: border-box; }
@@ -38,9 +41,7 @@
       color: var(--ink);
       font-family: var(--sans);
       line-height: 1.55;
-      background:
-        radial-gradient(circle at 0% 0%, rgba(255,255,255,0.9), transparent 28%),
-        linear-gradient(145deg, #f6f1e7 0%, #efe6d6 55%, #f7f2ea 100%);
+      background: var(--bg);
     }
 
     .shell {
@@ -59,7 +60,7 @@
       border: 1px solid var(--line);
       background: rgba(255,255,255,0.78);
       color: var(--ink);
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       padding: 11px 16px;
       font: inherit;
       font-weight: 700;
@@ -76,7 +77,7 @@
       border: 1px solid var(--line);
       background: var(--paper);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(8px);
+      backdrop-filter: none;
     }
 
     .hero {
@@ -86,15 +87,7 @@
       padding: 28px;
     }
 
-    .hero::before {
-      content: "";
-      position: absolute;
-      inset: auto -90px -120px auto;
-      width: 280px;
-      height: 280px;
-      background: radial-gradient(circle, rgba(13, 92, 112, 0.17), transparent 65%);
-      pointer-events: none;
-    }
+    .hero::before { content: none; }
 
     .eyebrow {
       color: var(--accent);
@@ -114,7 +107,7 @@
     h1 {
       margin-top: 12px;
       max-width: 860px;
-      font-size: clamp(2.4rem, 6vw, 4.8rem);
+      font-size: clamp(26px, 5vw, 32px);
     }
 
     h2 {
@@ -196,9 +189,7 @@
       padding: 22px;
     }
 
-    .metric.score {
-      background: linear-gradient(145deg, rgba(13, 92, 112, 0.14), rgba(255,255,255,0.8));
-    }
+    .metric.score { background: var(--report-surface-subtle); }
 
     .kicker {
       font-size: 0.76rem;
@@ -239,10 +230,10 @@
       min-height: 230px;
     }
 
-    .summary-card.good { background: linear-gradient(145deg, var(--good-soft), rgba(255,255,255,0.82)); }
-    .summary-card.warn { background: linear-gradient(145deg, var(--warn-soft), rgba(255,255,255,0.82)); }
-    .summary-card.bad { background: linear-gradient(145deg, var(--bad-soft), rgba(255,255,255,0.82)); }
-    .summary-card.manual { background: linear-gradient(145deg, var(--accent-soft), rgba(255,255,255,0.82)); }
+    .summary-card.good { background: var(--report-success-bg); border-color: var(--report-success-border); }
+    .summary-card.warn { background: var(--report-warning-bg); border-color: var(--report-warning-border); }
+    .summary-card.bad { background: var(--report-danger-bg); border-color: var(--report-danger-border); }
+    .summary-card.manual { background: var(--report-info-bg); border-color: var(--report-info-border); }
 
     .summary-grid.compact {
       grid-template-columns: minmax(0, 420px);
@@ -343,7 +334,7 @@
     .bar-fill {
       height: 100%;
       border-radius: 999px;
-      background: linear-gradient(90deg, #0d5c70, #27846b);
+      background: var(--report-fg);
     }
 
     .snapshot {
@@ -392,13 +383,13 @@
       display: grid;
       gap: 10px;
       min-height: 220px;
-      background: linear-gradient(145deg, rgba(13, 92, 112, 0.07), rgba(255,255,255,0.85));
+      background: var(--report-surface-subtle);
     }
 
     .action-row {
       display: grid;
       gap: 8px;
-      background: linear-gradient(145deg, rgba(243, 226, 183, 0.4), rgba(255,255,255,0.84));
+      background: var(--report-warning-bg);
     }
 
     .footer-note {
@@ -428,7 +419,12 @@
       .shell { width: auto; padding: 0; }
       body { background: white; }
       .hero, .panel, .metric, .summary-card, .idea-card, .action-row { box-shadow: none; }
+      .hero, .panel, .metric, .summary-card, .idea-card, .action-row, tr { break-inside: avoid; }
     }
+
+    button:focus-visible { outline: 3px solid var(--report-info-fg); outline-offset: 2px; }
+    .panel { overflow-x: auto; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
   </style>
 </head>
 <body>
@@ -450,7 +446,8 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
     function badge(kind, label) {
@@ -561,7 +558,7 @@
     ];
 
     document.getElementById("app").innerHTML = `
-      <section class="hero">
+      <header class="hero">
         <div class="eyebrow">Selofy Skill Hub \u00b7 Shopify Markets Auditor</div>
         <h1>${esc(report.title)}</h1>
         <p class="lead">${esc(report.summaryText)}</p>
@@ -592,7 +589,7 @@
             <p class="sub">${esc(report.fixCountText)}</p>
           </div>
         </div>
-      </section>
+      </header>
 
       <section class="section">
         <div class="overview-grid">
@@ -688,7 +685,7 @@
         <div class="panel">
           <div class="section-head">
             <div>
-              <h2>Languages</h2>
+              <h2>${isZh ? "语言" : "Languages"}</h2>
               <p class="section-desc">${esc(report.languagesIntro)}</p>
             </div>
           </div>
@@ -710,7 +707,7 @@
         <div class="panel">
           <div class="section-head">
             <div>
-              <h2>Markets</h2>
+              <h2>${isZh ? "市场" : "Markets"}</h2>
               <p class="section-desc">${esc(report.marketsIntro)}</p>
             </div>
           </div>
@@ -733,7 +730,7 @@
         <div class="panel">
           <div class="section-head">
             <div>
-              <h2>Shipping</h2>
+              <h2>${isZh ? "配送" : "Shipping"}</h2>
               <p class="section-desc">${esc(report.shippingIntro)}</p>
             </div>
           </div>
@@ -745,7 +742,7 @@
         <div class="panel">
           <div class="section-head">
             <div>
-              <h2>Storefront</h2>
+              <h2>${isZh ? "店铺前台" : "Storefront"}</h2>
               <p class="section-desc">${esc(report.storefrontIntro)}</p>
             </div>
           </div>

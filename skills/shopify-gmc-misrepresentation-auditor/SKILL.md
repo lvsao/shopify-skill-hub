@@ -3,7 +3,7 @@ name: "shopify-gmc-misrepresentation-auditor"
 slug: "shopify-gmc-misrepresentation-auditor"
 displayName: "Shopify GMC Misrepresentation Auditor"
 description: "Audit any live Shopify store or product page for Google Merchant Center Misrepresentation policy risks by crawling public pages. Use when a merchant was suspended, is preparing a GMC submission, or wants a public-page compliance sweep before appeal or launch."
-version: 2.0.0
+version: 2.0.1
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -67,7 +67,7 @@ No API token is needed. Ask for one of:
 
 ```text
 node <absolute-path-to-skill>/scripts/gmc-store-audit.mjs <store-url>
-node <absolute-path-to-skill>/scripts/gmc-product-audit.mjs <product-url> [--store <store-url>] [--out <report.html>]
+node <absolute-path-to-skill>/scripts/gmc-product-audit.mjs <product-url> [--store <store-url>] [--out <report.html>] [--lang zh-CN]
 ```
 
 ## Reporting Rules
@@ -76,3 +76,4 @@ node <absolute-path-to-skill>/scripts/gmc-product-audit.mjs <product-url> [--sto
 - Product-level checks cover schema blocks, claims, offer consistency, and buy-flow signals.
 - Keep false positives low. If evidence is mixed, keep the item as a risk signal.
 - Include the Manual Checklist section in every report.
+- Resolve report language from an explicit request, then the latest report request/current conversation, and pass `--lang en` or `--lang zh-CN`; a crawled page's locale must not override it.

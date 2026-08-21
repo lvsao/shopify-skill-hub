@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{REPORT_LANG}}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,8 +40,6 @@ body {
 }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 .page { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
 
@@ -366,6 +364,15 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
   .hero-store-icon { width: 40px; height: 40px; }
 }
 
+/* Shared dependency-free shadcn-style report baseline. */
+:root {
+  --report-bg:#fafafa;--report-surface:#fff;--report-surface-subtle:#f8fafc;--report-border:#e4e4e7;--report-border-subtle:#f4f4f5;--report-fg:#09090b;--report-muted:#71717a;--report-subtle:#a1a1aa;--report-link:#2563eb;
+  --report-success-fg:#15803d;--report-success-bg:#f0fdf4;--report-success-border:#bbf7d0;--report-danger-fg:#b91c1c;--report-danger-bg:#fef2f2;--report-danger-border:#fecaca;--report-warning-fg:#b45309;--report-warning-bg:#fffbeb;--report-warning-border:#fde68a;--report-info-fg:#1d4ed8;--report-info-bg:#eff6ff;--report-info-border:#bfdbfe;--report-accent-fg:#6d28d9;--report-accent-bg:#faf5ff;--report-accent-border:#e9d5ff;
+  --report-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans","Noto Sans SC","PingFang SC","Microsoft YaHei",Arial,sans-serif;--report-radius-sm:6px;--report-radius-md:10px;--report-radius-lg:14px;--report-shadow-subtle:0 1px 3px rgba(0,0,0,.04),0 1px 2px -1px rgba(0,0,0,.04);--report-shadow-card:0 1px 3px rgba(0,0,0,.05);
+  --bg:var(--report-bg);--bg2:var(--report-surface);--bg3:var(--report-surface-subtle);--border:var(--report-border);--border2:var(--report-border);--text:var(--report-fg);--muted:var(--report-muted);--high:var(--report-success-fg);--high-dim:var(--report-success-bg);--med:var(--report-warning-fg);--med-dim:var(--report-warning-bg);--low:var(--report-subtle);--low-dim:var(--report-surface-subtle);--accent:var(--report-link);--accent-dim:var(--report-info-bg);--radius:var(--report-radius-md);--radius-sm:var(--report-radius-sm);--font-head:var(--report-font-sans);--font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+body{font-family:var(--report-font-sans);background:var(--report-bg)}.hero{background:var(--report-surface);border:1px solid var(--report-border);padding:32px 0 0}.hero::before{content:none}.hero-eyebrow,.hero-title,.hero-subtitle,.hero-meta,.stat-label{color:var(--report-muted)}.hero-title .domain{color:var(--report-fg)}.hero-store-icon{background:var(--report-surface-subtle);border-color:var(--report-border)}.stat-bar,.stat{border-color:var(--report-border)}.stat-value{color:var(--report-fg)}.stat-value.green{color:var(--report-success-fg)}.stat-value.amber{color:var(--report-warning-fg)}.theme-card,.app-card,.appendix{box-shadow:var(--report-shadow-card)}.app-card:hover{transform:none;box-shadow:var(--report-shadow-card)}.app-card.high:hover::after{content:none}.badge{border-radius:var(--report-radius-sm)}a:focus-visible,summary:focus-visible{outline:3px solid var(--report-info-fg);outline-offset:2px}.clues-table{min-width:680px}.section:has(.clues-table){overflow-x:auto}@media print{body{background:#fff}.hero{padding:20px 0 0}.app-card,.theme-card,.appendix,.section{box-shadow:none;break-inside:avoid}.page{padding-bottom:0}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
 /* ── Animations ────────────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
@@ -384,43 +391,8 @@ details[open] .appendix summary { border-bottom-color: var(--border); }
 
 <body>
 
-<!-- ══ MULTI-SOURCE FAVICON LOADER ═══════════════════════════════ -->
-<script>
-function loadFavicon(img, domain) {
-  if (!domain || domain === 'unknown.com') { showFallback(img); return; }
-  const sources = [
-    'https://logo.clearbit.com/' + domain,
-    'https://www.google.com/s2/favicons?domain=' + domain + '&sz=64',
-    'https://' + domain + '/favicon.ico',
-  ];
-  tryNext(img, sources, 0);
-}
-function tryNext(img, sources, idx) {
-  if (idx >= sources.length) { showFallback(img); return; }
-  img.onload = function() { this.style.display = 'block'; };
-  img.onerror = function() { tryNext(this, sources, idx + 1); };
-  img.src = sources[idx];
-}
-function showFallback(el) {
-  var p = el.parentElement;
-  el.style.display = 'none';
-  var fb = p.querySelector('.logo-fallback');
-  if (fb) fb.style.display = 'flex';
-}
-function loadStoreFavicon(img, url) {
-  var domain;
-  try { domain = new URL(url).hostname; } catch(e) { showFallback(img); return; }
-  var sources = [
-    'https://www.google.com/s2/favicons?domain=' + domain + '&sz=64',
-    'https://logo.clearbit.com/' + domain,
-    'https://' + domain + '/favicon.ico',
-  ];
-  tryNext(img, sources, 0);
-}
-</script>
-
 <!-- ══ HERO ══════════════════════════════════════════════════════ -->
-<div class="hero">
+<header class="hero">
   <div class="hero-inner">
     <div class="hero-eyebrow">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -428,9 +400,9 @@ function loadStoreFavicon(img, url) {
     </div>
     <div class="hero-title-row">
       <div class="hero-store-icon">
-        <img src="" alt="store icon" onerror="showFallback(this)" style="display:none"
+        <img src="" alt="store icon" style="display:none"
              data-store-url="{{STORE_URL}}">
-        <span class="logo-fallback fallback" style="display:none">🛒</span>
+        <span class="logo-fallback fallback" style="display:flex">🛒</span>
       </div>
       <div class="hero-title-group">
         <h1 class="hero-title">
@@ -470,10 +442,10 @@ function loadStoreFavicon(img, url) {
       <div class="stat-label">Unconfirmed Clues</div>
     </div>
   </div>
-</div>
+ </header>
 
 <!-- ══ MAIN CONTENT ═══════════════════════════════════════════════ -->
-<div class="page">
+<main class="page">
 
   <!-- ── Theme ─────────────────────────────────────────────────── -->
   <div class="section">
@@ -519,39 +491,7 @@ function loadStoreFavicon(img, url) {
 
     <div class="apps-grid">
 
-      <!-- ── App card template (repeat per app) ── -->
-      <div class="app-card high">
-        <div class="app-header">
-          <div class="app-logo">
-            <img src="" alt="{{APP_NAME}} logo" style="display:none"
-                 data-vendor-domain="{{APP_VENDOR_DOMAIN}}">
-            <span class="logo-fallback app-logo-fallback" style="display:none">{{APP_EMOJI}}</span>
-          </div>
-          <div class="app-info">
-            <div class="app-name">{{APP_NAME}}</div>
-            <div class="app-category">{{APP_CATEGORY}}</div>
-          </div>
-          <span class="badge high">HIGH</span>
-        </div>
-
-        <div class="app-actions">
-          <a class="btn-store" href="{{APP_STORE_URL}}" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            App Store
-          </a>
-        </div>
-
-        <details>
-          <summary>Evidence ({{APP_EVIDENCE_COUNT}} signals)</summary>
-          <div class="evidence-list">
-            <div class="evidence-item">
-              <div class="evidence-type">{{EVIDENCE_TYPE}}</div>
-              <div class="evidence-snippet">{{EVIDENCE_SNIPPET}}</div>
-            </div>
-          </div>
-        </details>
-      </div>
-      <!-- ── End app card ── -->
+      {{APP_CARDS}}
 
     </div>
   </div>
@@ -572,11 +512,7 @@ function loadStoreFavicon(img, url) {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span class="clue-name">{{CLUE_NAME}}</span></td>
-            <td><span class="clue-reason">{{CLUE_REASON}}</span></td>
-            <td><span class="clue-snippet">{{CLUE_SNIPPET}}</span></td>
-          </tr>
+          {{CLUE_ROWS}}
         </tbody>
       </table>
     </div>
@@ -596,11 +532,7 @@ function loadStoreFavicon(img, url) {
           <div class="appendix-section-title">Pages Crawled</div>
           <table class="pages-table">
             <tbody>
-              <tr>
-                <td style="color:var(--muted);font-family:var(--font-mono);font-size:11px;">{{PAGE_URL}}</td>
-                <td><span class="status-ok">{{PAGE_STATUS}}</span></td>
-                <td style="color:var(--muted);">{{PAGE_TYPE}}</td>
-              </tr>
+              {{PAGE_ROWS}}
             </tbody>
           </table>
         </div>
@@ -608,14 +540,14 @@ function loadStoreFavicon(img, url) {
         <div>
           <div class="appendix-section-title">All External Scripts</div>
           <div class="script-list">
-            <div class="script-item">{{SCRIPT_URL}}</div>
+            {{SCRIPT_ROWS}}
           </div>
         </div>
 
         <div>
           <div class="appendix-section-title">Window Globals Detected</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            <span class="tag" style="font-family:var(--font-mono);font-size:11px;">{{GLOBAL_NAME}}</span>
+            {{GLOBAL_TAGS}}
           </div>
         </div>
 
@@ -634,25 +566,7 @@ function loadStoreFavicon(img, url) {
     </div>
   </div>
 
-</div>
-
-<!-- ══ BOOTSTRAP FAVICON LOADERS ═════════════════════════════════ -->
-<script>
-(function() {
-  // Load store favicon
-  var storeIcon = document.querySelector('.hero-store-icon img');
-  if (storeIcon) {
-    var url = storeIcon.getAttribute('data-store-url');
-    if (url) loadStoreFavicon(storeIcon, url);
-  }
-  // Load app favicons
-  var appLogos = document.querySelectorAll('.app-logo img');
-  for (var i = 0; i < appLogos.length; i++) {
-    var domain = appLogos[i].getAttribute('data-vendor-domain');
-    if (domain) loadFavicon(appLogos[i], domain);
-  }
-})();
-</script>
+</main>
 
 </body>
 </html>

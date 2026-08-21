@@ -3,7 +3,7 @@ name: "shopify-product-serp-optimizer"
 slug: "shopify-product-serp-optimizer"
 displayName: "Shopify Product SERP Optimizer"
 description: "Audit and improve Shopify product SERP performance with five-product batches, evidence-backed metadata recommendations, product image Alt Text checks, HTML reports, and one approval bundle for safe writes. Use for product-page search snippet work, not technical SEO, translations, redirects, theme work, or generic content strategy."
-version: 2.1.2
+version: 2.1.3
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -121,7 +121,7 @@ node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs connection-
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs product --env skill-hub.env --handle <product-handle>
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs scan-products --env skill-hub.env
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs batch-plan --env skill-hub.env --batch-size 5
-node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs report --input - --output shopify-serp-report-YYYYMMDD-HHMM.html
+node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs report --input - --output shopify-serp-report-YYYYMMDD-HHMM.html --lang zh-CN
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs apply --env skill-hub.env --input -
 node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs apply --env skill-hub.env --input - --execute
 ```
@@ -130,6 +130,7 @@ node <absolute-path-to-skill>/scripts/shopify-product-serp-admin.mjs apply --env
 
 1. Run onboarding only if the env is missing or incomplete.
 2. Read the relevant references.
+   - Resolve report language from an explicit request first, then the latest report request/current conversation, and pass it with `--lang` (`en`, `zh-CN`, or `de`). The input locale is only a fallback.
 3. Gather product evidence and live Google and Amazon intent evidence.
 4. Score the current product or batch.
 5. Generate one HTML report in the current working directory.

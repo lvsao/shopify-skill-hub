@@ -33,7 +33,7 @@ Commands:
   collection-preview --env skill-hub.env --handle <handle>
   scan-products      --env skill-hub.env
   batch-plan         --env skill-hub.env --batch-size 5
-  report             --input <file|-> --output <report.html>
+  report             --input <file|-> --output <report.html> [--lang en|zh-CN|de]
   apply              --env skill-hub.env --input <file|->
 `);
 }
@@ -969,6 +969,8 @@ const REPORT_COPY = {
     labelNote: "Note",
     generated: "Generated",
     reviewed: "Reviewed",
+    unknownStore: "Store name unavailable",
+    notAvailable: "Not available",
   },
   zh: {
     lang: "zh-CN",
@@ -1051,6 +1053,8 @@ const REPORT_COPY = {
     labelNote: "说明",
     generated: "生成时间",
     reviewed: "本次审查",
+    unknownStore: "店铺名称不可用",
+    notAvailable: "暂不可用",
   },
   de: {
     lang: "de",
@@ -1133,6 +1137,8 @@ const REPORT_COPY = {
     labelNote: "Hinweis",
     generated: "Erstellt",
     reviewed: "Geprüft",
+    unknownStore: "Shopname nicht verfügbar",
+    notAvailable: "Nicht verfügbar",
   },
 };
 
@@ -1375,11 +1381,11 @@ function renderProduct(rawProduct, index, copy = REPORT_COPY.en) {
         <h3>✍️ ${escapeHtml(copy.recommendedSnippet)}</h3>
         <div class="snippet">
           <strong>${escapeHtml(copy.seoTitle)}</strong>
-          <p>${escapeHtml(product.recommendedSeoTitle || "No title change recommended.")}</p>
+          <p>${escapeHtml(product.recommendedSeoTitle || copy.noOpportunity)}</p>
         </div>
         <div class="snippet">
           <strong>${escapeHtml(copy.metaDescription)}</strong>
-          <p>${escapeHtml(product.recommendedMetaDescription || "No meta description change recommended.")}</p>
+          <p>${escapeHtml(product.recommendedMetaDescription || copy.noOpportunity)}</p>
         </div>
       </article>
       <article class="card">
@@ -1427,7 +1433,7 @@ function reportTimestamp() {
 async function reportCommand(args) {
   const input = await loadJsonInput(args.input || "-");
   const template = await fs.readFile(REPORT_TEMPLATE, "utf8").catch((error) => fail(`Missing report template: ${error.message}`));
-  const copy = getCopy(input);
+  const copy = getCopy({ ...input, language: args.lang || input.language });
   const generatedAt = input.generatedAt || new Date().toISOString();
   const products = plainArray(input.products).map(normalizeReportProduct);
   const output = args.output || `shopify-serp-report-${reportTimestamp()}.html`;
@@ -1439,28 +1445,29 @@ async function reportCommand(args) {
     const score = product.serpScore ?? product.score;
     return score ? `${name}: ${copy.score} ${score}` : name;
   });
-  const overview = `<section class="cover">
+  const overview = `<header class="cover">
     <div class="cover-heading">
       <p class="eyebrow">${escapeHtml(copy.coverEyebrow)}</p>
       <h1>${escapeHtml(title)}</h1>
       <p class="lead">${escapeHtml(input.summary || copy.coverLead)}</p>
     </div>
     <div class="cover-grid">
-      <article class="metric-card store-card"><span>${escapeHtml(copy.store)}</span><strong>${escapeHtml(input.store?.name || input.store?.domain || "Unknown store")}</strong><small>${escapeHtml(input.store?.domain || "")}</small></article>
+      <article class="metric-card store-card"><span>${escapeHtml(copy.store)}</span><strong>${escapeHtml(input.store?.name || input.store?.domain || copy.unknownStore)}</strong><small>${escapeHtml(input.store?.domain || "")}</small></article>
       <article class="metric-card"><span>${escapeHtml(copy.totalProducts)}</span><strong>${escapeHtml(input.productCount ?? input.scannedProductCount ?? products.length)}</strong><small>${escapeHtml(copy.generated)} ${escapeHtml(generatedAt)}</small></article>
       <article class="metric-card"><span>${escapeHtml(copy.auditedProducts)}</span><strong>${escapeHtml(input.auditedProductCount ?? products.length)}</strong><small>${escapeHtml(copy.reviewed)}</small></article>
-      <article class="metric-card score-metric"><span>${escapeHtml(copy.averageScore)}</span><strong>${avgScore === null || avgScore === undefined ? "N/A" : `${escapeHtml(avgScore)}/100`}</strong><small>${escapeHtml(copy.scoreNote)}</small></article>
-      <article class="metric-card lift-metric"><span>${escapeHtml(copy.estimatedLift)}</span><strong>${lift === null || lift === undefined ? "N/A" : `+${escapeHtml(lift)}%`}</strong><small>${escapeHtml(copy.scoreNote)}</small></article>
+      <article class="metric-card score-metric"><span>${escapeHtml(copy.averageScore)}</span><strong>${avgScore === null || avgScore === undefined ? escapeHtml(copy.notAvailable) : `${escapeHtml(avgScore)}/100`}</strong><small>${escapeHtml(copy.scoreNote)}</small></article>
+      <article class="metric-card lift-metric"><span>${escapeHtml(copy.estimatedLift)}</span><strong>${lift === null || lift === undefined ? escapeHtml(copy.notAvailable) : `+${escapeHtml(lift)}%`}</strong><small>${escapeHtml(copy.scoreNote)}</small></article>
     </div>
     <div class="summary-panel">
       <h2>📍 ${escapeHtml(copy.topTakeaways)}</h2>
       ${list(takeaways, copy.noTakeaways)}
     </div>
-  </section>`;
+  </header>`;
   const productSections = products.map((product, index) => renderProduct(product, index, copy)).join("\n");
   const html = template
     .replaceAll("{{REPORT_TITLE}}", escapeHtml(title))
     .replaceAll("{{REPORT_LANG}}", escapeHtml(copy.lang))
+    .replaceAll("{{REPORT_ARIA_LABEL}}", escapeHtml(copy.reportTitle))
     .replaceAll("{{EXPORT_PDF_LABEL}}", escapeHtml(copy.exportPdf))
     .replaceAll("{{GENERATED_AT}}", escapeHtml(generatedAt))
     .replace("{{REPORT_CONTENT}}", `${overview}\n${productSections}`);

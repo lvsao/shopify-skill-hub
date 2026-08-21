@@ -439,6 +439,29 @@
       }
     }
 
+    /* Shared dependency-free report tokens and neutral component overrides. */
+    :root {
+      --report-bg: #fafafa; --report-surface: #ffffff; --report-surface-subtle: #f8fafc;
+      --report-border: #e4e4e7; --report-border-subtle: #f4f4f5; --report-fg: #09090b;
+      --report-muted: #71717a; --report-subtle: #a1a1aa; --report-link: #2563eb;
+      --report-success-fg: #15803d; --report-success-bg: #f0fdf4; --report-success-border: #bbf7d0;
+      --report-danger-fg: #b91c1c; --report-danger-bg: #fef2f2; --report-danger-border: #fecaca;
+      --report-warning-fg: #b45309; --report-warning-bg: #fffbeb; --report-warning-border: #fde68a;
+      --report-info-fg: #1d4ed8; --report-info-bg: #eff6ff; --report-info-border: #bfdbfe;
+      --report-accent-fg: #6d28d9; --report-accent-bg: #faf5ff; --report-accent-border: #e9d5ff;
+      --report-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      --report-radius-sm: 6px; --report-radius-md: 10px; --report-radius-lg: 14px;
+      --report-shadow-subtle: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px -1px rgba(0,0,0,.04); --report-shadow-card: 0 1px 3px rgba(0,0,0,.05);
+      --ink: var(--report-fg); --muted: var(--report-muted); --quiet: var(--report-subtle); --paper: var(--report-bg); --surface: var(--report-surface); --line: var(--report-border); --accent: var(--report-fg); --accent-ink: var(--report-fg); --shadow: var(--report-shadow-subtle); --radius: var(--report-radius-md);
+    }
+    body { background: var(--report-bg); font-family: var(--report-font-sans); font-size: 14px; }
+    h1, h2 { font-family: var(--report-font-sans); }
+    .cover-heading, .metric-card, .summary-panel, .card, .mini-card, .community-grid > div { background: var(--report-surface); border-color: var(--report-border); box-shadow: var(--report-shadow-card); }
+    .store-card, .score-metric, .lift-metric, .summary-panel, .score-card, .recommend, .clean-list li, .snippet, .mini-card, .community-grid > div { background: var(--report-surface-subtle); }
+    .score { color: var(--report-fg); }
+    .export-button { min-height: 44px; border-radius: var(--report-radius-sm); background: var(--report-surface); color: var(--report-fg); border-color: var(--report-border); box-shadow: var(--report-shadow-subtle); }
+    .export-button:focus-visible, a:focus-visible { outline: 3px solid var(--report-info-fg); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
     @media print {
       :root {
         --paper: white;
@@ -484,7 +507,7 @@
   <div class="report-toolbar">
     <button class="export-button" type="button" onclick="window.print()">{{EXPORT_PDF_LABEL}}</button>
   </div>
-  <main class="report-shell" aria-label="Shopify product SEO report">
+  <main class="report-shell" aria-label="{{REPORT_ARIA_LABEL}}">
     {{REPORT_CONTENT}}
   </main>
 </body>

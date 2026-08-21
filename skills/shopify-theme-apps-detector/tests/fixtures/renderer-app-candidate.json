@@ -1,0 +1,34 @@
+{
+  "storeUrl": "https://fixture-shop.example",
+  "scannedAt": "2026-08-21T00:00:00.000Z",
+  "isShopify": true,
+  "shopifyTheme": {
+    "id": "139222196000",
+    "name": "Dawn",
+    "schema_name": "Dawn",
+    "version": "15.2.0",
+    "theme_store_id": "887"
+  },
+  "shopifySignals": [
+    { "type": "script", "key": "judge.me", "value": "https://cdn.judge.me/widget.js?<script>alert(1)</script>" }
+  ],
+  "appCandidates": [
+    {
+      "name": "Judge.me Product Reviews",
+      "category": "Product reviews",
+      "confidence": "high",
+      "appStoreUrl": "https://apps.shopify.com/judgeme",
+      "evidence": [
+        { "type": "script URL", "snippet": "https://cdn.judge.me/widget.js?<script>alert(1)</script>" },
+        { "type": "window global", "snippet": "window.jdgm = { enabled: true }" }
+      ]
+    }
+  ],
+  "pages": [
+    { "url": "https://fixture-shop.example/", "status": 200, "type": "home" }
+  ],
+  "aggregated": {
+    "externalScripts": ["https://cdn.judge.me/widget.js"],
+    "windowGlobals": ["jdgm"]
+  }
+}

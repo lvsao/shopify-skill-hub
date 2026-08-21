@@ -3,7 +3,7 @@ name: "shopify-markets-localization-auditor"
 slug: "shopify-markets-localization-auditor"
 displayName: "Shopify Markets Localization Auditor"
 description: "Audit Shopify international setup across Markets, languages, shipping coverage, storefront localization, international SEO basics, and category-fit expansion opportunities with a plain-language HTML report and approval-based fixes. Use when a merchant wants to review or improve Markets, language readiness, local buying experience, or international growth direction. Do not use for theme coding, feed work, ad strategy, or generic translation writing."
-version: 2.1.1
+version: 2.1.2
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -158,6 +158,7 @@ node <absolute-path-to-skill>/scripts/shopify-markets-localization-auditor.mjs a
 
 - Use the full `translatableResources` pagination flow; do not sample. `references/api-surfaces.md` defines eligible fields, readiness/gap math, and how to explain a Shopify API coverage score without conflating it with translation-app metrics.
 - `references/audit-rules.md` defines the customer-facing report structure, plain-language terminology, language selection, and evidence-versus-inference rules.
+- Resolve `--lang` from an explicit request, then the latest report request/current conversation. Use `auto` only after the agent has resolved and persisted that language; never let machine or store locale silently turn a Chinese report into English.
 
 ## Supported Fixes
 

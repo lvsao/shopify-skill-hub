@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Barcode Generator"
+  short_description: "Build GTIN-14 barcode numbers for Shopify variants, with a review-then-approve write path."
+  default_prompt: "Generate GTIN-14 barcodes for my Shopify variants."

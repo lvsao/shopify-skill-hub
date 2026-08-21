@@ -3,7 +3,7 @@ name: "shopify-blog-seo-optimizer"
 slug: "shopify-blog-seo-optimizer"
 displayName: "Shopify Blog SEO Optimizer"
 description: "Audit a Shopify Article, research content and E-E-A-T gaps, generate a reviewable HTML candidate, and produce one audit-plus-storefront-preview report before any approved update. Use when a merchant gives an Article URL, title, or Article ID and wants safer blog SEO and reading-experience improvements."
-version: 1.0.1
+version: 1.0.2
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -154,7 +154,7 @@ Read `references/audit-checklist.md` and `references/eeat-methodology.md`. The a
 Render the combined report without asking the merchant to assemble an intermediate plan:
 
 ```text
-node <absolute-path-to-skill>/scripts/shopify-blog-seo-admin.mjs report --audit audit.json --candidate candidate.json --output shopify-blog-seo-report.html
+node <absolute-path-to-skill>/scripts/shopify-blog-seo-admin.mjs report --audit audit.json --candidate candidate.json --output shopify-blog-seo-report.html --lang zh-CN
 ```
 
 The report must contain:
@@ -166,6 +166,7 @@ The report must contain:
 - a `Preview only — not published` badge;
 - a responsive candidate article preview with clickable TOC and usable FAQ disclosure;
 - `real-storefront-reference` only when the live page was reachable, otherwise `theme-like-fallback` with the access reason.
+- Resolve the report language from the explicit request, then the latest report request/current conversation, and pass `--lang en` or `--lang zh-CN`; do not use the storefront locale to choose report copy.
 
 ## Safe optimization scope
 

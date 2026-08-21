@@ -15,17 +15,24 @@ const MAX_PAGES = 5;
 const MAX_RETRIES = 2;
 const USER_AGENT = 'Mozilla/5.0 (compatible; ShopifyDetector/1.0; +https://selofy.com)';
 
-const url = process.argv.find((value, index) => index > 0 && !value.startsWith("--"));
-const outputFlag = process.argv.indexOf("--output");
-const outputPath = outputFlag >= 0 ? process.argv[outputFlag + 1] : null;
-if (!url) {
-  console.error('Usage: node store-scanner.mjs <url>');
+const cliArgs = process.argv.slice(2);
+const optionValueFlags = new Set(["--output", "--lang", "--fixture"]);
+const url = cliArgs.find((value, index) => !value.startsWith("--") && !optionValueFlags.has(cliArgs[index - 1]));
+const outputFlag = cliArgs.indexOf("--output");
+const outputPath = outputFlag >= 0 ? cliArgs[outputFlag + 1] : null;
+const langFlag = cliArgs.indexOf("--lang");
+const reportLang = langFlag >= 0 ? String(cliArgs[langFlag + 1] || "en") : "en";
+const fixtureFlag = cliArgs.indexOf("--fixture");
+const fixturePath = fixtureFlag >= 0 ? cliArgs[fixtureFlag + 1] : null;
+if (!url && !fixturePath) {
+  console.error('Usage: node store-scanner.mjs <url> [--output <report.html>] [--lang en|zh-CN] | --fixture <bundle.json> --output <report.html>');
   process.exit(1);
 }
-try {
+try { if (url) {
   let tempUrl = url.trim();
   if (!/^https?:\/\//i.test(tempUrl)) tempUrl = 'https://' + tempUrl;
   validateSafeUrl(tempUrl);
+  }
 } catch (e) {
   console.error(`ERROR: ${e.message}`);
   process.exit(1);
@@ -78,12 +85,45 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function safeHref(value) {
+  try {
+    const parsed = new URL(String(value || ""));
+    return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : "#";
+  } catch { return "#"; }
+}
+
+function confidenceClass(value) {
+  const normalized = String(value || "low").toLowerCase();
+  return ["high", "medium", "low"].includes(normalized) ? normalized : "low";
+}
+
+function renderAppCards(candidates, copy) {
+  if (!Array.isArray(candidates) || candidates.length === 0) return `<p class="muted">${escapeHtml(copy.noApps)}</p>`;
+  return candidates.map((candidate) => {
+    const confidence = confidenceClass(candidate.confidence);
+    const evidence = Array.isArray(candidate.evidence) ? candidate.evidence : [];
+    const evidenceItems = evidence.length
+      ? evidence.map((item) => `<div class="evidence-item"><div class="evidence-type">${escapeHtml(item.type || copy.evidence)}</div><div class="evidence-snippet">${escapeHtml(item.snippet || item.value || item)}</div></div>`).join("")
+      : `<div class="evidence-item"><div class="evidence-snippet">${escapeHtml(copy.insufficientEvidence)}</div></div>`;
+    return `<article class="app-card ${confidence}"><div class="app-header"><span class="app-logo-fallback" aria-hidden="true">${escapeHtml(candidate.emoji || "▦")}</span><div class="app-info"><h3 class="app-name">${escapeHtml(candidate.name || copy.unknownApp)}</h3><p class="app-category">${escapeHtml(candidate.category || copy.notAvailable)}</p></div><span class="badge ${confidence}">${escapeHtml(copy[confidence])}</span></div><div class="app-actions">${candidate.appStoreUrl ? `<a class="btn-store" href="${escapeHtml(safeHref(candidate.appStoreUrl))}" target="_blank" rel="noopener noreferrer">${escapeHtml(copy.appStore)}</a>` : ""}</div><details><summary>${escapeHtml(copy.evidence)} (${escapeHtml(evidence.length)} ${escapeHtml(copy.signals)})</summary><div class="evidence-list">${evidenceItems}</div></details></article>`;
+  }).join("");
+}
+
+function renderClueRows(signals, copy) {
+  if (!Array.isArray(signals) || signals.length === 0) return `<tr><td colspan="3" class="muted">${escapeHtml(copy.noClues)}</td></tr>`;
+  return signals.slice(0, 50).map((signal) => `<tr><td><span class="clue-name">${escapeHtml(signal.key || signal.type || copy.notAvailable)}</span></td><td><span class="clue-reason">${escapeHtml(signal.type || copy.notAvailable)}</span></td><td><span class="clue-snippet">${escapeHtml(signal.value || signal.snippet || "")}</span></td></tr>`).join("");
+}
+
 async function writeHtmlReport(bundle, output) {
   if (!output) return null;
   const template = await fs.readFile(new URL("../assets/report-template.html", import.meta.url), "utf8");
   const domain = (() => { try { return new URL(bundle.storeUrl).hostname; } catch { return "unknown"; } })();
   const theme = bundle.shopifyTheme || {};
+  const candidates = Array.isArray(bundle.appCandidates) ? bundle.appCandidates : [];
+  const confirmed = candidates.filter((candidate) => confidenceClass(candidate.confidence) === "high").length;
+  const probable = candidates.filter((candidate) => confidenceClass(candidate.confidence) === "medium").length;
   const values = {
+    REPORT_LANG: reportLang.toLowerCase().startsWith("zh") ? "zh-CN" : "en",
     STORE_DOMAIN: domain,
     STORE_URL: bundle.storeUrl,
     SCAN_DATE: bundle.scannedAt,
@@ -93,13 +133,44 @@ async function writeHtmlReport(bundle, output) {
     THEME_ENTITY_ID: theme.id || "unknown",
     THEME_VERSION: theme.version || "unknown",
     THEME_STORE_ID: theme.theme_store_id || "unknown",
-    CONFIRMED_COUNT: 0,
-    PROBABLE_COUNT: 0,
+    THEME_STORE_URL: theme.theme_store_id ? `https://themes.shopify.com/themes/${encodeURIComponent(theme.theme_store_id)}` : "#",
+    CONFIRMED_COUNT: confirmed,
+    PROBABLE_COUNT: probable,
     CLUES_COUNT: bundle.shopifySignals?.length || 0,
   };
+  const copy = reportLang.toLowerCase().startsWith("zh") ? {
+    lang: "zh-CN", title: "Shopify 主题与应用检测报告", scanned: "扫描时间", confirmed: "已确认 Shopify", themeDetected: "已检测主题", appsConfirmed: "已确认应用", appsProbable: "可能的应用", clues: "未确认线索", theme: "主题", evidence: "证据", signals: "条信号", viewTheme: "查看主题", detectedApps: "检测到的应用", appStore: "应用商店", appendix: "技术附录", raw: "显示原始扫描数据", pages: "已抓取页面", scripts: "所有外部脚本", globals: "检测到的窗口变量", footer: "检测仅基于公开页面信号。仅在后台运行的应用无法检测；置信度反映证据质量，而不是确定性。", noApps: "未发现可确认的应用候选项。", noClues: "本次扫描没有未确认线索。", unknownApp: "未命名应用", notAvailable: "暂不可用", insufficientEvidence: "证据不足", high: "高置信度", medium: "中等置信度", low: "低置信度"
+  } : { lang: "en", title: "Shopify Theme & Apps Detector", scanned: "Scanned", confirmed: "Shopify confirmed", themeDetected: "Theme detected", appsConfirmed: "Apps confirmed", appsProbable: "Apps probable", clues: "Unconfirmed clues", theme: "Theme", evidence: "Evidence", signals: "signals", viewTheme: "View theme", detectedApps: "Detected apps", appStore: "App Store", appendix: "Technical appendix", raw: "Show raw scan data", pages: "Pages crawled", scripts: "All external scripts", globals: "Window globals detected", footer: "Detection is based on publicly visible page signals only. Apps that run exclusively in the backend are not detectable. Confidence reflects evidence quality, not certainty.", noApps: "No confirmed app candidates were found.", noClues: "No unconfirmed clues were captured in this scan.", unknownApp: "Unnamed app", notAvailable: "Not available", insufficientEvidence: "Insufficient evidence", high: "High confidence", medium: "Medium confidence", low: "Low confidence" };
+  const pages = Array.isArray(bundle.pages) ? bundle.pages : [];
+  values.APP_CARDS = renderAppCards(candidates, copy);
+  values.CLUE_ROWS = renderClueRows(bundle.shopifySignals, copy);
+  values.PAGE_ROWS = pages.length ? pages.map((page) => `<tr><td style="color:var(--muted);font-family:var(--font-mono);font-size:11px;">${escapeHtml(page.url)}</td><td><span class="${page.error ? "status-err" : "status-ok"}">${escapeHtml(page.status || (page.error ? "error" : "ok"))}</span></td><td style="color:var(--muted);">${escapeHtml(page.type || copy.notAvailable)}</td></tr>`).join("") : `<tr><td colspan="3" class="muted">${escapeHtml(copy.notAvailable)}</td></tr>`;
+  values.SCRIPT_ROWS = (bundle.aggregated?.externalScripts || []).length ? bundle.aggregated.externalScripts.map((item) => `<div class="script-item">${escapeHtml(item)}</div>`).join("") : `<p class="muted">${escapeHtml(copy.notAvailable)}</p>`;
+  values.GLOBAL_TAGS = (bundle.aggregated?.windowGlobals || []).length ? bundle.aggregated.windowGlobals.map((item) => `<span class="tag" style="font-family:var(--font-mono);font-size:11px;">${escapeHtml(item)}</span>`).join("") : `<span class="muted">${escapeHtml(copy.notAvailable)}</span>`;
   let html = template.replace(/\{\{([A-Z0-9_]+)\}\}/g, (match, key) => escapeHtml(values[key] ?? ""));
+  html = html.replaceAll("Shopify Store Detector", escapeHtml(copy.title))
+    .replaceAll("Shopify Theme &amp; Apps Detector", escapeHtml(copy.title))
+    .replaceAll("Tech Stack Report:", escapeHtml(copy.title) + ":")
+    .replaceAll("Scanned", escapeHtml(copy.scanned))
+    .replaceAll("Shopify Confirmed", escapeHtml(copy.confirmed))
+    .replaceAll("Theme Detected", escapeHtml(copy.themeDetected))
+    .replaceAll("Apps Confirmed", escapeHtml(copy.appsConfirmed))
+    .replaceAll("Apps Probable", escapeHtml(copy.appsProbable))
+    .replaceAll("Unconfirmed Clues", escapeHtml(copy.clues))
+    .replaceAll(">Theme<", `>${escapeHtml(copy.theme)}<`)
+    .replaceAll("Detected Apps", escapeHtml(copy.detectedApps))
+    .replaceAll("Technical Appendix", escapeHtml(copy.appendix))
+    .replaceAll("Show raw scan data", escapeHtml(copy.raw))
+    .replaceAll("Pages Crawled", escapeHtml(copy.pages))
+    .replaceAll("All External Scripts", escapeHtml(copy.scripts))
+    .replaceAll("Window Globals Detected", escapeHtml(copy.globals))
+    .replaceAll("View Theme", escapeHtml(copy.viewTheme))
+    .replaceAll("App Store", escapeHtml(copy.appStore))
+    .replaceAll("Evidence (", `${escapeHtml(copy.evidence)} (`)
+    .replaceAll(" signals)", ` ${escapeHtml(copy.signals)})`)
+    .replaceAll("Detection is based on publicly visible page signals only. Apps that run exclusively in the backend (inventory, orders, accounting) are not detectable. Confidence ratings reflect evidence quality, not certainty.", escapeHtml(copy.footer));
   const safeJson = JSON.stringify(bundle).replaceAll("<", "\\u003c").replaceAll(">", "\\u003e").replaceAll("&", "\\u0026");
-  const evidence = `<section style="margin:24px;padding:24px;border:1px solid #dbe3ef;border-radius:12px;background:#fff"><h2>Raw evidence bundle</h2><p>This report contains static scan evidence only.</p><pre style="white-space:pre-wrap;overflow:auto">${escapeHtml(JSON.stringify(bundle, null, 2))}</pre></section>`;
+  const evidence = `<section class="section"><details class="appendix"><summary>${escapeHtml(copy.raw)}</summary><div class="appendix-body"><p>${escapeHtml(copy.evidence)}: ${escapeHtml(copy.raw)}</p><pre class="evidence-snippet">${escapeHtml(JSON.stringify(bundle, null, 2))}</pre></div></details></section>`;
   html = html.replace("</body>", `${evidence}<script type="application/json" id="report-data">${safeJson}</script></body>`);
   await fs.writeFile(output, html, "utf8");
   return output;
@@ -492,6 +563,13 @@ async function discoverCollectionUrl(origin) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
+  if (fixturePath) {
+    const bundle = JSON.parse(await fs.readFile(fixturePath, "utf8"));
+    if (!bundle.storeUrl) throw new Error("FIXTURE_INVALID: storeUrl is required.");
+    const report = await writeHtmlReport(bundle, outputPath);
+    console.log(JSON.stringify({ ...bundle, reportPath: report, fixture: true }, null, 2));
+    return;
+  }
   let storeUrl;
   try {
     storeUrl = normalizeUrl(url);

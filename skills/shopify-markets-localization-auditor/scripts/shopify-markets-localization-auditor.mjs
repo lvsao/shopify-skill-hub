@@ -1693,8 +1693,15 @@ async function renderReport(audit, outputPath) {
     .replaceAll("<", "\\u003c")
     .replaceAll(">", "\\u003e")
     .replaceAll("&", "\\u0026");
+  const escapedTitle = String(reportModel.title)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
   const html = template
-    .replaceAll("{{REPORT_TITLE}}", reportModel.title.replace(/</g, "&lt;"))
+    .replaceAll("{{REPORT_TITLE}}", escapedTitle)
+    .replaceAll("{{REPORT_LANG}}", reportModel.lang === "zh-CN" ? "zh-CN" : "en")
     .replace("{{REPORT_DATA_JSON}}", safeReportJson);
   await mkdir(path.dirname(path.resolve(outputPath)), { recursive: true });
   await writeFile(outputPath, html, "utf8");

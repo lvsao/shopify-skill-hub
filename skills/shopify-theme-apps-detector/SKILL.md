@@ -3,7 +3,7 @@ name: "shopify-theme-apps-detector"
 slug: "shopify-theme-apps-detector"
 displayName: "Shopify Theme Apps Detector"
 description: "Reveal a public Shopify store's theme and detectable apps without API access. Use when someone wants a tech-stack audit, competitor research, or a visual report with evidence and confidence levels."
-version: 2.0.0
+version: 2.0.1
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -46,7 +46,7 @@ Scan any public Shopify store and generate a visual HTML report with theme detai
 ## Script Entry Point
 
 ```text
-node <absolute-path-to-skill>/scripts/store-scanner.mjs <url> --output <report.html>
+node <absolute-path-to-skill>/scripts/store-scanner.mjs <url> --output <report.html> --lang zh-CN
 ```
 
 ## Output
@@ -54,3 +54,4 @@ node <absolute-path-to-skill>/scripts/store-scanner.mjs <url> --output <report.h
 - Save `shopify-detector-report-<domain>-<YYYYMMDD>.html` in the current working directory.
 - Summarize the theme, top confirmed apps, and clue count in chat.
 - If the first scan misses likely product-page apps, offer a deeper re-scan of a product URL.
+- Resolve report language from an explicit request, then the latest report request/current conversation, and pass `--lang en` or `--lang zh-CN`. The public store's locale is evidence only and does not select report copy.

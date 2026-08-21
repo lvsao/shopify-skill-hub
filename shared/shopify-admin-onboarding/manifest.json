@@ -16,6 +16,20 @@
       "workflowBoundary": "Read access is required before Article lookup. A missing write scope may still allow audit and report generation, but it blocks `apply --execute`."
     },
     {
+      "path": "skills/shopify-broken-link-doctor/references/onboarding-guide.md",
+      "intro": "Use this guide only after the merchant reviews a public audit and explicitly requests a selected redirect repair.",
+      "publicAccess": "The public crawl is read-only and needs no connection. It cannot determine Admin redirect coverage or offer a write until the merchant requests connected review.",
+      "scopes": "read_online_store_navigation,write_online_store_navigation",
+      "workflowBoundary": "Connection never replaces the candidate CSV → row-level approval → `fix-preview` → explicit `fix --execute` boundary. Keep 404s without a relevant destination."
+    },
+    {
+      "path": "skills/shopify-barcode-generator/references/onboarding-guide.md",
+      "intro": "Use this guide only when the merchant asks to scan or apply Shopify variant barcodes; local generation requires no connection.",
+      "publicAccess": "Local GTIN-14 generation works without Shopify credentials. A store connection is required only to scan variants or perform an explicitly approved update.",
+      "scopes": "read_products,write_products",
+      "workflowBoundary": "Connection never replaces the scan → CSV review → explicit approval → `apply --execute` → verification boundary. Existing barcodes are not changed by a scan."
+    },
+    {
       "path": "skills/shopify-markets-localization-auditor/references/onboarding-guide.md",
       "intro": "Connect only when the audit needs Shopify Admin evidence or the merchant requests an approved supported fix.",
       "publicAccess": "A storefront-only review may inspect public signals without Admin authorization; it must not offer API fixes.",

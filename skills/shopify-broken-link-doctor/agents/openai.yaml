@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Broken Link Doctor"
+  short_description: "Find Shopify 404s, broken links, and redirect errors with a safe read-only crawl, then build a merchant-approved fix plan."
+  default_prompt: "Audit this store for broken links and 404s."

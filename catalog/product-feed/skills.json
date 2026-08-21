@@ -68,6 +68,50 @@
         { "id": "external-api-credential", "status": "not_required" },
         { "id": "vision-model", "status": "not_required" }
       ]
+    },
+    {
+      "name": "shopify-barcode-generator",
+      "displayName": "Shopify Barcode Generator",
+      "displayName_zh": "Shopify 条码生成器",
+      "path": "../../skills/shopify-barcode-generator",
+      "tags": ["gmc", "feed", "barcode", "gtin", "shopify"],
+      "integrations": ["shopify", "google", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "DRAFT",
+      "shortDescription": {
+        "en": "Build Shopify barcode numbers (GTIN-14), spot missing variant barcodes, and write only approved rows.",
+        "zh": "生成 Shopify 商品条码编号（GTIN-14），找出缺条码的变体，并且只写入你批准的行。"
+      },
+      "longDescription": {
+        "en": "Build up to 500 local GTIN-14 barcode numbers for testing, or connect a Shopify store to list variants with an empty barcode. Every store write stays preview-first: you review a CSV, approve each row, and the script rechecks the variant and confirms the write.",
+        "zh": "最多可本地生成 500 个用于测试的 GTIN-14 商品条码编号；或连接 Shopify 店铺，列出条码为空的变体。每次写入都先预览：你先看 CSV、逐行批准，脚本再核验变体并确认已写入。"
+      },
+      "introduction": {
+        "en": "Get a local barcode list, or find Shopify variants missing a barcode — review first, then write only the rows you approve.",
+        "zh": "准备好本地条码清单，或找出 Shopify 里条码为空的商品变体。先审核，再只写你批准的行。"
+      },
+      "features": [
+        {
+          "id": "checksum-valid-generation",
+          "title": { "en": "GTIN-14 barcode numbers", "zh": "GTIN-14 商品条码编号" },
+          "description": { "en": "Creates 1–500 unique, scannable barcode numbers with the skill's format.", "zh": "按固定格式生成 1 至 500 个不重复、可被扫描识别的条码编号。" },
+          "badge": { "en": "Local", "zh": "本地" },
+          "icon": "FileText"
+        },
+        {
+          "id": "approved-store-writeback",
+          "title": { "en": "Approved store write-back", "zh": "批准后回写店铺" },
+          "description": { "en": "Lists each variant missing a barcode and the number to add, then writes only the rows you approve.", "zh": "列出每个缺条码的变体、该填什么编号，你确认后才会写入。" },
+          "badge": { "en": "Preview first", "zh": "先预览" },
+          "icon": "CheckCircle"
+        }
+      ],
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "optional" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "not_required" }
+      ]
     }
   ]
 }

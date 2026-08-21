@@ -366,6 +366,57 @@
         { "id": "external-api-credential", "status": "not_required" },
         { "id": "vision-model", "status": "not_required" }
       ]
+    },
+    {
+      "name": "shopify-broken-link-doctor",
+      "displayName": "Shopify Broken Link Doctor",
+      "displayName_zh": "Shopify 失效链接医生",
+      "path": "../../skills/shopify-broken-link-doctor",
+      "tags": ["shopify", "seo", "redirects", "404", "broken-links"],
+      "integrations": ["shopify", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "DRAFT",
+      "shortDescription": {
+        "en": "Find Shopify 404s, broken links, and redirect errors, then get a merchant-approved fix plan — no risky auto-redirects.",
+        "zh": "找出 Shopify 的 404、死链（失效链接）与跳转错误，生成经商家逐条批准的修复方案——不做危险的批量跳转。"
+      },
+      "longDescription": {
+        "en": "Dead links quietly drain your Shopify SEO. This skill safely crawls your public storefront to surface evidence-backed 404s, soft 404s (pages that return 200 but show 'not found'), redirect chains, and loops. The public audit never writes data; connected Admin work builds a row-level redirect preview so you approve every fix before any change.",
+        "zh": "死链会悄悄拖垮你的 Shopify SEO 排名。本工具安全爬取公开店铺，找出有证据支持的 404、软 404（返回 200 却显示「找不到」的页面）、跳转链与跳转环路（too many redirects）。公开审计绝不写入数据；连接 Shopify Admin 后生成逐行跳转预览，让你在写入前逐条确认。"
+      },
+      "introduction": {
+        "en": "Turn Search Console 404 warnings and ranking drops into a clear, evidence-backed broken-link report and an approval-ready redirect plan.",
+        "zh": "把 Search Console 的 404 警告与排名下滑，转化为清晰、有证据支持的死链/404 报告，以及一份待批准的跳转修复方案。"
+      },
+      "features": [
+        {
+          "id": "safe-public-crawl",
+          "title": { "en": "Safe public crawl", "zh": "安全公开爬取" },
+          "description": { "en": "Validates public DNS and every redirect, respects robots.txt, and never follows private or local destinations.", "zh": "验证公开 DNS 和每次跳转，遵守 robots.txt，绝不访问私网或本地地址。" },
+          "badge": { "en": "Read only", "zh": "只读" },
+          "icon": "ShieldCheck"
+        },
+        {
+          "id": "evidence-first-report",
+          "title": { "en": "Evidence-backed 404 & redirect findings", "zh": "有证据的 404 与跳转发现" },
+          "description": { "en": "Separates test probes from real findings and clearly labels public 404 candidates, soft 404s, redirect chains, and loops with confidence and manual-review state.", "zh": "将测试探针与真实发现分离，清晰标注公开 404 候选、软 404、跳转链与跳转环路，并附置信度与人工审核状态。" },
+          "badge": { "en": "Reviewable", "zh": "可审核" },
+          "icon": "FileSearch"
+        },
+        {
+          "id": "approved-redirect-plan",
+          "title": { "en": "Merchant-approved redirect plan", "zh": "商家批准的跳转方案" },
+          "description": { "en": "Reads Admin URL Redirects and builds a row-level redirect preview so the merchant can pick a relevant destination and approve each fix before any write.", "zh": "读取 Admin URL Redirects，生成逐行跳转预览，让商家选择相关目标地址，并在写入前逐条批准。" },
+          "badge": { "en": "Preview first", "zh": "先预览" },
+          "icon": "FileCheck2"
+        }
+      ],
+      "prerequisites": [],
+      "badges": [
+        { "id": "shopify-store-access", "status": "optional" },
+        { "id": "external-api-credential", "status": "not_required" },
+        { "id": "vision-model", "status": "not_required" }
+      ]
     }
   ]
 }

@@ -31,7 +31,10 @@
     "payments",
     "backlinks",
     "yunexpress",
-    "yanwen"
+    "yanwen",
+    "redirects",
+    "broken-links",
+    "barcode"
   ],
   "integrations": [
     "shopify",
