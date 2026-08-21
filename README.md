@@ -26,7 +26,7 @@ Each skill is a reviewable folder with a clear trigger, documented limits, and a
 | --- | --- | --- |
 | Publish useful content | [`wechat-to-shopify-blog`](./skills/wechat-to-shopify-blog) · [Content catalog](./catalog/content-creation) | Turn an owned or authorized WeChat article into a Shopify blog draft. |
 | Improve organic traffic | [`optimize-shopify-alt-text`](./skills/optimize-shopify-alt-text) · [`shopify-product-serp-optimizer`](./skills/shopify-product-serp-optimizer) · [`shopify-broken-link-doctor`](./skills/shopify-broken-link-doctor) · [SEO catalog](./catalog/seo-growth) | Improve image alt text, product snippets, blog SEO, backlink research, and broken-link health. |
-| Check or operate a store | [`shopify-operations-brief`](./skills/shopify-operations-brief) · [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) · [`shopify-markets-localization-auditor`](./skills/shopify-markets-localization-auditor) · [Operations catalog](./catalog/operations) | See sales, shipping, low-stock reminders, and store operations. |
+| Check or operate a store | [`shopify-operations-brief`](./skills/shopify-operations-brief) · [Operations catalog](./catalog/operations) | See sales, shipping, low-stock reminders, and store operations. |
 | Prepare feeds or shipments | [`shopify-gmc-misrepresentation-auditor`](./skills/shopify-gmc-misrepresentation-auditor) · [`shopify-barcode-generator`](./skills/shopify-barcode-generator) · [`yuntu-yw-shipping`](./skills/yuntu-yw-shipping) · [Feed catalog](./catalog/product-feed) | Review Google Merchant Center risks, prepare barcodes, and prepare YunExpress or Yanwen requests. |
 
 ## Quick start
@@ -63,13 +63,13 @@ npx skills add lvsao/shopify-skill-hub
 | [`seo-backlink-opportunity-finder`](./skills/seo-backlink-opportunity-finder) | SEO | Actively research new backlink prospects from category searches and comparable-brand link paths. |
 | [`shopify-gmc-misrepresentation-auditor`](./skills/shopify-gmc-misrepresentation-auditor) | Product feed | Audit public store pages for Google Merchant Center policy risks. |
 | [`shopify-barcode-generator`](./skills/shopify-barcode-generator) | Product feed | Build Shopify barcode numbers (GTIN-14), spot missing variant barcodes, and write only approved rows. |
-| [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) | Operations | Detect a public Shopify store's theme and apps with evidence. |
 | [`shopify-store-translator`](./skills/shopify-store-translator) | Operations | Translate Shopify resources with a preview-first, approval-based workflow. |
-| [`shopify-markets-localization-auditor`](./skills/shopify-markets-localization-auditor) | Operations | Review Markets, languages, shipping coverage, and international SEO readiness. |
 | [`shopify-product-images-downloader`](./skills/shopify-product-images-downloader) | Operations | Download product images from a public Shopify store. |
-| [`shopify-checkout-payment-connection-check`](./skills/shopify-checkout-payment-connection-check) | Operations | Inspect checkout, delivery choices, and payment setup without placing an order. |
 | [`shopify-operations-brief`](./skills/shopify-operations-brief) | Operations | Generate a read-only store performance report and private HTML brief. |
 | [`yuntu-yw-shipping`](./skills/yuntu-yw-shipping) | Operations | Track, quote, and prepare YunExpress or Yanwen shipping requests. |
+| [`shopify-theme-apps-detector`](./skills/shopify-theme-apps-detector) | Store setup | Detect a public Shopify store's theme and apps with evidence. |
+| [`shopify-markets-localization-auditor`](./skills/shopify-markets-localization-auditor) | Store setup | Review Markets, languages, shipping coverage, and international SEO readiness. |
+| [`shopify-checkout-payment-connection-check`](./skills/shopify-checkout-payment-connection-check) | Store setup | Inspect checkout, delivery choices, and payment setup without placing an order. |
 
 For full descriptions, features, integrations, and access badges, see [`catalog/`](./catalog).
 </details>

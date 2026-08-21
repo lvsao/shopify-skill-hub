@@ -1,3 +1,400 @@
 {
-  "skills": []
+  "skills": [
+    {
+      "name": "shopify-theme-apps-detector",
+      "displayName": "Shopify Theme & Apps Detector",
+      "displayName_zh": "Shopify 主题与插件检测器",
+      "path": "../../skills/shopify-theme-apps-detector",
+      "tags": [
+        "shopify",
+        "analytics",
+        "competitor-research"
+      ],
+      "integrations": [
+        "chatgpt",
+        "claude",
+        "codex"
+      ],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Reveal any Shopify store's theme and installed apps — no API token required, instant visual HTML report",
+        "zh": "无需 API Token，一键检测任意 Shopify 店铺的主题和插件，生成可视化 HTML 报告"
+      },
+      "longDescription": {
+        "en": "Enter any Shopify store URL and get a complete tech-stack audit in minutes. The skill crawls public pages, extracts raw evidence (script URLs, window globals, CSS namespaces, response headers), uses AI reasoning to identify every theme and app, cross-verifies each finding with live web search, and produces a polished HTML report with app logos, App Store links, theme links, confidence ratings, and traceable evidence chains. No API token, no login, no browser extension — works on any publicly accessible Shopify store.",
+        "zh": "输入任意 Shopify 店铺 URL，几分钟内获得完整技术栈审计。技能爬取公开页面，提取原始证据（脚本 URL、全局变量、CSS 命名空间、响应头），通过 AI 推理识别主题和插件，联网搜索交叉验证每个发现，最终生成精美 HTML 报告，包含插件 Logo、App Store 链接、主题链接、置信度评级和可追溯证据链。无需 API Token、无需登录、无需浏览器扩展。"
+      },
+      "introduction": {
+        "en": "Spy on any Shopify store's tech stack: theme, apps, and evidence — all in one visual report, zero credentials needed.",
+        "zh": "一键侦测任意 Shopify 店铺技术栈：主题、插件、证据链——全部呈现在一份可视化报告中，无需任何授权。"
+      },
+      "features": [
+        {
+          "id": "theme-detection",
+          "title": {
+            "en": "Theme identification",
+            "zh": "主题识别"
+          },
+          "description": {
+            "en": "Extracts the Shopify.theme object to get theme name, schema_name, version, and theme_store_id. Links directly to the Shopify Theme Store page for official themes, or finds the vendor page for custom themes via web search.",
+            "zh": "提取 Shopify.theme 对象获取主题名称、schema_name、版本号和 theme_store_id。官方主题直链 Shopify Theme Store，自定义主题通过网络搜索找到供应商页面。"
+          },
+          "badge": {
+            "en": "Smart detect",
+            "zh": "智能检测"
+          },
+          "icon": "Palette"
+        },
+        {
+          "id": "app-detection",
+          "title": {
+            "en": "AI-powered app detection",
+            "zh": "AI 驱动插件检测"
+          },
+          "description": {
+            "en": "Detects installed apps from script URLs, app embed blocks, window globals, and CSS class namespaces — without any hardcoded signature list. Every candidate is verified via live web search before being reported.",
+            "zh": "从脚本 URL、App Embed Block、全局变量和 CSS 命名空间检测已安装插件，无硬编码特征库。每个候选结果均通过实时网络搜索验证后才输出。"
+          },
+          "badge": {
+            "en": "No signature list",
+            "zh": "无硬编码库"
+          },
+          "icon": "Puzzle"
+        },
+        {
+          "id": "html-report",
+          "title": {
+            "en": "Visual HTML report",
+            "zh": "可视化报告"
+          },
+          "description": {
+            "en": "Generates a self-contained HTML file with direct App Store links, theme store links, color-coded confidence badges (HIGH / MEDIUM / LOW), and collapsible evidence chains for every finding.",
+            "zh": "生成独立 HTML 文件，包含 App Store 直链、主题商店链接、颜色编码置信度徽章（HIGH / MEDIUM / LOW）以及每个发现的可折叠证据链。"
+          },
+          "badge": {
+            "en": "One-click share",
+            "zh": "一键分享"
+          },
+          "icon": "FileHtml"
+        },
+        {
+          "id": "evidence-chains",
+          "title": {
+            "en": "Traceable evidence chains",
+            "zh": "可追溯证据链"
+          },
+          "description": {
+            "en": "Every detection result cites the raw HTML/header snippet that triggered it, plus the web search result that confirmed it. No black-box guessing — every conclusion is auditable.",
+            "zh": "每个检测结果都引用触发它的原始 HTML/响应头片段，以及确认它的网络搜索结果。无黑盒猜测，每个结论均可审计。"
+          },
+          "badge": {
+            "en": "Audit-ready",
+            "zh": "可审计"
+          },
+          "icon": "Link"
+        }
+      ],
+      "prerequisites": [],
+      "badges": [
+        {
+          "id": "shopify-store-access",
+          "status": "not_required"
+        },
+        {
+          "id": "external-api-credential",
+          "status": "not_required"
+        },
+        {
+          "id": "vision-model",
+          "status": "not_required"
+        }
+      ]
+    },
+    {
+      "name": "shopify-markets-localization-auditor",
+      "displayName": "Shopify Localization & Markets Auditor",
+      "displayName_zh": "Shopify 国际化与 Markets 审计",
+      "path": "../../skills/shopify-markets-localization-auditor",
+      "tags": [
+        "shopify",
+        "markets",
+        "translation"
+      ],
+      "integrations": [
+        "shopify",
+        "chatgpt",
+        "claude",
+        "codex"
+      ],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Audit Shopify languages, Markets, shipping, SEO basics, and global growth opportunities in one clear report",
+        "zh": "审查 Shopify 多语言、Markets、配送、国际化 SEO 基础与全球增长机会，并输出一份清晰报告"
+      },
+      "longDescription": {
+        "en": "Review your Shopify international setup in one workflow. This skill checks language status and translation completeness, market structure, currency and URL strategy, shipping coverage, and core international SEO signals such as hreflang and canonical tags. It also studies the store's category and storefront context before giving business-facing suggestions for where to expand next. The result is a plain-language HTML report plus an approval-only fix bundle for safe settings updates.",
+        "zh": "用一个流程把 Shopify 国际化配置看清楚。这个 skill 会检查语言状态与翻译完成度、Markets 结构、货币与网址策略、配送覆盖，以及 hreflang、canonical 等国际化 SEO 基础。它也会先理解店铺品类和前台上下文，再给出更偏业务层的全球增长建议。最终输出一份讲人话的 HTML 报告，并准备一份需确认后才能执行的安全修复清单。"
+      },
+      "introduction": {
+        "en": "See what is already working, what is missing, and where your store should expand next across languages, Markets, shipping, and international SEO.",
+        "zh": "快速看清你的店铺在多语言、Markets、配送和国际化 SEO 上哪些已经做到位，哪些还缺，下一步该往哪里扩。"
+      },
+      "features": [
+        {
+          "id": "language-readiness",
+          "title": {
+            "en": "Language audit and translation readiness",
+            "zh": "多语言与翻译完成度审查"
+          },
+          "description": {
+            "en": "Checks how many languages are enabled, whether they are actually published, and how complete each language is based on Shopify translation status and outdated signals.",
+            "zh": "检查店铺开了多少语言、这些语言是否真的已发布，以及每种语言目前翻译到了什么程度，哪些内容已经过时需要补。"
+          },
+          "badge": {
+            "en": "Locale readiness",
+            "zh": "语言完成度"
+          },
+          "icon": "Languages"
+        },
+        {
+          "id": "market-architecture",
+          "title": {
+            "en": "Markets structure, currency, and URL strategy",
+            "zh": "Markets 结构、货币与域名策略"
+          },
+          "description": {
+            "en": "Reviews each market's country grouping, assigned languages, local currency behavior, and URL setup so you can spot messy structures and weak localization paths.",
+            "zh": "逐个审查每个市场的国家组合、语言分配、本地货币表现和网址路径，帮助发现结构混乱或本地化不够深入的地方。"
+          },
+          "badge": {
+            "en": "Structure check",
+            "zh": "结构检查"
+          },
+          "icon": "Globe"
+        },
+        {
+          "id": "shipping-coverage",
+          "title": {
+            "en": "Shipping coverage audit",
+            "zh": "配送范围审查"
+          },
+          "description": {
+            "en": "Compares your market countries with your shipping setup to show whether every active market is actually deliverable.",
+            "zh": "把已开启市场和配送配置对起来，直接看每个市场到底能不能真正完成配送覆盖。"
+          },
+          "badge": {
+            "en": "Coverage check",
+            "zh": "覆盖检查"
+          },
+          "icon": "Truck"
+        },
+        {
+          "id": "seo-basics",
+          "title": {
+            "en": "International SEO basics",
+            "zh": "国际化 SEO 基础审查"
+          },
+          "description": {
+            "en": "Checks core storefront signals such as hreflang, canonical tags, and public policy-page discoverability so search engines and shoppers can find the right localized pages.",
+            "zh": "检查 hreflang、canonical 和政策页可见性等前台基础信号，帮助搜索引擎和顾客找到正确的本地化页面。"
+          },
+          "badge": {
+            "en": "SEO basics",
+            "zh": "SEO 基础"
+          },
+          "icon": "Search"
+        },
+        {
+          "id": "growth-advice",
+          "title": {
+            "en": "Global growth recommendations",
+            "zh": "全球增长业务建议"
+          },
+          "description": {
+            "en": "Uses store context, product category clues, and external market research to suggest where this business should focus next instead of giving generic language advice.",
+            "zh": "结合店铺上下文、商品品类线索和外部市场调研，给出更贴近这家店业务的国际化增长建议，而不是空泛地建议多开语言。"
+          },
+          "badge": {
+            "en": "Business insight",
+            "zh": "业务洞察"
+          },
+          "icon": "TrendingUp"
+        },
+        {
+          "id": "full-report",
+          "title": {
+            "en": "Complete report and safe fix bundle",
+            "zh": "完整报告与安全修复清单"
+          },
+          "description": {
+            "en": "Outputs a full HTML report in plain language and prepares approval-only fixes for supported Shopify settings changes.",
+            "zh": "输出一份完整、易读的 HTML 报告，并为可支持的 Shopify 设置变更准备一份需要确认后才执行的安全修复清单。"
+          },
+          "badge": {
+            "en": "Action-ready",
+            "zh": "可执行"
+          },
+          "icon": "FileCheck"
+        }
+      ],
+      "prerequisites": [],
+      "badges": [
+        {
+          "id": "shopify-store-access",
+          "status": "required"
+        },
+        {
+          "id": "external-api-credential",
+          "status": "not_required"
+        },
+        {
+          "id": "vision-model",
+          "status": "not_required"
+        }
+      ]
+    },
+    {
+      "name": "shopify-checkout-payment-connection-check",
+      "displayName": "Shopify Checkout & Payment Connection Check",
+      "displayName_zh": "Shopify 结账与支付连通性检查",
+      "path": "../../skills/shopify-checkout-payment-connection-check",
+      "tags": [
+        "shopify",
+        "checkout",
+        "payments"
+      ],
+      "integrations": [
+        "shopify",
+        "chatgpt",
+        "claude",
+        "codex"
+      ],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Test the journey from cart to payment before customers find a broken checkout.",
+        "zh": "在顾客遇到问题前，实测从购物车到付款的整条下单链路。"
+      },
+      "longDescription": {
+        "en": "Run a safe, no-purchase walkthrough from a sellable product to checkout. It checks cart entry, delivery choices for your target regions, and the payment methods a customer can actually reach; with store approval, it also compares setup status and recent payment outcomes to pinpoint what is blocking orders.",
+        "zh": "用一次不付款、不创建订单的真实下单演练，检查可售商品能否加入购物车、进入结账、获得目标地区的配送方案，以及顾客实际能进入哪些付款方式。连接 Shopify 店铺后，进一步结合支付设置状态和近期交易结果，定位阻断下单、配送受限或支付失败上升的原因。"
+      },
+      "introduction": {
+        "en": "Before customers find a problem, test the complete journey from cart to payment and find the checkout, delivery, or payment setting that is costing you orders.",
+        "zh": "在顾客遇到问题前，实测从购物车到付款的整条下单链路，发现结账、配送和支付设置中正在造成弃单的环节。"
+      },
+      "features": [
+        {
+          "id": "real-checkout-walkthrough",
+          "title": {
+            "en": "Real checkout walkthrough",
+            "zh": "真实顾客下单演练"
+          },
+          "description": {
+            "en": "Start with a purchasable item and reach checkout to verify the key pre-purchase steps, without submitting an order or charging a card.",
+            "zh": "从一件可售商品开始进入购物车和结账页，检查顾客是否能走完购买前的关键步骤；全程不提交订单、不扣款。"
+          },
+          "badge": {
+            "en": "No charge",
+            "zh": "不扣款"
+          },
+          "icon": "ShoppingBag"
+        },
+        {
+          "id": "delivery-coverage",
+          "title": {
+            "en": "Delivery coverage and rate details",
+            "zh": "配送覆盖与运费呈现"
+          },
+          "description": {
+            "en": "Test a destination you choose and review the delivery choices, prices, and delivery messages a customer actually sees. Find markets where delivery is unavailable or incomplete.",
+            "zh": "按你选择的国家或地区测试收货地址，核对顾客实际可选的配送方式、运费和送达说明，找出无法配送或信息不完整的市场。"
+          },
+          "badge": {
+            "en": "Market check",
+            "zh": "市场检查"
+          },
+          "icon": "Truck"
+        },
+        {
+          "id": "payment-entry-connectivity",
+          "title": {
+            "en": "Payment entry connectivity",
+            "zh": "支付入口连通性"
+          },
+          "description": {
+            "en": "Review the cards, wallets, PayPal, and other configured payment options shown at checkout. Confirm a safe handoff where possible without login, payment details, or a charge.",
+            "zh": "核对结账页展示的银行卡、钱包、PayPal 和其他已配置付款方式；在不登录、不填写支付信息、不扣款的前提下，确认能否安全进入相应付款入口。"
+          },
+          "badge": {
+            "en": "Safe handoff",
+            "zh": "安全跳转"
+          },
+          "icon": "Link"
+        },
+        {
+          "id": "setup-and-payment-signals",
+          "title": {
+            "en": "Payment setup and failure signals",
+            "zh": "支付设置与失败趋势"
+          },
+          "description": {
+            "en": "With store permission, compare the payment setup with recent aggregated transaction outcomes to spot unusual failure patterns without exposing customer or payment details.",
+            "zh": "获得店铺授权后，将支付设置与近期汇总交易结果对照，识别异常失败趋势；不会展示顾客信息或支付信息。"
+          },
+          "badge": {
+            "en": "Store signals",
+            "zh": "店铺信号"
+          },
+          "icon": "SearchCheck"
+        },
+        {
+          "id": "abandonment-priority",
+          "title": {
+            "en": "Prioritized abandonment fixes",
+            "zh": "按弃单风险排优先级"
+          },
+          "description": {
+            "en": "Separate checkout blocks, unavailable delivery, payment-entry issues, and unusual failure signals so the issues most likely to stop a purchase are addressed first.",
+            "zh": "将无法进入结账、目标地区无法配送、支付入口受阻和异常失败趋势分开呈现，优先处理最直接影响成交的问题。"
+          },
+          "badge": {
+            "en": "Fix first",
+            "zh": "优先修复"
+          },
+          "icon": "ListChecks"
+        }
+      ],
+      "prerequisites": [
+        {
+          "id": "shopify-store-access",
+          "label": {
+            "en": "Shopify store connection",
+            "zh": "Shopify 店铺连接"
+          },
+          "badge": {
+            "en": "Required",
+            "zh": "必需"
+          },
+          "icon": "Store"
+        }
+      ],
+      "badges": [
+        {
+          "id": "shopify-store-access",
+          "status": "required"
+        },
+        {
+          "id": "external-api-credential",
+          "status": "not_required"
+        },
+        {
+          "id": "vision-model",
+          "status": "not_required"
+        }
+      ]
+    }
+  ]
 }
