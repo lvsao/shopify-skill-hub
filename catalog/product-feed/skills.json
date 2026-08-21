@@ -77,7 +77,7 @@
       "tags": ["gmc", "feed", "barcode", "gtin", "shopify"],
       "integrations": ["shopify", "google", "chatgpt", "claude", "codex"],
       "public": true,
-      "status": "DRAFT",
+      "status": "PUBLISHED",
       "shortDescription": {
         "en": "Build Shopify barcode numbers (GTIN-14), spot missing variant barcodes, and write only approved rows.",
         "zh": "生成 Shopify 商品条码编号（GTIN-14），找出缺条码的变体，并且只写入你批准的行。"

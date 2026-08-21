@@ -375,7 +375,7 @@
       "tags": ["shopify", "seo", "redirects", "404", "broken-links"],
       "integrations": ["shopify", "chatgpt", "claude", "codex"],
       "public": true,
-      "status": "DRAFT",
+      "status": "PUBLISHED",
       "shortDescription": {
         "en": "Find Shopify 404s, broken links, and redirect errors, then get a merchant-approved fix plan — no risky auto-redirects.",
         "zh": "找出 Shopify 的 404、死链（失效链接）与跳转错误，生成经商家逐条批准的修复方案——不做危险的批量跳转。"
