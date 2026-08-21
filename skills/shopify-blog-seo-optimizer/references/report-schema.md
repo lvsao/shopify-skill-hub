@@ -17,7 +17,7 @@ The agent may start from `audit.json` and add the proposed version:
     "id": "gid://shopify/Article/000000000000",
     "title": "Current article title",
     "handle": "current-handle",
-    "storefrontUrl": "https://store.example/blogs/news/current-handle"
+    "storefrontUrl": "<storefront-article-url>"
   },
   "candidate": {
     "body": "<nav id=\"article-toc\">...</nav><h2 id=\"section\">...</h2>",
@@ -29,7 +29,7 @@ The agent may start from `audit.json` and add the proposed version:
     "updates": { "body": "<candidate HTML>" }
   },
   "research": [
-    { "url": "https://example.org/source", "title": "Authoritative source", "supports": "Claim supported and limitation." }
+    { "url": "<source-url>", "title": "Authoritative source", "supports": "Claim supported and limitation." }
   ],
   "eeat": {
     "score": 2,
@@ -40,7 +40,7 @@ The agent may start from `audit.json` and add the proposed version:
   "preview": {
     "mode": "theme-like-fallback",
     "accessState": "password-protected",
-    "storefrontUrl": "https://store.example/blogs/news/current-handle",
+    "storefrontUrl": "<storefront-article-url>",
     "note": "The live storefront could not be verified."
   }
 }

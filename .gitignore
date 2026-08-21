@@ -3,6 +3,7 @@ AGENTS.md
 agents.md
 .agents/
 .codex/
+.workbuddy/
 
 # Secrets and local Shopify credentials
 .env
@@ -48,3 +49,17 @@ temp/
 .tmp/
 *.log
 *.bak
+
+# Development-only test sources, fixtures, and generated reports
+test/
+tests/
+fixtures/
+test-results/
+playwright-report/
+*.test.[cm]js
+*.spec.[cm]js
+test-*.[cm]js
+*.report.*
+*-report.html
+*-report.json
+*-report.md

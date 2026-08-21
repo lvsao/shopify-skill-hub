@@ -15,7 +15,7 @@ All fields can be produced from public data.
 
 ### 1. Parse the URL
 
-Given a URL like `https://www.your-store.com/collections/dog-harnesses/products/flora-dog-walking-set`:
+Given a storefront product URL such as `<storefront-product-url>`:
 
 ```javascript
 const url = new URL(userUrl);
@@ -86,7 +86,7 @@ No headers needed. Returns:
       {
         "id": 1111111111,
         "alt": "Vetreska Flora 3-in-1 Dog Walking Set in Pink",
-        "src": "https://cdn.shopify.com/s/files/1/.../image.jpg",
+        "src": "<public-cdn-image-url>",
         "width": 2048,
         "height": 2048
       }
@@ -222,7 +222,7 @@ When generating the audit report in read-only mode, apply these adjustments:
 All image URLs from the public JSON are Shopify CDN URLs that require no authentication:
 
 ```
-https://cdn.shopify.com/s/files/1/{shop_id}/files/{filename}
+<public-cdn-image-url>
 ```
 
 You can:

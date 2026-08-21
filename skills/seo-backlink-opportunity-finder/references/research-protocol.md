@@ -175,7 +175,7 @@ Field semantics:
 - `target_url` is the owned page that should receive the link.
 - `evidence_url` is a direct public page on the external source site that supports the prospect or route. It must not be a search-result page or a page on the target site.
 - `root_domain` is the normalized root domain of the external source site.
-- `contact_info` is the verified outreach channel: a direct email string (`"editor@example.com"`), a submission/form URL string (`"https://example.com/contact"`), or a structured object (`{"email": "...", "form_url": "..."}`).
+- `contact_info` is the verified outreach channel: a direct email string (`"editor@example.com"`), a submission/form URL string (`"<contact-form-url>"`), or a structured object (`{"email": "...", "form_url": "..."}`).
 - `next_action` states the exact verification or outreach step that remains for this candidate.
 - `discovery_method` records how the opportunity was found, not how the merchant will acquire it.
 

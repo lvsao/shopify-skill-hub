@@ -1,12 +1,12 @@
 <!-- GENERATED FILE: edit shared/shopify-admin-onboarding/core.md or manifest.json, then run node scripts/sync-onboarding.mjs --write. -->
-<!-- onboarding-contract: 1.2.0; source-sha256: c33766f865a107fb8e14e67698df5dbc26ccbd7da63d684ce5935ff68f76796b -->
+<!-- onboarding-contract: 1.2.0; source-sha256: e42fb395139c00d522f44ffaa61be8879b1f0daf017abd1d0fc91afa03ac2d74 -->
 # Connect Your Store
 
-Use this guide before connected store-setup evidence or an explicitly approved module fix.
+Use this guide before every Shopify Store Setup Auditor audit or an explicitly approved module fix.
 
 ## Choose the smallest access path
 
-A public storefront URL supports a read-only technical audit. Shopify Admin authorization is required for store data, evidence tied to private configuration, previews, or writes.
+A public storefront URL is required alongside Shopify Admin authorization. The URL supplies buyer-facing evidence, while authorization is required before this skill generates its full setup-audit report, score, fix preview, or writes.
 
 ### Quick connection (recommended)
 

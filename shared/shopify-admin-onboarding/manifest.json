@@ -66,8 +66,8 @@
     },
     {
       "path": "skills/shopify-store-setup-auditor/references/onboarding-guide.md",
-      "intro": "Use this guide before connected store-setup evidence or an explicitly approved module fix.",
-      "publicAccess": "A public storefront URL supports a read-only technical audit. Shopify Admin authorization is required for store data, evidence tied to private configuration, previews, or writes.",
+      "intro": "Use this guide before every Shopify Store Setup Auditor audit or an explicitly approved module fix.",
+      "publicAccess": "A public storefront URL is required alongside Shopify Admin authorization. The URL supplies buyer-facing evidence, while authorization is required before this skill generates its full setup-audit report, score, fix preview, or writes.",
       "scopes": "read_products,read_inventory,read_publications,read_content,read_online_store_pages,read_online_store_navigation,read_legal_policies,read_checkout_and_accounts_configurations,read_checkout_settings,read_markets,write_markets,read_shipping,read_discounts,read_themes",
       "workflowBoundary": "Connection never replaces the module-scoped audit → candidate values → fix-preview → explicit approval → `fix --execute` → verification boundary. Never use it to change DNS, password protection, payment credentials or test mode, taxes, carrier accounts, or external ad/search accounts."
     }

@@ -4,8 +4,8 @@
  *
  * Usage:
  *   node gmc-product-audit.mjs <product-url-or-store-url> [--store <store-url>] [--out <report.html>] [--lang en|zh-CN]
- *   node gmc-product-audit.mjs https://your-store.com/products/example
- *   node gmc-product-audit.mjs https://your-store.com --out gmc-audit-report.html
+ *   node gmc-product-audit.mjs <storefront-product-url>
+ *   node gmc-product-audit.mjs <storefront-url> --out gmc-audit-report.html
  *
  * If a store URL is given, reads Phase A JSON from stdin (piped from gmc-store-audit.mjs),
  * audits sampled products, and generates the HTML report.
@@ -88,7 +88,7 @@ async function fetchPage(url, opts = {}) {
     const res = await fetchPublic(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; GMC-Auditor/1.0; +https://selofy.com)',
+        'User-Agent': 'Selofy-GMC-Auditor/1.0',
         'Accept': 'text/html,application/xhtml+xml,*/*',
         'Accept-Language': 'en-US,en;q=0.9',
         ...opts.headers,
@@ -747,16 +747,8 @@ td{padding:7px 8px;vertical-align:top;border-top:1px solid #f1f5f9}
   </div>
 
   <div class="card">
-    <h2>Official GMC Reference Documentation</h2>
-    <p style="font-size:.82rem;color:#64748b;margin-bottom:.75rem">Verify all findings against Google's official policy pages. These are the authoritative sources.</p>
-    <a class="ref-link" href="https://support.google.com/merchants/answer/6150127" target="_blank">Misrepresentation (Shopping ads)</a>
-    <a class="ref-link" href="https://support.google.com/merchants/answer/12079606" target="_blank">Misrepresentation (Free listings)</a>
-    <a class="ref-link" href="https://support.google.com/merchants/answer/4752265" target="_blank">Landing page requirements</a>
-    <a class="ref-link" href="https://support.google.com/merchants/answer/9158778" target="_blank">Checkout requirements</a>
-    <a class="ref-link" href="https://support.google.com/merchants/answer/7052112" target="_blank">Product data specification</a>
-    <a class="ref-link" href="https://support.google.com/merchants/answer/188484" target="_blank">Building trust with customers</a>
-    <a class="ref-link" href="https://support.google.com/merchants/answer/160161" target="_blank">Fix a suspended account</a>
-    <a class="ref-link" href="https://support.google.com/merchants/answer/1678274" target="_blank">Request account review</a>
+    <h2>Policy verification</h2>
+    <p style="font-size:.82rem;color:#64748b;margin-bottom:.75rem">Verify each finding against the current Google Merchant Center policy before remediation or appeal. This report intentionally does not embed external reference links.</p>
   </div>
 
   <div class="card" style="font-size:.8rem;color:#64748b">

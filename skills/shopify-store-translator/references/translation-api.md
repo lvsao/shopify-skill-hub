@@ -37,7 +37,4 @@ read_locales,write_locales,read_markets,write_markets,read_translations,write_tr
 - Re-fetch before retrying a digest mismatch because the source may have changed.
 - Use GraphQL variables for locales, resource IDs, keys, digests, and values.
 
-Official references:
-
-- [Translatable resources](https://shopify.dev/docs/api/admin-graphql/latest/queries/translatableresources)
-- [Register translations](https://shopify.dev/docs/api/admin-graphql/latest/mutations/translationsRegister)
+Before a connected run, verify `translatableResources` and `translationsRegister` against the current official Shopify Admin GraphQL reference. Do not add external documentation addresses to this skill.

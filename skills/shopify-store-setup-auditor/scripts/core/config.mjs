@@ -68,12 +68,14 @@ export async function loadConfig(envPath) {
   if (!ACCESS_METHODS.has(accessMethod)) {
     throw new Error("INVALID_ACCESS_METHOD: use shopify_cli_oauth or dev_dashboard_client_credentials.");
   }
-  const storeInput = normalizeStoreInput(values.SKILL_HUB_SHOPIFY_STORE_DOMAIN);
+  const configuredDomain = String(values.SKILL_HUB_SHOPIFY_STORE_DOMAIN || "").trim();
+  const storeInput = configuredDomain ? normalizeStoreInput(configuredDomain) : null;
   const apiVersion = values.SKILL_HUB_SHOPIFY_API_VERSION || API_VERSIONS[0];
   return { ...values, accessMethod, storeInput, apiVersion, envPath };
 }
 
 export function connectionReadiness(config) {
+  if (!config.storeInput) return { ready: false, reason: "STORE_DOMAIN_REQUIRED" };
   if (config.accessMethod === "dev_dashboard_client_credentials") {
     return !isPlaceholder(config.SKILL_HUB_SHOPIFY_CLIENT_ID) && !isPlaceholder(config.SKILL_HUB_SHOPIFY_CLIENT_SECRET)
       ? { ready: true }

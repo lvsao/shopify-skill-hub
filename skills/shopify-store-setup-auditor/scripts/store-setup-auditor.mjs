@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs, normalizeLanguage, requiredArg, selectedModules } from "./core/args.mjs";
@@ -22,18 +22,13 @@ function print(value) { process.stdout.write(`${JSON.stringify(value, null, 2)}\
 const USAGE = `Usage:
   init-env --method <shopify_cli_oauth|dev_dashboard_client_credentials> [--env skill-hub.env]
   connection-check [--env skill-hub.env]
-  audit --url <store-url> --out <report.html> [--modules all] [--lang auto|en|zh-CN]
+  audit --env <skill-hub.env> --url <store-url> --out <report.html> [--modules all] [--lang auto|en|zh-CN]
   fix-preview --env <skill-hub.env> --from-report <report.html> --target <module> --changes <candidate.json>
   fix --env <skill-hub.env> --from-report <report.html> --target <module> --changes <candidate.json> --execute
   verify --env <skill-hub.env> --from-report <report.html> --target <module> --changes <candidate.json>
   permission-preview --env <skill-hub.env> --scopes <scope,...> --reason <merchant-reason> --app-path <private-.skill-hub-app-dir>
   permission-upgrade --env <skill-hub.env> --scopes <scope,...> --reason <merchant-reason> --app-path <private-.skill-hub-app-dir> --approve-scopes --approve-release`;
 function languageFromEnvironment() { return /^zh/i.test(process.env.LANG || "") ? "zh-CN" : "en"; }
-async function maybeConfig(envPath) {
-  const exists = await access(envPath).then(() => true).catch(() => false);
-  if (!exists) return null;
-  try { return await loadConfig(envPath); } catch { return null; }
-}
 async function runBounded(names, context, limit = 3) {
   const results = new Array(names.length); let cursor = 0;
   const workers = Array.from({ length: Math.min(limit, names.length) }, async () => {
@@ -48,7 +43,11 @@ async function runBounded(names, context, limit = 3) {
 }
 async function auditCommand(args) {
   const rawUrl = requiredArg(args, "url"); const out = path.resolve(requiredArg(args, "out")); const url = validatePublicUrl(rawUrl).href;
-  const envPath = path.resolve(String(args.env || "skill-hub.env")); const config = await maybeConfig(envPath); const modules = selectedModules(args.modules); const lang = normalizeLanguage(args.lang, languageFromEnvironment());
+  const envPath = path.resolve(String(args.env || "skill-hub.env")); const config = await loadConfig(envPath); const readiness = connectionReadiness(config);
+  if (!readiness.ready) throw new Error(`AUTHORIZED_CONNECTION_REQUIRED: ${readiness.reason}`);
+  const connection = await safeShopifyRead(config, `query ConnectionCheck { shop { id name myshopifyDomain } }`);
+  if (!connection.available) throw new Error(`AUTHORIZED_CONNECTION_REQUIRED: ${connection.code}`);
+  const modules = selectedModules(args.modules); const lang = normalizeLanguage(args.lang, languageFromEnvironment());
   const results = await runBounded(modules, { config, storeUrl: url });
   const audit = { generatedAt: new Date().toISOString(), storeUrl: url, results, score: scoreAudit(results) };
   const manifest = { kind: "shopify-store-setup-audit", version: 1, generatedAt: audit.generatedAt, storeUrl: url, lang, auditDigest: digest({ storeUrl: audit.storeUrl, generatedAt: audit.generatedAt, results: audit.results }), candidates: audit.results.flatMap((result) => (result.findings || []).filter((item) => item.fix).map((item) => ({ module: item.module, findingId: item.id, action: item.fix.action || null, resourceId: item.fix.resourceId || null, requiresMerchantValues: Boolean(item.fix.merchantValuesRequired || item.fix.merchantContentRequired) }))), changeSets: [] };

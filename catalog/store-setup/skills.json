@@ -60,10 +60,10 @@
       ],
       "prerequisites": [
         {"id": "public-storefront-url", "label": {"en": "Public storefront URL", "zh": "公开店铺网址"}, "badge": {"en": "Required", "zh": "必需"}, "icon": "Link"},
-        {"id": "shopify-store-connection", "label": {"en": "Authorized Shopify store connection", "zh": "已授权的 Shopify 店铺连接"}, "badge": {"en": "Optional for public audit", "zh": "公开审计可选"}, "icon": "Store"}
+        {"id": "shopify-store-connection", "label": {"en": "Authorized Shopify store connection", "zh": "已授权的 Shopify 店铺连接"}, "badge": {"en": "Required", "zh": "必需"}, "icon": "Store"}
       ],
       "badges": [
-        {"id": "shopify-store-access", "status": "optional"},
+        {"id": "shopify-store-access", "status": "required"},
         {"id": "external-api-credential", "status": "not_required"},
         {"id": "vision-model", "status": "not_required"}
       ]

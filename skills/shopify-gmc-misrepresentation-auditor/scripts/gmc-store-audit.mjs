@@ -4,7 +4,7 @@
  *
  * Usage:
  *   node gmc-store-audit.mjs <store-url>
- *   node gmc-store-audit.mjs https://your-store.com
+ *   node gmc-store-audit.mjs <storefront-url>
  *
  * Output: JSON to stdout — { storeUrl, fetchedAt, themeHints, checks, productUrls, score }
  * Errors: stderr only
@@ -55,7 +55,7 @@ async function fetchPage(url, opts = {}) {
     const res = await fetchPublic(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; GMC-Auditor/1.0; +https://selofy.com)',
+        'User-Agent': 'Selofy-GMC-Auditor/1.0',
         'Accept': 'text/html,application/xhtml+xml,*/*',
         'Accept-Language': 'en-US,en;q=0.9',
         ...opts.headers,

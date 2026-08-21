@@ -2,14 +2,9 @@
 
 Reference document for `shopify-gmc-misrepresentation-auditor`. Load this before scoring, classifying findings, or generating the report.
 
-## Official Policy Sources
+## Current policy verification
 
-- Shopping ads Misrepresentation policy: https://support.google.com/merchants/answer/6150127
-- Free listings Misrepresentation policy: https://support.google.com/merchants/answer/12079606
-- Landing page requirements: https://support.google.com/merchants/answer/4752265
-- Checkout requirements: https://support.google.com/merchants/answer/9158778
-- Product data specification: https://support.google.com/merchants/answer/7052112
-- Building trust with your customers: https://support.google.com/merchants/answer/188484
+Before a live audit, verify the current Google Merchant Center guidance for Shopping ads and free-listings misrepresentation, landing pages, checkout, product data, and customer trust. Do not retain source-site addresses in this skill or generated report.
 
 ## Four Policy Buckets
 

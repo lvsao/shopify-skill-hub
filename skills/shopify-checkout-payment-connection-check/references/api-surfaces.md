@@ -33,8 +33,6 @@ Use a browser session for the shopper-facing portion. Re-snapshot after every na
 
 Never complete a payment, enter a payment credential, or treat a visible payment method as proof of successful charging. A provider handoff may be recorded as reachable only when the next page opens without authentication or payment data.
 
-## Official documentation
+## Current schema verification
 
-- [ShopifyPaymentsAccount](https://shopify.dev/docs/api/admin-graphql/2026-07/objects/ShopifyPaymentsAccount)
-- [OrderTransaction](https://shopify.dev/docs/api/admin-graphql/2026-07/objects/OrderTransaction)
-- [deliveryProfiles](https://shopify.dev/docs/api/admin-graphql/2026-07/queries/deliveryProfiles)
+Before a connected run, verify `ShopifyPaymentsAccount`, `OrderTransaction`, and `deliveryProfiles` against the current official Shopify Admin GraphQL reference. Keep external documentation addresses out of the skill and generated report.

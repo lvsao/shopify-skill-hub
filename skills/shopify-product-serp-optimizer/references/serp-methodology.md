@@ -464,21 +464,6 @@ Stop completely before writes when:
 - The user asks for full-store processing in one pass.
 - Product availability or status makes storefront targeting unclear.
 
-## References
+## Current guidance
 
-- Google title link best practices: https://developers.google.com/search/docs/appearance/title-link
-- Google snippets and meta descriptions: https://developers.google.com/search/docs/appearance/snippet
-- Google image SEO: https://developers.google.com/search/docs/appearance/google-images
-- Google link best practices: https://developers.google.com/search/docs/crawling-indexing/links-crawlable
-- Google helpful content guidance: https://developers.google.com/search/docs/fundamentals/creating-helpful-content
-- Google structured data policies: https://developers.google.com/search/docs/appearance/structured-data/sd-policies
-- Shopify SEO overview: https://help.shopify.com/en/manual/promoting-marketing/seo
-- Shopify product SEO field API: https://shopify.dev/docs/api/admin-graphql/latest/input-objects/SEOInput
-- Shopify product update API: https://shopify.dev/docs/api/admin-graphql/latest/mutations/productUpdate
-- Shopify file update API: https://shopify.dev/docs/api/admin-graphql/latest/mutations/fileUpdate
-- Ahrefs ecommerce product page SEO: https://ahrefs.com/blog/ecommerce-product-page-seo/
-- Semrush ecommerce keyword research: https://www.semrush.com/blog/ecommerce-keyword-research/
-- Moz keyword research: https://moz.com/beginners-guide-to-seo/keyword-research
-- Yoast product page SEO: https://yoast.com/product-page-seo/
-- Backlinko ecommerce SEO: https://backlinko.com/ecommerce-seo
-- Baymard product descriptions: https://baymard.com/blog/product-descriptions
+Before a live audit, verify current Google Search and Shopify SEO guidance through their official documentation. Treat third-party SEO commentary as optional background research only; do not embed reference-site addresses in this skill or generated report.
