@@ -1,4 +1,4 @@
 interface:
   display_name: "SEO Backlink Prospecting & Opportunity Finder"
-  short_description: "Find new backlink prospects via category and competitor research."
-  default_prompt: "Use $seo-backlink-opportunity-finder to actively find new backlink prospects from my site's category and comparable brands' public referring pages; keep existing-link reclamation secondary."
+  short_description: "Find new backlink prospects through category and competitor research."
+  default_prompt: "Use $seo-backlink-opportunity-finder to actively find new backlink prospects from my site's category and comparable brands' public referring pages, verify a practical contact route, and keep existing-link reclamation secondary."

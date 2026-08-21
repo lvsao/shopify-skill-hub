@@ -167,7 +167,7 @@ Each candidate needs:
 ```text
 id, target_url, root_domain, opportunity_type, lane, discovery_method,
 route, evidence_state, evidence_url, why_relevant, next_action,
-cost_or_disclosure, quality_risk
+contact_info, cost_or_disclosure, quality_risk
 ```
 
 Field semantics:
@@ -175,7 +175,22 @@ Field semantics:
 - `target_url` is the owned page that should receive the link.
 - `evidence_url` is a direct public page on the external source site that supports the prospect or route. It must not be a search-result page or a page on the target site.
 - `root_domain` is the normalized root domain of the external source site.
+- `contact_info` is the verified outreach channel: a direct email string (`"editor@example.com"`), a submission/form URL string (`"https://example.com/contact"`), or a structured object (`{"email": "...", "form_url": "..."}`).
+- `next_action` states the exact verification or outreach step that remains for this candidate.
 - `discovery_method` records how the opportunity was found, not how the merchant will acquire it.
+
+### Contact Acquisition & Verification Protocol
+
+When researching any prospect, actively inspect the target publication or platform for actionable contact details:
+1. **Primary Channels**:
+   - Editorial inboxes: `/contact`, `/about`, `/editorial-team`, `/press`, `/write-for-us`, or article author bylines (`editor@`, `tips@`, `press@`, `partnerships@`).
+   - Dedicated intake forms: Submission portals, creator signup forms, or review pitch forms.
+2. **Validation Rules**:
+   - Verify email syntax (`user@domain.tld`).
+   - Match email domain to the target source domain whenever possible.
+   - Reject fake placeholder emails (`name@example.com`, `admin@domain.com`).
+   - If no direct email is publicly exposed, provide the exact Contact / Inquiry Form URL so outreach is immediately actionable.
+
 
 Allowed `opportunity_type` values:
 
@@ -245,4 +260,4 @@ Exclude and report sources that sell ranking links, require undisclosed payment 
 
 Validate redirect hops and final destinations before fetching. Do not access private address ranges, local services, restricted pages, or pages requiring a bypass. Respect robots, terms, rate limits, and access controls. Store only public URLs and concise evidence needed for this run.
 
-The ledger validator checks record structure, direct literal hosts, method coverage, ratio caps, and domain binding. It does not replace redirect-hop or DNS validation while collecting evidence.
+The ledger validator checks record structure, direct literal hosts, method coverage, ratio caps, domain binding, and actionable contact routes. It does not replace redirect-hop or DNS validation while collecting evidence.

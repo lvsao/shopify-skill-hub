@@ -3,7 +3,7 @@ name: "seo-backlink-opportunity-finder"
 slug: "seo-backlink-opportunity-finder"
 displayName: "SEO Backlink Prospecting & Opportunity Finder"
 description: "Find genuinely new backlink prospects for a public website by extracting its category, audience, use-case, and market language, expanding that language into backlink-intent searches, and tracing comparable brands' public referring pages into repeatable opportunities. Use when someone wants active new-link prospecting, competitor backlink-path research, or a reviewable outreach pipeline without Shopify authorization. Existing-link inventory and reclamation are secondary and capped; never replace new prospecting with a report of links the target already has, and never promise placements or recommend paid links, spam directories, or link schemes."
-version: 1.1.0
+version: 2.0.0
 author: "Selofy (lvsao)"
 license: MIT
 platforms: [macos, linux, windows]
@@ -86,16 +86,16 @@ Cover the relevant lanes in the protocol, with new prospects first: independent 
 
 Search the target's own brand, products, distinctive phrases, and public mentions for existing links, unlinked mentions, redirects, and broken references. Put these only in `existing_link_reclamation` under `own_mentions_and_reclamation`. Keep this queue visibly separate and capped at 20%; it never substitutes for new prospects.
 
-### 6. Verify, score, and deduplicate
+### 6. Verify, score, extract contact info, and deduplicate
 
-For every new prospect:
+For every candidate:
 
-- verify a safe public external evidence page or an identifiable submission/program page;
-- verify the target page that should receive the link;
-- check that the target is not already linked from that source;
-- state the acquisition route and the action required from the merchant;
-- distinguish “can act now,” “needs contact/policy check,” and “research lead—do not pitch yet”;
-- retain lower-confidence leads only when the exact verification step is stated.
+- **Target and Evidence verification**: Verify a safe public external evidence page and the exact owned target page that should receive the link.
+- **Contact Acquisition Protocol**:
+  - Locate the verified outreach channel: dedicated editorial/press email (`editor@`, `press@`, `partnerships@`, `contact@`), submission URL, or contact form from `/contact`, `/about`, `/press`, `/editorial-policy`, or page footer.
+  - Validate email syntax (`RFC 5322`) and verify domain relevance. Filter out generic placeholder addresses (`yourname@email.com`, `admin@example.com`).
+  - If no direct email exists, supply the direct Contact Form / Submission Portal URL.
+- **Deduplication and Quality Gates**: Ensure root domains are unique (or capped at 2 per domain for distinct sub-brands) and meet quality tier standards.
 
 Do not pad the count with weak sources. If the selected tier cannot be met, report the shortfall and omitted lanes instead of presenting an audit or generic brainstorming list as completed prospecting.
 
@@ -103,11 +103,10 @@ Do not pad the count with weak sources. If the selected tier cannot be met, repo
 
 Deliver the following in this order:
 
-1. **New backlink prospects** — the main table, with specific source pages/programs first.
-2. **Comparable-brand paths** — which competitor or comparable brand exposed each repeatable route.
-3. **Existing-link reclamation** — a separate, smaller queue only if found.
-4. **Excluded sources** — paid links, spam, irrelevant pages, inaccessible pages, and other rejected routes with reasons.
-5. **Next actions** — the highest-priority outreach or verification actions.
+1. **Backlink Outreach Pipeline** — the unified main table with clickable Source Domains, merged Lane & Acquisition Route, Target Page, Relevance & Evidence, and verified Contact/Submission details. (Do not duplicate competitor paths into a separate section).
+2. **Existing-link reclamation** — a separate, smaller maintenance queue only if found (capped at 20%).
+3. **Excluded sources** — paid links, spam, irrelevant pages, inaccessible pages, and other rejected routes with reasons.
+4. **Priority Action Plan** — phased outreach roadmap.
 
 State the completed tier, category seeds, competitor hypotheses/supplied competitors, discovery-method checks, new-prospect count, reclamation count, omitted lanes, and confidence split before the tables.
 
@@ -116,21 +115,22 @@ Every candidate must include:
 ```text
 id, target_url, root_domain, opportunity_type, lane, discovery_method,
 route, evidence_state, evidence_url, why_relevant, next_action,
-cost_or_disclosure, quality_risk
+contact_info (email or contact form URL), cost_or_disclosure, quality_risk
 ```
 
 Validate the ledger after research:
 
 ```text
-node <absolute-path-to-skill>/scripts/validate-opportunity-ledger.mjs --input opportunities.json --tier full
+# Step 1: Validate candidate ledger
 node <absolute-path-to-skill>/scripts/validate-opportunity-ledger.mjs --input opportunities.json --tier minimum
+
 ```
 
 ## Hard failure conditions
 
 - The main result is a list of the target site's existing backlinks.
 - A competitor's existing backlink is described as if the target already owns it.
-- A “prospect” is only a category such as “find blogs,” “try directories,” or “contact influencers” without a specific page/program and evidence.
+- A “prospect” is only a category such as “find blogs,” “try directories,” or “contact influencers” without a specific page/program, contact info, and evidence.
 - A new prospect uses `link_reclamation` or `verified_existing_link`.
 - The result promises placement, approval, dofollow status, ranking impact, or guaranteed value.
 - The source requires paid ranking links, undisclosed sponsorship, mass submissions, link exchange, or other manipulative schemes.

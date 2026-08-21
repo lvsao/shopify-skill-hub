@@ -202,6 +202,41 @@ function requiredText(candidate, field, index, errors) {
   if (!String(candidate[field] || "").trim()) errors.push(`candidate ${index}: ${field} is required.`);
 }
 
+function isValidContactEmail(value) {
+  const email = String(value || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+  return !new Set(["yourname@email.com", "admin@example.com", "name@example.com"]).has(email);
+}
+
+function validateContactInfo(value, index, errors) {
+  if (!value) {
+    errors.push(`candidate ${index}: contact_info is required.`);
+    return;
+  }
+  if (typeof value === "string") {
+    const text = value.trim();
+    if (isValidContactEmail(text)) return;
+    if (text.startsWith("http://") || text.startsWith("https://")) {
+      asPublicUrl(text, "contact_info", index, errors);
+      return;
+    }
+    errors.push(`candidate ${index}: contact_info must be a non-placeholder email address or public http(s) URL.`);
+    return;
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    errors.push(`candidate ${index}: contact_info must be an email address, public URL, or contact object.`);
+    return;
+  }
+  const email = String(value.email || "").trim();
+  const formUrl = String(value.form_url || "").trim();
+  if (!email && !formUrl) {
+    errors.push(`candidate ${index}: contact_info must include email or form_url.`);
+    return;
+  }
+  if (email && !isValidContactEmail(email)) errors.push(`candidate ${index}: contact_info.email must be a non-placeholder email address.`);
+  if (formUrl) asPublicUrl(formUrl, "contact_info.form_url", index, errors);
+}
+
 function validate(ledger, options = {}) {
   const requirements = tierRequirements(options.tier);
   const candidates = ledger?.candidates;
@@ -253,6 +288,7 @@ function validate(ledger, options = {}) {
       if (discoveryMethod !== "existing_mention_search") errors.push(`candidate ${index}: existing_link_reclamation must use existing_mention_search.`);
       if (!["verified_existing_link", "research_lead"].includes(candidate.evidence_state)) errors.push(`candidate ${index}: reclamation evidence_state must be verified_existing_link or research_lead.`);
     }
+    validateContactInfo(candidate.contact_info, index, errors);
     if (String(candidate.evidence_state || "").startsWith("verified_") && !evidence) errors.push(`candidate ${index}: verified evidence requires a valid evidence_url.`);
   });
   if (domains.size < requirements.minimumDomains) errors.push(`Expected at least ${requirements.minimumDomains} root domains; received ${domains.size}.`);
@@ -265,10 +301,22 @@ function validate(ledger, options = {}) {
     if (!discoveryMethods[method]) errors.push(`Candidates must include new prospects from ${method}.`);
   }
   for (const [domain, count] of domains) if (count > MAX_PER_DOMAIN) errors.push(`${domain}: exceeds the maximum of ${MAX_PER_DOMAIN} candidates per root domain.`);
+
   return {
     ok: errors.length === 0,
     errors,
-    summary: { ...requirements, targetRootDomain, candidateCount: candidates.length, rootDomainCount: domains.size, laneCount: lanes.size, newProspectCount, existingReclamationCount, evidenceStates: states, discoveryMethods, research: researchSummary },
+    summary: {
+      ...requirements,
+      targetRootDomain,
+      candidateCount: candidates.length,
+      rootDomainCount: domains.size,
+      laneCount: lanes.size,
+      newProspectCount,
+      existingReclamationCount,
+      evidenceStates: states,
+      discoveryMethods,
+      research: researchSummary,
+    },
   };
 }
 
