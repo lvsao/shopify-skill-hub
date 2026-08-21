@@ -24,7 +24,7 @@ If the CLI grant expires, is revoked, or lacks access, repeat this browser step 
 
 ### Long-running connection
 
-Use this only for a trusted local or server agent operating on the merchant's own store.
+Use this only for a trusted local or server agent where the app is developed by the merchant's own organization and operates on that same merchant-owned store. Client credentials cannot be used as a general connection method for other merchants' stores.
 
 1. In Shopify admin, open **Developer Dashboard** → **Apps** → **Create app** → **Start from Dev Dashboard**.
 2. Create the first app version with this exact, copyable comma-separated scope list:
@@ -57,7 +57,7 @@ Dev Dashboard mode is a two-consent flow:
 
 1. Show only the missing scopes, the merchant-language reason, and the full copyable scope list.
 2. Obtain approval for those exact scopes. If declined, continue only with a path supported by the current access.
-3. Obtain separate approval to publish the app change. Only then synchronize the merchant's existing app under private `.skill-hub/` with `shopify app config link --path <private-.skill-hub-app-dir> --client-id <client-id>`; preserve unknown settings and never synthesize a replacement configuration.
+3. Obtain separate approval to publish the app change. Only then synchronize the merchant's existing app under private `.skill-hub/` with `shopify app config link --path <private-.skill-hub-app-dir> --client-id <client-id>`. Update only the existing top-level `scopes = "..."` value by merging the approved scopes; preserve unknown settings, keep the original file for rollback if validation or deploy fails, and never synthesize a replacement configuration.
 4. Run `shopify app config validate --path <private-.skill-hub-app-dir> --json`. Inject `SKILL_HUB_SHOPIFY_APP_AUTOMATION_TOKEN` as `SHOPIFY_APP_AUTOMATION_TOKEN` only into the child process that runs `shopify app deploy --path <private-.skill-hub-app-dir> --allow-updates`. Never place it in arguments, files, logs, or GraphQL requests.
 5. Tell the merchant to open the installed app in Shopify admin and approve the pending **Update/Approve permissions** action. Publishing a version does not grant consent.
 6. Wait for propagation, refresh the short-lived token, and rerun a read-only connection check. If the scope remains absent, report `SCOPE_UPDATE_PENDING` and stop; never redeploy repeatedly.

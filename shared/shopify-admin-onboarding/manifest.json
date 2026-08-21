@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.2.0",
   "skills": [
     {
       "path": "skills/optimize-shopify-alt-text/references/onboarding-guide.md",
@@ -63,6 +63,13 @@
       "publicAccess": "This skill needs Shopify Admin read access for payment and delivery evidence. The public storefront walkthrough supplements that evidence; it never replaces authorization.",
       "scopes": "read_orders,read_shipping,read_shopify_payments_accounts",
       "workflowBoundary": "The Admin-data portion is read-only and never creates an order, product, customer, or payment. The browser walkthrough may create a temporary unsubmitted checkout session, and always stops before payment confirmation."
+    },
+    {
+      "path": "skills/shopify-store-setup-auditor/references/onboarding-guide.md",
+      "intro": "Use this guide before connected store-setup evidence or an explicitly approved module fix.",
+      "publicAccess": "A public storefront URL supports a read-only technical audit. Shopify Admin authorization is required for store data, evidence tied to private configuration, previews, or writes.",
+      "scopes": "read_products,read_inventory,read_publications,read_content,read_online_store_pages,read_online_store_navigation,read_legal_policies,read_checkout_and_accounts_configurations,read_checkout_settings,read_markets,write_markets,read_shipping,read_discounts,read_themes",
+      "workflowBoundary": "Connection never replaces the module-scoped audit → candidate values → fix-preview → explicit approval → `fix --execute` → verification boundary. Never use it to change DNS, password protection, payment credentials or test mode, taxes, carrier accounts, or external ad/search accounts."
     }
   ]
 }

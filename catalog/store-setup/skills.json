@@ -1,6 +1,74 @@
 {
   "skills": [
     {
+      "name": "shopify-store-setup-auditor",
+      "displayName": "Shopify Store Setup Auditor",
+      "displayName_zh": "Shopify 店铺上线体检",
+      "path": "../../skills/shopify-store-setup-auditor",
+      "tags": ["shopify", "launch", "markets"],
+      "integrations": ["shopify", "chatgpt", "claude", "codex"],
+      "public": true,
+      "status": "PUBLISHED",
+      "shortDescription": {
+        "en": "Audit Shopify launch readiness across storefront, Markets, shipping, catalog, trust, SEO, discounts, and tracking—with evidence coverage and approval-only fixes.",
+        "zh": "Shopify 店铺上线前体检：全面检查前台、多地区销售（Markets）、配送、商品、信任基建、搜索优化（SEO）、折扣与追踪，并展示证据覆盖率，仅在批准后执行修复。"
+      },
+      "longDescription": {
+        "en": "Run one evidence-backed pre-launch review for a Shopify DTC store and its cross-border Markets. The skill combines public storefront checks with merchant-authorized Admin API reads, scores readiness from 0–100, and separates passed, blocked, and unverified checks so missing permissions never look like a pass. It covers foundation gates, domains, policies, checkout evidence, Market-driven or legacy shipping, products, navigation, technical SEO, discounts, tracking signals, and essential trust pages. Supported Shopify changes remain module-scoped: each one needs a current resource snapshot, preview, explicit approval, execution, and re-read verification. Domain setup, password protection, payment credentials/test mode, taxes, carrier accounts, and external marketing/search accounts are always guided manually.",
+        "zh": "为 Shopify DTC 店铺及跨境多地区销售（Markets）执行一份有证据支撑的上线前体检。Skill 会结合公开前台检查和商家授权的 Admin API 读取，给出 0–100 就绪度评分，并清晰区分已通过、上线受阻和未验证项目；权限不足绝不会被当作通过。覆盖基础门禁、域名、政策、结账证据、多地区销售（Markets）驱动的配送或旧配送模型、商品、导航、搜索优化（SEO）与主题、折扣、追踪信号及必备信任页面。可支持的 Shopify 变更按模块严格控制：每一项都需要当前资源快照、预览、明确批准、执行与回读验证。域名设置、店铺密码、支付凭证/测试模式、税务、承运商账号及外部营销/搜索账号始终只提供人工操作指引。"
+      },
+      "introduction": {
+        "en": "Launch with evidence, not guesswork: see exactly what is blocked, what is unverified, and which safe Shopify fixes you can approve module by module.",
+        "zh": "用证据而非猜测上线：清楚看到哪些项目上线受阻、哪些尚未验证，以及哪些安全 Shopify 修复可按模块审批。"
+      },
+      "features": [
+        {
+          "id": "ten-module-audit",
+          "title": {"en": "10-module launch audit", "zh": "10 大模块上线审计"},
+          "description": {"en": "Reviews foundation, domain/security, policies, checkout evidence, Markets/shipping, catalog, navigation, SEO/theme, discounts/tracking, and trust content independently.", "zh": "独立检查基础配置、域名/安全、政策、结账证据、多地区销售（Markets）/配送、商品、导航、搜索优化（SEO）/主题、折扣/追踪与信任内容。"},
+          "badge": {"en": "Full setup", "zh": "全套搭建"},
+          "icon": "ClipboardCheck"
+        },
+        {
+          "id": "evidence-aware-score",
+          "title": {"en": "Readiness score + evidence coverage", "zh": "就绪度评分 + 证据覆盖率"},
+          "description": {"en": "Returns a 0–100 score plus evidence coverage; a Critical item is Blocked and less than 75% coverage is never labelled ready.", "zh": "输出 0–100 评分与证据覆盖率；任何严重项都会标为上线受阻，覆盖率低于 75% 时绝不会标为准备就绪。"},
+          "badge": {"en": "No false pass", "zh": "不虚假通过"},
+          "icon": "ShieldCheck"
+        },
+        {
+          "id": "markets-shipping-model",
+          "title": {"en": "Current shipping-model handling", "zh": "兼容当前配送模型"},
+          "description": {"en": "Detects Shopify market-driven shipping and avoids treating legacy delivery profiles as cross-border shipping proof on migrated shops.", "zh": "识别 Shopify 多地区销售（Markets）驱动的配送；已迁移店铺不会用旧配送方案误判跨境配送已就绪。"},
+          "badge": {"en": "Migration aware", "zh": "兼容迁移"},
+          "icon": "Globe2"
+        },
+        {
+          "id": "safe-public-probes",
+          "title": {"en": "Safe public storefront probes", "zh": "安全的公开前台探测"},
+          "description": {"en": "Safely probes your public storefront pages, automatically blocking internal network addresses and suspicious redirects so it never touches data it should not.", "zh": "安全地对店铺公开页面做体检，自动屏蔽内网地址和可疑跳转，不会触碰你不该碰的数据。"},
+          "badge": {"en": "Safe scanning", "zh": "安全扫描"},
+          "icon": "LockKeyhole"
+        },
+        {
+          "id": "approval-only-fixes",
+          "title": {"en": "Previewed, module-approved fixes", "zh": "预览后按模块批准修复"},
+          "description": {"en": "Supported API changes require candidate values, fresh resource snapshots, an explicit module approval, error checks before writing, and post-write verification.", "zh": "支持的 API 变更需要候选值、最新资源快照、明确模块批准、写入前自动拦截错误和写入后验证。"},
+          "badge": {"en": "Controlled writes", "zh": "受控写入"},
+          "icon": "FileCheck2"
+        }
+      ],
+      "prerequisites": [
+        {"id": "public-storefront-url", "label": {"en": "Public storefront URL", "zh": "公开店铺网址"}, "badge": {"en": "Required", "zh": "必需"}, "icon": "Link"},
+        {"id": "shopify-store-connection", "label": {"en": "Authorized Shopify store connection", "zh": "已授权的 Shopify 店铺连接"}, "badge": {"en": "Optional for public audit", "zh": "公开审计可选"}, "icon": "Store"}
+      ],
+      "badges": [
+        {"id": "shopify-store-access", "status": "optional"},
+        {"id": "external-api-credential", "status": "not_required"},
+        {"id": "vision-model", "status": "not_required"}
+      ]
+    },
+    {
       "name": "shopify-theme-apps-detector",
       "displayName": "Shopify Theme & Apps Detector",
       "displayName_zh": "Shopify 主题与插件检测器",

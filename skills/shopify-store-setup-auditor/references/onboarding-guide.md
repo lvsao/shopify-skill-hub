@@ -1,12 +1,12 @@
 <!-- GENERATED FILE: edit shared/shopify-admin-onboarding/core.md or manifest.json, then run node scripts/sync-onboarding.mjs --write. -->
-<!-- onboarding-contract: 1.2.0; source-sha256: bab85fedee9c3f1e75c3c1d7685ed4013b03972dc33ad10edc278e743df4a98c -->
+<!-- onboarding-contract: 1.2.0; source-sha256: c33766f865a107fb8e14e67698df5dbc26ccbd7da63d684ce5935ff68f76796b -->
 # Connect Your Store
 
-Use Admin access for connected audits and approved fixes; select public storefront mode for a URL-only report.
+Use this guide before connected store-setup evidence or an explicitly approved module fix.
 
 ## Choose the smallest access path
 
-**Public storefront mode:** no Shopify credential or Admin authorization is needed. A private local config may retain the non-secret target domain for repeatable read-only commands; it must never offer writes.
+A public storefront URL supports a read-only technical audit. Shopify Admin authorization is required for store data, evidence tied to private configuration, previews, or writes.
 
 ### Quick connection (recommended)
 
@@ -17,7 +17,7 @@ Use this for a first run or occasional work. The merchant supplies a store addre
 3. Explain that Shopify will open a browser permission page, then run:
 
 ```text
-shopify store auth --store <shop>.myshopify.com --scopes read_products,write_products,read_files,write_files --json
+shopify store auth --store <shop>.myshopify.com --scopes read_products,read_inventory,read_publications,read_content,read_online_store_pages,read_online_store_navigation,read_legal_policies,read_checkout_and_accounts_configurations,read_checkout_settings,read_markets,write_markets,read_shipping,read_discounts,read_themes --json
 ```
 
 4. Wait for the merchant to approve the browser permission page, then run the skill's read-only `connection-check`.
@@ -32,7 +32,7 @@ Use this only for a trusted local or server agent where the app is developed by 
 2. Create the first app version with this exact, copyable comma-separated scope list:
 
 ```text
-read_products,write_products,read_files,write_files
+read_products,read_inventory,read_publications,read_content,read_online_store_pages,read_online_store_navigation,read_legal_policies,read_checkout_and_accounts_configurations,read_checkout_settings,read_markets,write_markets,read_shipping,read_discounts,read_themes
 ```
 
 3. Release the version, copy the Client ID and Client Secret from **Settings** into private local/server configuration, then install the app from **Home** to the merchant's own store.
@@ -68,4 +68,4 @@ Dev Dashboard mode is a two-consent flow:
 
 ## Safety boundary
 
-Every connected write still requires preview → explicit approval → `apply --execute`. Public storefront mode is report-only.
+Connection never replaces the module-scoped audit → candidate values → fix-preview → explicit approval → `fix --execute` → verification boundary. Never use it to change DNS, password protection, payment credentials or test mode, taxes, carrier accounts, or external ad/search accounts.

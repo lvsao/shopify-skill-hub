@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Store Setup Auditor"
+  short_description: "Audit launch readiness and prepare approval-based Shopify fixes."
+  default_prompt: "Audit my Shopify store setup before launch, explain the blockers, and prepare only the fixes I approve."
