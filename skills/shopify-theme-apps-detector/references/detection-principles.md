@@ -27,7 +27,7 @@ Extracted from inline script in HTML. Fields:
 }
 ```
 
-- `theme_store_id` is a 4-5 digit number → official Theme Store theme; verify the listing through the current Shopify Theme Store.
+- `theme_store_id` is a 4-5 digit number → official Theme Store theme → link to `https://themes.shopify.com/themes/<theme_store_id>`
 - `theme_store_id: null` → custom or third-party theme → web-search `schema_name` to find official page
 - `name` is merchant-customizable and unreliable for identification; use `schema_name` instead
 
@@ -49,16 +49,16 @@ Unique class prefixes that appear consistently across pages indicate the theme f
 Scripts loaded from non-Shopify domains are the strongest app signal:
 
 ```
-Klaviyo static script host               → Klaviyo (email marketing)
-Gorgias configuration script host        → Gorgias (customer support)
-Judge.me CDN script host                 → Judge.me (reviews)
-Loox CDN script host                     → Loox (reviews)
-Klaviyo application script host          → Klaviyo
-Tidio script host                        → Tidio (chat)
-Intercom widget host                     → Intercom (chat)
-HubSpot script host                      → HubSpot
-Google Tag Manager script host           → Google Tag Manager (not an app, but confirms GTM)
-Meta Pixel script host                   → Meta Pixel (not an app)
+https://static.klaviyo.com/...          → Klaviyo (email marketing)
+https://config.gorgias.chat/...         → Gorgias (customer support)
+https://cdn.judge.me/...                → Judge.me (reviews)
+https://cdn.loox.io/...                 → Loox (reviews)
+https://a.klaviyo.com/...               → Klaviyo
+https://code.tidio.co/...               → Tidio (chat)
+https://widget.intercom.io/...          → Intercom (chat)
+https://js.hs-scripts.com/...           → HubSpot
+https://www.googletagmanager.com/...    → Google Tag Manager (not an app, but confirms GTM)
+https://connect.facebook.net/...        → Meta Pixel (not an app)
 ```
 
 ### Tier 2: App Embed Blocks (High Confidence)
@@ -116,10 +116,19 @@ data-judgeme-*            → Judge.me
 4. **Unconfirmed clues** — table of ambiguous signals
 5. **Technical appendix** — all scripts, globals, pages crawled (collapsible)
 
-### Listing and logo handling
+### App Store Links
 
-- For a confirmed app or theme, look up its current official listing during the live review; do not embed a static marketplace address in the skill or report.
-- Use the merchant's approved logo source when available; otherwise use the inline SVG generic icon.
+- Known app: `https://apps.shopify.com/<app-handle>` (find via web search)
+- Unknown app: `https://apps.shopify.com/search?q=<app-name>`
+
+### Theme Store Links
+
+- Theme Store theme: `https://themes.shopify.com/themes/<theme_store_id>`
+- Custom theme: link to official vendor page if found via web search
+
+### Logo Sources
+
+Use the merchant's approved logo source when available; otherwise use the inline SVG generic icon. Do not add an unverified third-party logo proxy as a dependency.
 
 ### Confidence Color Coding
 
@@ -131,10 +140,10 @@ data-judgeme-*            → Judge.me
 
 | Signal | Looks Like | Actually |
 |--------|-----------|---------|
-| Google Tag Manager script | App | Google Analytics / GTM — not a Shopify app |
-| Meta Pixel script | App | Meta Pixel — not a Shopify app |
-| Shopify core CDN asset | App | Shopify core CDN — not an app |
-| Shop Pay checkout route | App | Shopify Shop Pay — native feature |
-| Shopify platform script | App | Shopify platform script — not an app |
+| `www.googletagmanager.com/gtag/js` | App | Google Analytics / GTM — not a Shopify app |
+| `connect.facebook.net/en_US/fbevents.js` | App | Meta Pixel — not a Shopify app |
+| `cdn.shopify.com/s/files/...` | App | Shopify core CDN — not an app |
+| `shop.app/checkouts/...` | App | Shopify Shop Pay — native feature |
+| `cdn.shopify.com/shopifycloud/...` | App | Shopify platform scripts — not an app |
 
 Always web-search before marking as confirmed. GTM and Meta Pixel should be noted as "tracking/analytics" but not listed as Shopify apps.

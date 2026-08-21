@@ -6,7 +6,7 @@ import { assertPublicDestination, fetchPublic, validatePublicUrl } from "./lib/p
 import { connectionStatus, loadShopifyConfig, shopifyGraphql } from "./lib/shopify-auth.mjs";
 
 const VERSION = "1.1.0";
-const USER_AGENT = "Selofy-BrokenLinkDoctor/1.1";
+const USER_AGENT = "Selofy-BrokenLinkDoctor/1.1 (+https://github.com/lvsao/shopify-skill-hub)";
 const READ_SCOPES = ["read_online_store_navigation"];
 const WRITE_SCOPES = ["read_online_store_navigation", "write_online_store_navigation"];
 const CONNECTION_QUERY = "query ConnectionCheck { shop { name myshopifyDomain } urlRedirects(first: 1) { nodes { id path target } } }";

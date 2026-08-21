@@ -4,7 +4,13 @@
 
 E-E-A-T means Experience, Expertise, Authoritativeness, and Trustworthiness. It is a quality framework, not a Google ranking score. Google's guidance says trust is the most important part; the other dimensions contribute to trust, and not every page must demonstrate all four in the same way.
 
-Before a live review, consult the current Google Search documentation for helpful content, quality-evaluator guidance, and structured-data policies. Do not embed third-party reference links in the skill, report, or candidate artifact.
+Primary references:
+
+- [Creating helpful, reliable, people-first content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content)
+- [Google Search Quality Evaluator Guidelines](https://developers.google.com/search/blog/2022/12/google-raters-guidelines-e-e-a-t)
+- [General structured data guidelines](https://developers.google.com/search/docs/appearance/structured-data/sd-policies)
+
+Use these sources to verify methodology during a live review. They are citations for the audit rules, not merchant inputs or generated candidate data.
 
 Never promise rankings, traffic, rich results, or an E-E-A-T “pass”. Report evidence, gaps, confidence, and practical next actions.
 

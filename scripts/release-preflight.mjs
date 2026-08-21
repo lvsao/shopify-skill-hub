@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 import { readFile, readdir } from "node:fs/promises";
+import { execFile } from "node:child_process";
 import path from "node:path";
+import { promisify } from "node:util";
 
 const ROOT = process.cwd();
 const SEMVER = /^\d+\.\d+\.\d+$/;
+const execFileAsync = promisify(execFile);
 
 function parseFrontmatter(text) {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -25,6 +28,18 @@ function findSetDifference(expected, actual) {
 }
 
 const errors = [];
+const { stdout: trackedPathOutput } = await execFileAsync("git", ["ls-files", "-z"], { cwd: ROOT, maxBuffer: 1024 * 1024 });
+const trackedPaths = trackedPathOutput.split("\0").filter(Boolean);
+const prohibitedTrackedPathRules = [
+  { pattern: /(^|\/)\.workbuddy(?:\/|$)/i, label: "agent memory" },
+  { pattern: /(^|\/)(?:test|tests|fixtures|test-results|playwright-report)(?:\/|$)/i, label: "test or fixture artifact" },
+  { pattern: /(^|\/)(?:test-[^/]+|[^/]+\.(?:test|spec))\.(?:[cm]?[jt]sx?)$/i, label: "test script" },
+  { pattern: /(^|\/)[^/]*(?:audit|test|demo)-report\.(?:html|json|md)$/i, label: "generated report" },
+];
+for (const trackedPath of trackedPaths) {
+  const match = prohibitedTrackedPathRules.find((rule) => rule.pattern.test(trackedPath));
+  if (match) errors.push(`${trackedPath}: tracked ${match.label} is not allowed in the published repository.`);
+}
 const catalogNames = new Set();
 const catalogItems = new Map();
 const publishedSlugs = new Set();

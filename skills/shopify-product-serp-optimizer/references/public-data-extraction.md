@@ -86,7 +86,7 @@ No headers needed. Returns:
       {
         "id": 1111111111,
         "alt": "Vetreska Flora 3-in-1 Dog Walking Set in Pink",
-        "src": "<public-cdn-image-url>",
+        "src": "https://cdn.shopify.com/s/files/1/.../image.jpg",
         "width": 2048,
         "height": 2048
       }
@@ -222,7 +222,7 @@ When generating the audit report in read-only mode, apply these adjustments:
 All image URLs from the public JSON are Shopify CDN URLs that require no authentication:
 
 ```
-<public-cdn-image-url>
+https://cdn.shopify.com/s/files/1/{shop_id}/files/{filename}
 ```
 
 You can:

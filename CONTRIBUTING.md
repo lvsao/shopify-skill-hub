@@ -15,6 +15,13 @@ This repository contains public skills, their catalog metadata, and small suppor
 5. Keep Shopify writes preview-first and require explicit merchant approval before execution.
 6. Never include secrets, session cookies, tokens, or real merchant data.
 
+## Link and artifact hygiene
+
+- Keep an external URL when it is an official API or policy source, a methodology citation, a required operating endpoint, or a runtime-derived destination that changes the skill's decision or output.
+- Keep the citation beside the claim it supports. Do not add unlabelled referral links, unused third-party services, or copied link collections.
+- Use clear placeholders for illustrative merchant/store URLs. Never use a real merchant, test-store, or private URL as an example.
+- Do not commit `test/`, `tests/`, fixtures, generated reports, agent memory, caches, or scratch output. The release preflight rejects those tracked paths.
+
 ## Validate locally
 
 Run these commands from the repository root:

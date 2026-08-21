@@ -55,7 +55,7 @@ async function fetchPage(url, opts = {}) {
     const res = await fetchPublic(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Selofy-GMC-Auditor/1.0',
+        'User-Agent': 'Mozilla/5.0 (compatible; GMC-Auditor/1.0; +https://selofy.com)',
         'Accept': 'text/html,application/xhtml+xml,*/*',
         'Accept-Language': 'en-US,en;q=0.9',
         ...opts.headers,

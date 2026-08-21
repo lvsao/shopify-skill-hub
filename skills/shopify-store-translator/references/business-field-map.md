@@ -6,7 +6,7 @@ When a user says "translate my products" or "translate my blog", the agent must 
 
 ## Resource-Field Reference (Official Shopify API)
 
-Source: current official Shopify Admin GraphQL `TranslatableResourceType` reference. Do not add an external documentation address here.
+Source: [Shopify Admin GraphQL `TranslatableResourceType`](https://shopify.dev/docs/api/admin-graphql/latest/enums/TranslatableResourceType). Verify the current enum before a connected run.
 
 | Resource Type | Translatable Fields | Commonly Missed |
 |---|---|---|
